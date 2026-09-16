@@ -2,32 +2,70 @@
 
 本项目使用版本记录来保留从设计思想到正式产品的完整演进过程。
 
-## Unreleased — v0.3.0 · Knowledge Source Foundation (Design Ready)
+## v0.3.0 — Knowledge Source Foundation (2026-09-16)
 
-### Design
+### Added
 
-- 完成 `docs/versions/v0.3.0.md`，正式定义 v0.3.0 的目标、边界、架构、测试计划与 Acceptance Criteria。
-- 综合多模型独立评审后，确认采用 Generic + Structured + Manual Knowledge 的长期方向，但 v0.3.0 只实现 Generic Knowledge Source Foundation。
-- 新增 Content Normalizer 作为 WordPress Content 与 Unified Knowledge Source 之间的基础清洗层。
-- 确定 v0.3.0 的六项核心能力：Post Type Discovery、Source Enable/Disable、Generic Extractor、Content Normalizer、Manual Knowledge CPT、Minimal Source Preview。
-- 确定 Generic Extractor 默认不读取任何 Post Meta；结构化字段未来通过显式白名单的 Structured Extractor 提供。
-- 确定 `wpaic_knowledge` 作为 AI 补充知识 CPT，第一阶段仅使用 Title、Content、Category 与 WordPress Status。
-- 确定 Source Hash 在 v0.3.0 只生成、不持久化、不比较；Knowledge Store 与 Lifecycle 延后到 v0.4.0。
-- 确定 WEM Structured Source 延后到 v0.3.1，用第二个真实实现验证当前 Source Schema 后，再决定是否正式抽象 Interface / Registry。
-- 新增 `docs/research/v0.3.0-knowledge-source-architecture-review.md`，保留本阶段架构决策草案与外部评审问题。
+- 新增 Post Type Discovery，只发现 `public + show_ui` 的业务内容类型，并排除常见 WordPress / Builder 内部类型。
+- 新增“知识来源”后台页面，管理员可以显式启用 / 禁用允许进入 AI Knowledge Source 管道的 Post Type；默认全部关闭。
+- 新增 `WPAIC_Generic_Extractor`，将普通 WordPress 内容按需转换为统一 Knowledge Source。
+- 新增 `WPAIC_Content_Normalizer`，处理基础 HTML、script/style、HTML / Gutenberg 注释、Shortcode、HTML Entity 与多余空白噪音。
+- 新增 `WPAIC_Knowledge_Source`，统一输出 `source_id`、`source_type`、`post_type`、`knowledge_type`、title、excerpt、URL、taxonomy、structured data、normalized content、SHA-256 source hash、updated_at 与 status。
+- 新增 `wpaic_knowledge` CPT，后台名称为“AI 补充知识”，用于保存样品政策、报价流程、MOQ 通用说明等原有业务内容无法自然表达的知识。
+- 新增 `wpaic_knowledge_category` 分类法，用于 AI 补充知识的后台组织与筛选。
+- 新增 Minimal Source Preview，可按 WordPress 内容 ID 查看 AI 后续实际可见的数据。
+- Source Preview 支持最近内容快捷预览，不调用 DeepSeek，也不持久化 Knowledge Source。
+- 新增轻量扩展 Filter：`wpaic_discoverable_post_types`、`wpaic_allowed_meta_keys_for_post_type`、`wpaic_normalized_content`、`wpaic_knowledge_source`。
+- 新增 `wpaic_enabled_sources` Option，作为知识来源 Opt-in 配置，并保持非自动加载。
 
-### Intentionally Not Implemented Yet
+### Changed
 
-当前仓库仍使用 v0.2.0 插件代码。以下 v0.3.0 功能尚未开始实现：
+- 插件版本正式提升到 `0.3.0`。
+- 后台菜单扩展为“AI 设置 / 知识来源 / AI 补充知识”。
+- v0.2.0 AI Provider Foundation 完整保留，知识来源模块与 DeepSeek Provider 解耦。
+- README 与 `docs/versions/v0.3.0.md` 更新为 Final Review Passed / Stable Release 状态。
 
-- Post Type Discovery
-- Knowledge Source Enable / Disable
-- Generic Extractor
-- Content Normalizer
-- Manual Knowledge CPT
-- Source Preview
+### Security / Data Boundaries
 
-因此本节点属于 **Design Ready**，不是 v0.3.0 功能 Release。
+- Generic Extractor 默认不读取任何 Post Meta；只有开发者显式白名单 Filter 才能读取指定 Key。
+- Public Taxonomy 以独立结构输出，不直接混入正文。
+- 正式 Knowledge 只接受 `publish` 内容；Preview 可以用于管理员调试非发布内容，但明确标记为不可进入正式 Knowledge。
+- `wpaic_knowledge` 设置为非公开、不可前台查询、排除站内搜索。
+- v0.3.0 不创建任何自定义数据库表。
+
+### Intentionally Not Included
+
+v0.3.0 仍不包含：
+
+- 正式 Adapter Interface / Registry
+- WEM / WooCommerce / ACF / Meta Box Extractor
+- Field Mapping UI
+- Knowledge Store / Lifecycle / Auto Sync
+- Chunk / Retrieval / Search Ranking
+- Embedding / Vector Database
+- RAG / Grounding / AI Answer
+- Conversation / Live Chat / Lead / Human Handoff
+
+### Validation Status
+
+- PHP syntax check：通过。
+- JavaScript syntax check：通过。
+- v0.2.0 DeepSeek Provider 回归测试：通过。
+- Post Type Discovery / Enable / Disable / 默认 Opt-in：通过。
+- FAQ Knowledge Source Preview：通过。
+- Product Knowledge Source Preview：通过。
+- Post Knowledge Source Preview：通过。
+- Manual Knowledge Preview：通过。
+- Product / Blog Content Normalization：通过。
+- Public Taxonomy 独立结构化输出：通过。
+- Generic Extractor 默认 Meta 隔离：通过。
+- Draft 可预览但不属于正式 Knowledge：通过。
+- Source Hash 在仅状态变化时保持稳定：通过。
+- Source Hash 在标题 / 正文变化时改变：通过。
+- Preview 不调用 DeepSeek：通过。
+- DeepSeek API URL 仍只存在于 DeepSeek Provider。
+- 自定义数据库建表语句：0。
+- Final Review：通过。
 
 ---
 

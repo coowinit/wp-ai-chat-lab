@@ -21,6 +21,38 @@
 		'</dl>';
 	}
 
+	function prettyJson(value) {
+		try {
+			return JSON.stringify(value || {}, null, 2);
+		} catch (error) {
+			return '{}';
+		}
+	}
+
+	function knowledgePreviewHtml(data) {
+		var eligibility = data.eligible
+			? '<span class="wpaic-status is-eligible">正式 Knowledge：是</span>'
+			: '<span class="wpaic-status is-ineligible">正式 Knowledge：否（当前状态不是 publish）</span>';
+
+		return '<div class="wpaic-preview-summary">' + eligibility + '</div>' +
+			'<dl class="wpaic-meta wpaic-meta-source">' +
+				'<div><dt>Source ID</dt><dd>' + escapeHtml(data.source_id) + '</dd></div>' +
+				'<div><dt>Source Type</dt><dd>' + escapeHtml(data.source_type) + '</dd></div>' +
+				'<div><dt>Object ID</dt><dd>' + escapeHtml(data.object_id) + '</dd></div>' +
+				'<div><dt>Post Type</dt><dd>' + escapeHtml(data.post_type) + '</dd></div>' +
+				'<div><dt>Knowledge Type</dt><dd>' + escapeHtml(data.knowledge_type) + '</dd></div>' +
+				'<div><dt>Status</dt><dd>' + escapeHtml(data.status) + '</dd></div>' +
+				'<div><dt>Updated At</dt><dd>' + escapeHtml(data.updated_at) + '</dd></div>' +
+				'<div class="wpaic-meta-wide"><dt>Source Hash</dt><dd><code>' + escapeHtml(data.source_hash) + '</code></dd></div>' +
+			'</dl>' +
+			'<div class="wpaic-preview-section"><h3>Title</h3><div class="wpaic-preview-box">' + escapeHtml(data.title || '') + '</div></div>' +
+			'<div class="wpaic-preview-section"><h3>URL</h3><div class="wpaic-preview-box">' + escapeHtml(data.url || '(内部补充知识，无前台 URL)') + '</div></div>' +
+			'<div class="wpaic-preview-section"><h3>Excerpt</h3><pre>' + escapeHtml(data.excerpt || '(empty)') + '</pre></div>' +
+			'<div class="wpaic-preview-section"><h3>Taxonomies</h3><pre>' + escapeHtml(prettyJson(data.taxonomies)) + '</pre></div>' +
+			'<div class="wpaic-preview-section"><h3>Structured Data</h3><pre>' + escapeHtml(prettyJson(data.structured_data)) + '</pre></div>' +
+			'<div class="wpaic-preview-section"><h3>Normalized Content</h3><pre>' + escapeHtml(data.content || '(empty)') + '</pre></div>';
+	}
+
 	function setBusy(button, busy) {
 		if (!button) return;
 		if (busy) {
@@ -33,8 +65,8 @@
 		}
 	}
 
-	function request(action, payload, button, resultEl) {
-		if (!button || button.disabled) return;
+	function postRequest(action, payload, nonce, button, resultEl, successRenderer) {
+		if (!button || button.disabled || !resultEl) return;
 
 		setBusy(button, true);
 		resultEl.className = 'wpaic-result is-loading';
@@ -42,7 +74,7 @@
 
 		var body = new URLSearchParams();
 		body.append('action', action);
-		body.append('nonce', WPAICAdmin.nonce);
+		body.append('nonce', nonce);
 		Object.keys(payload || {}).forEach(function (key) {
 			body.append(key, payload[key]);
 		});
@@ -70,9 +102,7 @@
 				}
 
 				resultEl.className = 'wpaic-result is-success';
-				resultEl.innerHTML = '<strong>成功</strong>' +
-					(json.data.content ? '<div class="wpaic-response-text">' + escapeHtml(json.data.content) + '</div>' : '') +
-					metaHtml(json.data);
+				resultEl.innerHTML = successRenderer(json.data);
 			})
 			.catch(function (error) {
 				resultEl.className = 'wpaic-result is-error';
@@ -83,16 +113,27 @@
 			});
 	}
 
+	function aiRequest(action, payload, button, resultEl) {
+		postRequest(action, payload, WPAICAdmin.nonce, button, resultEl, function (data) {
+			return '<strong>成功</strong>' +
+				(data.content ? '<div class="wpaic-response-text">' + escapeHtml(data.content) + '</div>' : '') +
+				metaHtml(data);
+		});
+	}
+
 	document.addEventListener('DOMContentLoaded', function () {
 		var connectionButton = document.getElementById('wpaic-test-connection');
 		var connectionResult = document.getElementById('wpaic-connection-result');
 		var chatButton = document.getElementById('wpaic-test-chat');
 		var chatResult = document.getElementById('wpaic-chat-result');
 		var question = document.getElementById('wpaic-test-question');
+		var previewButton = document.getElementById('wpaic-preview-source');
+		var previewResult = document.getElementById('wpaic-source-preview-result');
+		var previewPostId = document.getElementById('wpaic-preview-post-id');
 
 		if (connectionButton && connectionResult) {
 			connectionButton.addEventListener('click', function () {
-				request('wpaic_test_connection', {}, connectionButton, connectionResult);
+				aiRequest('wpaic_test_connection', {}, connectionButton, connectionResult);
 			});
 		}
 
@@ -104,8 +145,45 @@
 					chatResult.innerHTML = '<strong>失败</strong><p>请输入测试问题。</p>';
 					return;
 				}
-				request('wpaic_test_chat', { question: value }, chatButton, chatResult);
+				aiRequest('wpaic_test_chat', { question: value }, chatButton, chatResult);
 			});
 		}
+
+		function runPreview(button, postId) {
+			if (!previewResult || !postId) return;
+			postRequest(
+				'wpaic_preview_source',
+				{ post_id: postId },
+				WPAICAdmin.knowledgeNonce,
+				button,
+				previewResult,
+				knowledgePreviewHtml
+			);
+		}
+
+		if (previewButton && previewResult && previewPostId) {
+			previewButton.addEventListener('click', function () {
+				var postId = parseInt(previewPostId.value, 10);
+				if (!postId || postId < 1) {
+					previewResult.className = 'wpaic-result is-error';
+					previewResult.innerHTML = '<strong>失败</strong><p>请输入有效的 WordPress 内容 ID。</p>';
+					return;
+				}
+				runPreview(previewButton, postId);
+			});
+		}
+
+		document.querySelectorAll('.wpaic-preview-example').forEach(function (button) {
+			button.addEventListener('click', function () {
+				var postId = parseInt(button.getAttribute('data-post-id'), 10);
+				if (previewPostId) {
+					previewPostId.value = postId || '';
+				}
+				if (previewResult) {
+					previewResult.scrollIntoView({ behavior: 'smooth', block: 'start' });
+				}
+				runPreview(button, postId);
+			});
+		});
 	});
 }());

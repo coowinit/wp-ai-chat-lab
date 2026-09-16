@@ -1,6 +1,6 @@
 <?php
 /**
- * WordPress admin UI for v0.2.0 provider settings and minimal tests.
+ * WordPress admin UI for AI provider tests and Knowledge Source Foundation.
  *
  * @package WP_AI_Chat_Lab
  */
@@ -14,34 +14,68 @@ class WPAIC_Admin {
 	/** @var WPAIC_AI_Manager */
 	protected $manager;
 
+	/** @var WPAIC_Source_Discovery */
+	protected $discovery;
+
+	/** @var WPAIC_Generic_Extractor */
+	protected $extractor;
+
 	/** @var string */
-	protected $page_hook = '';
+	protected $ai_page_hook = '';
+
+	/** @var string */
+	protected $knowledge_page_hook = '';
 
 	/**
-	 * @param WPAIC_AI_Manager $manager AI manager.
+	 * @param WPAIC_AI_Manager        $manager   AI manager.
+	 * @param WPAIC_Source_Discovery  $discovery Source discovery.
+	 * @param WPAIC_Generic_Extractor $extractor Generic source extractor.
 	 */
-	public function __construct( WPAIC_AI_Manager $manager ) {
-		$this->manager = $manager;
+	public function __construct( WPAIC_AI_Manager $manager, WPAIC_Source_Discovery $discovery, WPAIC_Generic_Extractor $extractor ) {
+		$this->manager   = $manager;
+		$this->discovery = $discovery;
+		$this->extractor = $extractor;
 
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'wp_ajax_wpaic_test_connection', array( $this, 'ajax_test_connection' ) );
 		add_action( 'wp_ajax_wpaic_test_chat', array( $this, 'ajax_test_chat' ) );
+		add_action( 'wp_ajax_wpaic_preview_source', array( $this, 'ajax_preview_source' ) );
 	}
 
 	/**
 	 * @return void
 	 */
 	public function register_menu() {
-		$this->page_hook = add_menu_page(
+		$this->ai_page_hook = add_menu_page(
 			'WP AI Chat Lab',
 			'WP AI Chat Lab',
 			'manage_options',
 			'wp-ai-chat-lab',
-			array( $this, 'render_page' ),
+			array( $this, 'render_ai_page' ),
 			'dashicons-format-chat',
 			81
+		);
+
+		// Replace the automatically generated first submenu label with a clearer
+		// description while keeping the top-level page URL unchanged.
+		add_submenu_page(
+			'wp-ai-chat-lab',
+			'AI 设置',
+			'AI 设置',
+			'manage_options',
+			'wp-ai-chat-lab',
+			array( $this, 'render_ai_page' )
+		);
+
+		$this->knowledge_page_hook = add_submenu_page(
+			'wp-ai-chat-lab',
+			'知识来源',
+			'知识来源',
+			'manage_options',
+			'wp-ai-chat-lab-knowledge',
+			array( $this, 'render_knowledge_page' )
 		);
 	}
 
@@ -60,6 +94,16 @@ class WPAIC_Admin {
 					'model'    => WPAIC_DeepSeek_Provider::DEFAULT_MODEL,
 					'api_key'  => '',
 				),
+			)
+		);
+
+		register_setting(
+			'wpaic_knowledge_settings_group',
+			WPAIC_OPTION_KNOWLEDGE_SOURCES,
+			array(
+				'type'              => 'array',
+				'sanitize_callback' => array( $this, 'sanitize_enabled_sources' ),
+				'default'           => array(),
 			)
 		);
 	}
@@ -84,9 +128,9 @@ class WPAIC_Admin {
 			$model = WPAIC_DeepSeek_Provider::DEFAULT_MODEL;
 		}
 
-		$existing_key = isset( $current['api_key'] ) && is_string( $current['api_key'] ) ? trim( $current['api_key'] ) : '';
+		$existing_key  = isset( $current['api_key'] ) && is_string( $current['api_key'] ) ? trim( $current['api_key'] ) : '';
 		$submitted_key = isset( $input['api_key'] ) && is_string( $input['api_key'] ) ? trim( sanitize_text_field( wp_unslash( $input['api_key'] ) ) ) : '';
-		$clear_key = ! empty( $input['clear_api_key'] );
+		$clear_key     = ! empty( $input['clear_api_key'] );
 
 		if ( defined( 'WPAIC_DEEPSEEK_API_KEY' ) ) {
 			$stored_key = $existing_key;
@@ -106,11 +150,36 @@ class WPAIC_Admin {
 	}
 
 	/**
+	 * Only persist discoverable post types. An empty list is valid and means
+	 * the administrator has intentionally disabled every generic source.
+	 *
+	 * @param mixed $input Submitted post type names.
+	 * @return array<int,string>
+	 */
+	public function sanitize_enabled_sources( $input ) {
+		$input     = is_array( $input ) ? $input : array();
+		$available = $this->discovery->get_post_types();
+		$clean     = array();
+
+		foreach ( $input as $post_type ) {
+			$post_type = sanitize_key( $post_type );
+			if ( '' !== $post_type && isset( $available[ $post_type ] ) ) {
+				$clean[] = $post_type;
+			}
+		}
+
+		$clean = array_values( array_unique( $clean ) );
+		sort( $clean );
+
+		return $clean;
+	}
+
+	/**
 	 * @param string $hook Current admin hook.
 	 * @return void
 	 */
 	public function enqueue_assets( $hook ) {
-		if ( $hook !== $this->page_hook ) {
+		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook ), true ) ) {
 			return;
 		}
 
@@ -133,9 +202,10 @@ class WPAIC_Admin {
 			'wpaic-admin',
 			'WPAICAdmin',
 			array(
-				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-				'nonce'   => wp_create_nonce( 'wpaic_ai_test' ),
-				'i18n'    => array(
+				'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
+				'nonce'          => wp_create_nonce( 'wpaic_ai_test' ),
+				'knowledgeNonce' => wp_create_nonce( 'wpaic_knowledge_preview' ),
+				'i18n'           => array(
 					'working' => '请求中…',
 					'error'   => '请求失败，请重试。',
 				),
@@ -146,10 +216,8 @@ class WPAIC_Admin {
 	/**
 	 * @return void
 	 */
-	public function render_page() {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'You do not have permission to access this page.', 'wp-ai-chat-lab' ) );
-		}
+	public function render_ai_page() {
+		$this->guard_admin_page();
 
 		$provider = $this->manager->get_current_provider();
 		if ( is_wp_error( $provider ) ) {
@@ -159,10 +227,6 @@ class WPAIC_Admin {
 		$settings = get_option( WPAIC_OPTION_SETTINGS, array() );
 		$settings = is_array( $settings ) ? $settings : array();
 
-		// options.php redirects back with settings-updated=true after a successful save.
-		// Add the success notice here instead of inside sanitize_settings(), because
-		// WordPress may run setting sanitization more than once during an update.
-		// Keeping the notice out of the sanitizer prevents duplicate messages.
 		$settings_updated = isset( $_GET['settings-updated'] )
 			? sanitize_text_field( wp_unslash( $_GET['settings-updated'] ) )
 			: '';
@@ -182,8 +246,73 @@ class WPAIC_Admin {
 	/**
 	 * @return void
 	 */
+	public function render_knowledge_page() {
+		$this->guard_admin_page();
+
+		$source_types     = $this->discovery->get_post_types();
+		$enabled_sources  = $this->get_enabled_sources();
+		$source_examples  = array();
+
+		foreach ( $source_types as $post_type => $object ) {
+			$ids = get_posts(
+				array(
+					'post_type'      => $post_type,
+					'post_status'    => 'publish',
+					'posts_per_page' => 1,
+					'fields'         => 'ids',
+					'orderby'        => 'modified',
+					'order'          => 'DESC',
+					'no_found_rows'  => true,
+				)
+			);
+
+			if ( ! empty( $ids ) ) {
+				$source_examples[ $post_type ] = array(
+					'id'    => (int) $ids[0],
+					'title' => get_the_title( $ids[0] ),
+				);
+			}
+		}
+
+		$manual_count = wp_count_posts( WPAIC_Manual_Knowledge::POST_TYPE );
+		$manual_count = $manual_count && isset( $manual_count->publish ) ? (int) $manual_count->publish : 0;
+		$manual_ids   = get_posts(
+			array(
+				'post_type'      => WPAIC_Manual_Knowledge::POST_TYPE,
+				'post_status'    => 'publish',
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				'orderby'        => 'modified',
+				'order'          => 'DESC',
+				'no_found_rows'  => true,
+			)
+		);
+		$manual_example = ! empty( $manual_ids ) ? array(
+			'id'    => (int) $manual_ids[0],
+			'title' => get_the_title( $manual_ids[0] ),
+		) : array();
+
+		$settings_updated = isset( $_GET['settings-updated'] )
+			? sanitize_text_field( wp_unslash( $_GET['settings-updated'] ) )
+			: '';
+
+		if ( 'true' === $settings_updated ) {
+			add_settings_error(
+				'wpaic_knowledge_messages',
+				'wpaic_knowledge_saved',
+				'知识来源设置已保存。',
+				'updated'
+			);
+		}
+
+		include WPAIC_PLUGIN_DIR . 'admin/views/page-knowledge-sources.php';
+	}
+
+	/**
+	 * @return void
+	 */
 	public function ajax_test_connection() {
-		$this->guard_ajax_request();
+		$this->guard_ai_ajax_request();
 
 		$result = $this->manager->test_connection();
 		if ( is_wp_error( $result ) ) {
@@ -197,7 +326,7 @@ class WPAIC_Admin {
 	 * @return void
 	 */
 	public function ajax_test_chat() {
-		$this->guard_ajax_request();
+		$this->guard_ai_ajax_request();
 
 		$question = isset( $_POST['question'] ) ? sanitize_textarea_field( wp_unslash( $_POST['question'] ) ) : '';
 		$question = trim( $question );
@@ -247,9 +376,101 @@ class WPAIC_Admin {
 	}
 
 	/**
+	 * Preview one source on demand. This does not call DeepSeek and does not
+	 * persist a Knowledge Source record.
+	 *
 	 * @return void
 	 */
-	protected function guard_ajax_request() {
+	public function ajax_preview_source() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array(
+					'code'    => 'wpaic_forbidden',
+					'message' => '你没有执行此操作的权限。',
+				),
+				403
+			);
+		}
+
+		check_ajax_referer( 'wpaic_knowledge_preview', 'nonce' );
+
+		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+		if ( ! $post_id ) {
+			wp_send_json_error(
+				array(
+					'code'    => 'wpaic_preview_missing_post_id',
+					'message' => '请输入有效的 WordPress 内容 ID。',
+				),
+				400
+			);
+		}
+
+		$post = get_post( $post_id );
+		if ( ! $post ) {
+			wp_send_json_error(
+				array(
+					'code'    => 'wpaic_preview_not_found',
+					'message' => '未找到对应内容。',
+				),
+				404
+			);
+		}
+
+		$is_manual = WPAIC_Manual_Knowledge::POST_TYPE === $post->post_type;
+		$enabled   = $this->get_enabled_sources();
+
+		if ( ! $is_manual && ! in_array( $post->post_type, $enabled, true ) ) {
+			wp_send_json_error(
+				array(
+					'code'    => 'wpaic_preview_source_disabled',
+					'message' => '该内容类型尚未启用为 AI 知识来源，请先在上方启用并保存。',
+				),
+				400
+			);
+		}
+
+		if ( ! $is_manual && ! $this->discovery->is_discoverable( $post->post_type ) ) {
+			wp_send_json_error(
+				array(
+					'code'    => 'wpaic_preview_source_not_discoverable',
+					'message' => '该内容类型不属于可用的 Generic Knowledge Source。',
+				),
+				400
+			);
+		}
+
+		$result = $this->extractor->extract( $post_id, true );
+		if ( is_wp_error( $result ) ) {
+			$this->send_error( $result );
+		}
+
+		$result['eligible'] = 'publish' === $result['status'];
+		wp_send_json_success( $result );
+	}
+
+	/**
+	 * @return array<int,string>
+	 */
+	protected function get_enabled_sources() {
+		$enabled = get_option( WPAIC_OPTION_KNOWLEDGE_SOURCES, array() );
+		$enabled = is_array( $enabled ) ? array_map( 'sanitize_key', $enabled ) : array();
+
+		return array_values( array_unique( array_filter( $enabled ) ) );
+	}
+
+	/**
+	 * @return void
+	 */
+	protected function guard_admin_page() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'wp-ai-chat-lab' ) );
+		}
+	}
+
+	/**
+	 * @return void
+	 */
+	protected function guard_ai_ajax_request() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error(
 				array(

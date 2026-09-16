@@ -2,9 +2,9 @@
 
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
-**当前稳定版本：v0.2.0 · AI Provider Foundation**  
-**下一开发版本：v0.3.0 · Knowledge Source Foundation**  
-**当前阶段：v0.3.0 Design Ready，尚未开始 v0.3.0 功能代码开发**
+**当前稳定 Release：v0.3.0 · Knowledge Source Foundation**  
+**当前开发目标：v0.3.1 · WEM Structured Source Validation**  
+**当前阶段：v0.3.0 已通过真实 WordPress 环境测试与 Final Review**
 
 ## v0.2.0 实测状态
 
@@ -18,9 +18,9 @@
 
 测试未发现功能问题。Final Review 中仅发现保存设置成功通知重复显示，现已修复，版本号继续保持 `v0.2.0`。
 
-## v0.3.0 设计状态
+## v0.3.0 实测状态
 
-`v0.3.0 — Knowledge Source Foundation` 的开发定义已经完成，并经过多模型独立评审后收敛为以下六个核心能力：
+`v0.3.0 — Knowledge Source Foundation` 已完成正式功能实现、真实 WordPress 环境测试与 Final Review，范围严格保持在设计合同确认的六项能力：
 
 ```text
 1. Post Type Discovery
@@ -31,13 +31,24 @@
 6. Minimal Source Preview
 ```
 
-当前仅完成设计与版本边界确认，**尚未加入 v0.3.0 功能代码**。正式开发定义见：
+本轮实现仍保持以下边界：
+
+- Generic Extractor 默认不读取任何 Post Meta；
+- Knowledge Source 按需生成，不建立自定义 Knowledge 表；
+- Source Preview 不调用 DeepSeek；
+- `wpaic_knowledge` 仅用于 AI 补充知识；
+- WEM / WooCommerce / ACF Extractor 尚未加入；
+- Chunk / Retrieval / RAG / Embedding / Vector 尚未加入。
+
+真实环境已经验证 FAQ、Product、Post 与 Manual Knowledge 四类来源；复杂 Product 内容与普通 Blog 内容均能经过 Generic Extractor + Content Normalizer 输出可读 Knowledge Source。Draft 内容可预览但不会被标记为正式 Knowledge；Source Hash 在仅改变发布状态时保持稳定，在标题 / 正文等 AI-visible 内容变化时会改变。
+
+当前状态是 **Final Review Passed / Stable Release**。正式开发定义、实现与验收记录见：
 
 ```text
 docs/versions/v0.3.0.md
 ```
 
-架构决策草案与评审问题保留在：
+架构决策草案与外部评审问题保留在：
 
 ```text
 docs/research/v0.3.0-knowledge-source-architecture-review.md
@@ -2403,10 +2414,10 @@ Lead / Support / Action
 
 ```text
 Version:
-v0.2.0
+v0.3.0
 
 Stage:
-AI Provider Foundation
+Knowledge Source Foundation
 
 Production:
 Tidio
@@ -2415,19 +2426,19 @@ Development:
 WP AI Chat Lab
 
 Plugin Code:
-Started — Provider foundation implemented
+v0.3.0 released
 
 Primary Provider:
-DeepSeek
+DeepSeek (from v0.2.0)
 
-Default Model:
-deepseek-flash
+Knowledge Source:
+Generic WordPress + Manual Supplement
 
-Thinking:
-Disabled for v0.2.0 transport tests
+Content Normalizer:
+Implemented — basic deterministic cleaning
 
-Knowledge Strategy:
-WordPress Native + Manual Supplement
+Source Preview:
+Implemented — no AI call, no persistence
 
 Retrieval:
 Local First — not implemented yet
@@ -2439,16 +2450,16 @@ Custom Database Tables:
 0
 
 Current Stable Release:
-v0.2.0 AI Provider Foundation
-
-Current Design Target:
 v0.3.0 Knowledge Source Foundation
 
-Design Status:
-Ready — code implementation not started
+Current Development Target:
+v0.3.1 WEM Structured Source Validation
+
+Development Status:
+v0.3.0 Final Review Passed
 
 Next:
-v0.3.0 Code Implementation
+v0.3.1 WEM Structured Source Validation
 ```
 
 ---

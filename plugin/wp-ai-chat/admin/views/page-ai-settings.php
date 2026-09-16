@@ -18,14 +18,14 @@ $constant_key    = 'constant' === $key_source;
 ?>
 <div class="wrap wpaic-wrap">
 	<h1>WP AI Chat Lab</h1>
-	<p class="description">v<?php echo esc_html( WPAIC_VERSION ); ?> · AI Provider Foundation</p>
+	<p class="description">v<?php echo esc_html( WPAIC_VERSION ); ?> · AI Provider + Knowledge Source Foundation</p>
 
 	<?php settings_errors( 'wpaic_settings_messages' ); ?>
 
 	<div class="wpaic-grid">
 		<section class="wpaic-card">
 			<h2>AI 设置</h2>
-			<p>v0.2.0 只接入 DeepSeek，但代码已经通过 Provider Interface 与 AI Manager 解耦。</p>
+			<p>AI Provider Foundation 来自 v0.2.0：当前只接入 DeepSeek，但代码已经通过 Provider Interface 与 AI Manager 解耦。</p>
 
 			<form method="post" action="options.php">
 				<?php settings_fields( 'wpaic_settings_group' ); ?>
@@ -90,8 +90,7 @@ $constant_key    = 'constant' === $key_source;
 	</section>
 
 	<section class="wpaic-card">
-		<h2>v0.2.0 边界</h2>
-		<p>本版本<strong>没有</strong> Knowledge、Retrieval、Grounding、Conversation、Lead、Human Handoff、Usage Limit、Embedding 或 Vector Database。</p>
-		<p>当前目标只有一个：把 AI Provider 基础打稳。</p>
+		<h2>AI Provider 边界</h2>
+		<p>这一页继续只负责 Provider 设置和最小 AI 测试。v0.3.0 新增的 Knowledge Source Foundation 位于“知识来源”菜单中，并且不会在知识预览阶段调用 DeepSeek。</p>
 	</section>
 </div>
