@@ -2,8 +2,20 @@
 
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
-**当前版本：v0.1.0 · Concept & Architecture Baseline**  
-**当前阶段：设计思想、竞品研究与开发架构确认**
+**当前版本：v0.2.0 · AI Provider Foundation**  
+**当前阶段：AI Provider Foundation 已完成真实 WordPress + DeepSeek 测试，进入 v0.2.0 Final Review**
+
+## v0.2.0 实测状态
+
+真实 WordPress 环境已经完成本版本核心与边界测试，包括：
+
+- 正确 / 错误 / 空 API Key；
+- `wp-config.php` 常量优先；
+- DeepSeek 连接与中文最小对话；
+- Usage、模型、耗时、Finish Reason 与 HTTP 状态；
+- 断网、慢网与重复点击保护。
+
+测试未发现功能问题。Final Review 中仅发现保存设置成功通知重复显示，现已修复，版本号继续保持 `v0.2.0`。
 
 ---
 
@@ -1850,16 +1862,30 @@ Roadmap
 
 ## v0.2.0
 
-### DeepSeek Client
+### AI Provider Foundation
 
-验证：
+已实现：
 
 ```text
-WordPress
-↓
-DeepSeek
-↓
-Response
+WordPress Admin
+      ↓
+AI Manager
+      ↓
+AI Provider Interface
+      ↓
+DeepSeek Provider
+      ↓
+DeepSeek API
+      ↓
+Unified Response
+```
+
+本版本正式加入可安装的 WordPress 插件骨架、DeepSeek API Key 双入口、连接测试、最小 AI 测试、统一响应与错误模型。
+
+仍然**不包含** Knowledge、Retrieval、Grounding、Conversation、Lead 或 Human Handoff。详细设计与测试清单见：
+
+```text
+docs/versions/v0.2.0.md
 ```
 
 ---
@@ -1992,6 +2018,70 @@ Playground
 > 第一款可以部署到真实 WordPress 企业网站进行长期使用和验证的版本。
 
 ---
+
+---
+
+# v0.2.0 已实现内容
+
+仓库从纯设计阶段正式进入代码实验阶段。
+
+当前新增：
+
+```text
+plugin/wp-ai-chat/
+```
+
+核心模块：
+
+```text
+AI Manager
+AI Provider Interface
+DeepSeek Provider
+Admin Settings
+Connection Test
+Minimal AI Test
+```
+
+DeepSeek API Key 支持：
+
+```text
+wp-config.php
+        ↓
+WordPress Option
+```
+
+当前 Provider 测试采用：
+
+```text
+Model: deepseek-flash
+Streaming: false
+Thinking: disabled
+```
+
+并统一返回：
+
+```text
+content
+provider
+request_model
+response_model
+usage
+finish_reason
+elapsed_ms
+status_code
+```
+
+完整版本设计、测试清单和 Acceptance Criteria：
+
+```text
+docs/versions/v0.2.0.md
+```
+
+版本变化记录：
+
+```text
+CHANGELOG.md
+```
 
 # 四十七、与 WP Live Chat Inquiry 的关系
 
@@ -2271,10 +2361,10 @@ Lead / Support / Action
 
 ```text
 Version:
-v0.1.0
+v0.2.0
 
 Stage:
-Concept & Architecture Baseline
+AI Provider Foundation
 
 Production:
 Tidio
@@ -2283,22 +2373,34 @@ Development:
 WP AI Chat Lab
 
 Plugin Code:
-Not Started
+Started — Provider foundation implemented
 
 Primary Provider:
 DeepSeek
+
+Default Model:
+deepseek-flash
+
+Thinking:
+Disabled for v0.2.0 transport tests
 
 Knowledge Strategy:
 WordPress Native + Manual Supplement
 
 Retrieval:
-Local First
+Local First — not implemented yet
 
 Vector:
 Not Used
 
+Custom Database Tables:
+0
+
+Current Test Target:
+Real WordPress environment verification
+
 Next:
-v0.2.0 DeepSeek Minimal Client
+v0.3.0 Knowledge Sources
 ```
 
 ---
