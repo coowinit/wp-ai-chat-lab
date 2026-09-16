@@ -91,6 +91,6 @@ $constant_key    = 'constant' === $key_source;
 
 	<section class="wpaic-card">
 		<h2>AI Provider 边界</h2>
-		<p>这一页继续只负责 Provider 设置和最小 AI 测试。v0.3.0 新增的 Knowledge Source Foundation 位于“知识来源”菜单中，并且不会在知识预览阶段调用 DeepSeek。</p>
+		<p>这一页继续只负责 Provider 设置和最小 AI 测试。v0.3.1 的 Structured Source Validation 位于“知识来源”菜单中，并且不会在知识预览阶段调用 DeepSeek。</p>
 	</section>
 </div>

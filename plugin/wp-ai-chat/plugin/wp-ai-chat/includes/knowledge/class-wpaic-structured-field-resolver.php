@@ -15,6 +15,10 @@ class WPAIC_Structured_Field_Resolver {
 	protected $providers = array();
 
 	/**
+	 * Provider order is significant: earlier providers are fallbacks, later
+	 * providers have higher value priority when they expose a non-empty value
+	 * for the same knowledge_key.
+	 *
 	 * @param array<int,object> $providers Providers exposing get_definitions().
 	 */
 	public function __construct( array $providers ) {
@@ -22,11 +26,16 @@ class WPAIC_Structured_Field_Resolver {
 	}
 
 	/**
-	 * Resolve definitions for a post.
+	 * Resolve candidate definitions for a post.
 	 *
-	 * Later providers win when two providers expose the same knowledge_key.
-	 * This leaves room for a future WEM provider to override a legacy fallback
-	 * without introducing a formal adapter framework in v0.3.1.
+	 * Definitions are intentionally NOT collapsed by knowledge_key here. The
+	 * Structured Source Enhancer evaluates values in provider order, allowing:
+	 *
+	 * Legacy non-empty -> fallback value
+	 * WEM non-empty    -> overrides Legacy
+	 * WEM empty        -> Legacy remains
+	 *
+	 * This keeps schema resolution separate from value fallback.
 	 *
 	 * @param WP_Post $post Source post.
 	 * @return array<int,array<string,string>>
@@ -59,7 +68,7 @@ class WPAIC_Structured_Field_Resolver {
 					continue;
 				}
 
-				$resolved[ $knowledge_key ] = array(
+				$resolved[] = array(
 					'knowledge_key' => $knowledge_key,
 					'meta_key'      => $meta_key,
 					'label'         => $label,
@@ -69,16 +78,16 @@ class WPAIC_Structured_Field_Resolver {
 			}
 		}
 
-		$definitions = array_values( $resolved );
-
 		/**
-		 * Filter normalized structured field definitions after provider merging.
+		 * Filter normalized structured field candidates after provider discovery.
+		 * Candidate order is meaningful because later non-empty candidates can
+		 * override earlier fallback values for the same knowledge_key.
 		 *
-		 * @param array<int,array<string,string>> $definitions Definitions.
-		 * @param WP_Post                        $post        Source post.
+		 * @param array<int,array<string,string>> $resolved Definitions.
+		 * @param WP_Post                        $post     Source post.
 		 */
-		$filtered = apply_filters( 'wpaic_structured_field_definitions', $definitions, $post );
+		$filtered = apply_filters( 'wpaic_structured_field_definitions', $resolved, $post );
 
-		return is_array( $filtered ) ? $filtered : $definitions;
+		return is_array( $filtered ) ? $filtered : $resolved;
 	}
 }

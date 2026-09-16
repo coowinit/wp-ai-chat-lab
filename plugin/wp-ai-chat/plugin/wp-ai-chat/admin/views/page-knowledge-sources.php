@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 <div class="wrap wpaic-wrap">
 	<h1>WP AI Chat Lab</h1>
-	<p class="description">v0.3.0 · Knowledge Source Foundation</p>
+	<p class="description">v<?php echo esc_html( WPAIC_VERSION ); ?> · Structured Source Validation</p>
 
 	<?php settings_errors( 'wpaic_knowledge_messages' ); ?>
 
@@ -90,13 +90,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 
 		<div class="wpaic-card">
-			<h2>v0.3.0 边界</h2>
-			<p>这一版只验证 WordPress Content → Clean Knowledge Source。</p>
+			<h2>v<?php echo esc_html( WPAIC_VERSION ); ?> 边界</h2>
+			<p>这一版验证 Generic Source + 显式 Structured Source，仍不进入 Retrieval / RAG。</p>
 			<ul class="wpaic-plain-list">
 				<li>✓ 不创建 Knowledge 自定义数据表</li>
-				<li>✓ 不调用 DeepSeek</li>
-				<li>✓ Generic 默认不读取任何 Post Meta</li>
-				<li>— 不做 WEM / WooCommerce / ACF Extractor</li>
+				<li>✓ 预览不调用 DeepSeek</li>
+				<li>✓ Generic 默认不读取任意 Post Meta</li>
+				<li>✓ Legacy / WEM 仅通过显式 AI Allowlist 进入 Structured Data</li>
+				<li>— 不做 Field Mapping UI / WooCommerce / ACF</li>
 				<li>— 不做 Chunk / Retrieval / RAG / Vector</li>
 			</ul>
 		</div>

@@ -30,6 +30,7 @@ require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-knowledge-source
 require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-manual-knowledge.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-generic-extractor.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-legacy-profile-provider.php';
+require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-wem-field-registry-provider.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-structured-field-resolver.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-structured-value-normalizer.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-structured-source-enhancer.php';
@@ -86,10 +87,12 @@ function wpaic_bootstrap() {
 	$normalizer  = new WPAIC_Content_Normalizer();
 	$extractor   = new WPAIC_Generic_Extractor( $normalizer );
 
-	// v0.3.1 first implementation slice: explicit legacy Product fields are
-	// resolved as structured knowledge without changing the Generic Extractor.
+	// v0.3.1 structured-source validation: Legacy remains the fallback provider;
+	// WEM is evaluated later so a non-empty WEM value can override the same
+	// knowledge_key while an empty WEM field naturally falls back to Legacy.
 	$legacy_provider      = new WPAIC_Legacy_Profile_Provider();
-	$structured_resolver  = new WPAIC_Structured_Field_Resolver( array( $legacy_provider ) );
+	$wem_provider         = new WPAIC_WEM_Field_Registry_Provider();
+	$structured_resolver  = new WPAIC_Structured_Field_Resolver( array( $legacy_provider, $wem_provider ) );
 	$structured_normalizer = new WPAIC_Structured_Value_Normalizer( $normalizer );
 	$structured_enhancer  = new WPAIC_Structured_Source_Enhancer( $structured_resolver, $structured_normalizer );
 
