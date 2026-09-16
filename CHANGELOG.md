@@ -1,28 +1,37 @@
-# Changelog
+## [Unreleased]
 
-本项目使用版本记录来保留从设计思想到正式产品的完整演进过程。
+### v0.3.1 — Structured Source Validation（First Code Build）
 
-## Unreleased — v0.3.1 Structured Source Validation
-
-### Design
+#### Design
 
 - 将原计划 `WEM Structured Source Validation` 扩展为 `Structured Source Validation`。
 - 确认大量旧站使用 `functions.php + Post Meta`，不能把 WEM Field Group 作为结构化知识的架构前提。
 - 确立 `Structured Field Resolver → Provider → AI Allowlist → structured_data` 的最小结构。
-- 定义 Legacy Profile Provider，用显式 Profile 兼容旧站，不解析 PHP 源码。
-- 定义 WEM Definition Provider，读取 WEM Runtime Field Definitions，但仍必须经过 AI Allowlist。
-- 引入稳定 `knowledge_key` 概念，使旧 Meta Key 与新 WEM Meta Key 可以映射到同一业务语义。
-- 第一轮继续 Product First；Solution 样本仅用于验证 Legacy Profile 的可复用性。
-- 结构化字段继续采用 Explicit Allowlist，图片、文件、VR、视频、PDF IDs 默认不进入 AI 文本知识。
-- Provider 冲突采用固定策略：WEM 非空值优先，Legacy 作为 fallback；同一 `knowledge_key` 最终只输出一次。
-- 不新增 Field Mapping UI、源码解析器、Adapter Framework、Retrieval、RAG 或数据库表。
+- 引入稳定 `knowledge_key` 概念，使旧 Meta Key 与未来 WEM Meta Key 可以映射到同一业务语义。
+- 继续坚持 Explicit Allowlist，不自动读取所有 Post Meta，也不自动授权所有结构化字段。
 
-### Status
+#### Added
 
-- Compatibility Architecture：已确认。
-- `docs/versions/v0.3.1.md`：已建立。
-- 插件代码：尚未进入 v0.3.1 功能实现，当前稳定版本仍为 v0.3.0。
-- WEM Product 实际 Field Mapping：等待真实 Field Group Schema 样本后冻结。
+- 新增 `WPAIC_Legacy_Profile_Provider`，以显式 Profile 兼容旧站 functions.php Post Meta。
+- 新增 `WPAIC_Structured_Field_Resolver`，统一解析结构化字段定义，并为后续 WEM Provider 预留轻量合并路径。
+- 新增 `WPAIC_Structured_Value_Normalizer`。
+- 新增 `WPAIC_Structured_Source_Enhancer`，继续复用 `wpaic_knowledge_source` 扩展现有 Unified Source。
+- 新增 Legacy Product 最小 Allowlist：`product_number → product_model`、`product_size → product_dimension`。
+- 新增 `wpaic_legacy_structured_profiles`、`wpaic_structured_field_definitions`、`wpaic_structured_data` 扩展点。
+
+#### Boundaries
+
+- 当前代码轮次只验证 Legacy Product；尚未实现 WEM Definition Provider。
+- 不扫描任意 Post Meta，不解析 functions.php，不加入图片、VR、Video 或 PDF IDs。
+- 不新增 Field Mapping UI、数据库表、Knowledge Store、Retrieval、RAG 或 AI 调用。
+
+#### Validation Pending
+
+- 旧站 Product 的 `structured_data` 真实预览。
+- `product_number` / `product_size` 变化与 Source Hash 联动。
+- 非 Allowlist Meta（如 `product_pic01`）变化不影响 Source Hash。
+- FAQ / Post / Manual Knowledge 回归测试。
+- Preview 仍不调用 DeepSeek。
 
 ---
 

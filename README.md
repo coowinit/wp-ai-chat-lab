@@ -4,9 +4,9 @@
 
 **当前稳定 Release：v0.3.0 · Knowledge Source Foundation**  
 **当前开发目标：v0.3.1 · Structured Source Validation**  
-**当前阶段：v0.3.0 已通过真实 WordPress 环境测试与 Final Review**
+**当前阶段：v0.3.1 Legacy Product First Code Build · 等待真实环境验证**
 
-## v0.3.1 设计状态
+## v0.3.1 开发状态
 
 `v0.3.1` 在 v0.3.0 封版后的真实旧站兼容性审查中，从原计划的 **WEM Structured Source Validation** 调整为：
 
@@ -26,7 +26,30 @@ WEM Field Definitions
 → Unified Knowledge Source
 ```
 
-第一轮仍坚持 **Product First**；旧站无需迁移字段系统，新站继续利用 WEM Schema。完整设计见：
+第一轮仍坚持 **Product First**；旧站无需迁移字段系统，新站后续继续利用 WEM Schema。
+
+当前已经完成第一轮最小代码实现：
+
+```text
+product_number
+→ product_model
+
+product_size
+→ product_dimension
+```
+
+链路为：
+
+```text
+Legacy Product Profile
+→ Structured Field Resolver
+→ Structured Value Normalizer
+→ Structured Source Enhancer
+→ structured_data
+→ Source Preview / Source Hash
+```
+
+本轮**尚未实现 WEM Definition Provider**，等待 Legacy Product 真实环境验证通过后再进入第二个 Provider。完整设计与实现记录见：
 
 ```text
 docs/versions/v0.3.1.md
@@ -1957,7 +1980,7 @@ docs/versions/v0.2.0.md
 
 ### Knowledge Source Foundation
 
-设计已完成，下一步进入代码开发。范围严格限定为：
+v0.3.0 已完成实现、真实环境测试与 Final Review，稳定范围严格限定为：
 
 ```text
 Post Type Discovery
@@ -1982,7 +2005,14 @@ docs/versions/v0.3.0.md
 
 ### Structured Source Validation
 
-计划以 WEM 结构化字段作为第一个真实 Structured Source 验证场景，用于检验 `structured_data` 与 Unified Knowledge Source 的设计是否合理。
+当前采用两阶段真实验证：
+
+```text
+第一阶段：Legacy Product Profile
+第二阶段：WEM Field Definitions
+```
+
+第一轮代码已完成 Legacy Product 最小链路，只将 `product_number` 与 `product_size` 映射为稳定 `knowledge_key`，用于验证 `structured_data`、Source Preview 与 Source Hash 是否能在不改写 Generic Extractor 的前提下正常工作。
 
 ---
 
@@ -2440,10 +2470,10 @@ Lead / Support / Action
 
 ```text
 Version:
-v0.3.0
+v0.3.1 development build
 
 Stage:
-Knowledge Source Foundation
+Structured Source Validation — Legacy Product Slice
 
 Production:
 Tidio
@@ -2452,13 +2482,13 @@ Development:
 WP AI Chat Lab
 
 Plugin Code:
-v0.3.0 released
+v0.3.1 First Code Build (validation pending)
 
 Primary Provider:
 DeepSeek (from v0.2.0)
 
 Knowledge Source:
-Generic WordPress + Manual Supplement
+Generic WordPress + Manual Supplement + Legacy Product structured enhancement
 
 Content Normalizer:
 Implemented — basic deterministic cleaning
@@ -2482,10 +2512,10 @@ Current Development Target:
 v0.3.1 Structured Source Validation
 
 Development Status:
-v0.3.0 Final Review Passed
+v0.3.1 Legacy Product First Code Build — Awaiting Real-world Validation
 
 Next:
-v0.3.1 Structured Source Validation
+Validate Legacy Product → then implement WEM Definition Provider
 ```
 
 ---

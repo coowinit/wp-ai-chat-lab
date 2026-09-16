@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP AI Chat Lab
  * Description: Experimental WordPress AI foundation for controlled, knowledge-grounded chat, including AI providers and WordPress knowledge sources.
- * Version: 0.3.0
+ * Version: 0.3.1
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: coowinit
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPAIC_VERSION', '0.3.0' );
+define( 'WPAIC_VERSION', '0.3.1' );
 define( 'WPAIC_PLUGIN_FILE', __FILE__ );
 define( 'WPAIC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WPAIC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -29,6 +29,10 @@ require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-content-normaliz
 require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-knowledge-source.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-manual-knowledge.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-generic-extractor.php';
+require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-legacy-profile-provider.php';
+require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-structured-field-resolver.php';
+require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-structured-value-normalizer.php';
+require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-structured-source-enhancer.php';
 
 require_once WPAIC_PLUGIN_DIR . 'admin/class-wpaic-admin.php';
 
@@ -81,6 +85,13 @@ function wpaic_bootstrap() {
 	$discovery   = new WPAIC_Source_Discovery();
 	$normalizer  = new WPAIC_Content_Normalizer();
 	$extractor   = new WPAIC_Generic_Extractor( $normalizer );
+
+	// v0.3.1 first implementation slice: explicit legacy Product fields are
+	// resolved as structured knowledge without changing the Generic Extractor.
+	$legacy_provider      = new WPAIC_Legacy_Profile_Provider();
+	$structured_resolver  = new WPAIC_Structured_Field_Resolver( array( $legacy_provider ) );
+	$structured_normalizer = new WPAIC_Structured_Value_Normalizer( $normalizer );
+	$structured_enhancer  = new WPAIC_Structured_Source_Enhancer( $structured_resolver, $structured_normalizer );
 
 	if ( is_admin() ) {
 		new WPAIC_Admin( $manager, $discovery, $extractor );

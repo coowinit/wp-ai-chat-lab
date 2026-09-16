@@ -18,7 +18,7 @@ $constant_key    = 'constant' === $key_source;
 ?>
 <div class="wrap wpaic-wrap">
 	<h1>WP AI Chat Lab</h1>
-	<p class="description">v<?php echo esc_html( WPAIC_VERSION ); ?> · AI Provider + Knowledge Source Foundation</p>
+	<p class="description">v<?php echo esc_html( WPAIC_VERSION ); ?> · AI Provider + Knowledge Source + Structured Source Validation</p>
 
 	<?php settings_errors( 'wpaic_settings_messages' ); ?>
 
