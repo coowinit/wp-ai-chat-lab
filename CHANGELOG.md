@@ -2,6 +2,30 @@
 
 本项目使用版本记录来保留从设计思想到正式产品的完整演进过程。
 
+## Unreleased — v0.3.1 Structured Source Validation
+
+### Design
+
+- 将原计划 `WEM Structured Source Validation` 扩展为 `Structured Source Validation`。
+- 确认大量旧站使用 `functions.php + Post Meta`，不能把 WEM Field Group 作为结构化知识的架构前提。
+- 确立 `Structured Field Resolver → Provider → AI Allowlist → structured_data` 的最小结构。
+- 定义 Legacy Profile Provider，用显式 Profile 兼容旧站，不解析 PHP 源码。
+- 定义 WEM Definition Provider，读取 WEM Runtime Field Definitions，但仍必须经过 AI Allowlist。
+- 引入稳定 `knowledge_key` 概念，使旧 Meta Key 与新 WEM Meta Key 可以映射到同一业务语义。
+- 第一轮继续 Product First；Solution 样本仅用于验证 Legacy Profile 的可复用性。
+- 结构化字段继续采用 Explicit Allowlist，图片、文件、VR、视频、PDF IDs 默认不进入 AI 文本知识。
+- Provider 冲突采用固定策略：WEM 非空值优先，Legacy 作为 fallback；同一 `knowledge_key` 最终只输出一次。
+- 不新增 Field Mapping UI、源码解析器、Adapter Framework、Retrieval、RAG 或数据库表。
+
+### Status
+
+- Compatibility Architecture：已确认。
+- `docs/versions/v0.3.1.md`：已建立。
+- 插件代码：尚未进入 v0.3.1 功能实现，当前稳定版本仍为 v0.3.0。
+- WEM Product 实际 Field Mapping：等待真实 Field Group Schema 样本后冻结。
+
+---
+
 ## v0.3.0 — Knowledge Source Foundation (2026-09-16)
 
 ### Added

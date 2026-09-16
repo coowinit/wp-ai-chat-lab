@@ -3,8 +3,34 @@
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
 **当前稳定 Release：v0.3.0 · Knowledge Source Foundation**  
-**当前开发目标：v0.3.1 · WEM Structured Source Validation**  
+**当前开发目标：v0.3.1 · Structured Source Validation**  
 **当前阶段：v0.3.0 已通过真实 WordPress 环境测试与 Final Review**
+
+## v0.3.1 设计状态
+
+`v0.3.1` 在 v0.3.0 封版后的真实旧站兼容性审查中，从原计划的 **WEM Structured Source Validation** 调整为：
+
+```text
+v0.3.1 — Structured Source Validation
+```
+
+原因是大量现有站点的结构化字段直接定义在主题 `functions.php` 中，并不存在 WEM Field Group。新版本因此不把 WEM 作为架构前提，而是统一验证：
+
+```text
+Legacy Profile
++
+WEM Field Definitions
+→ Normalized Field Definitions
+→ AI Allowlist
+→ structured_data
+→ Unified Knowledge Source
+```
+
+第一轮仍坚持 **Product First**；旧站无需迁移字段系统，新站继续利用 WEM Schema。完整设计见：
+
+```text
+docs/versions/v0.3.1.md
+```
 
 ## v0.2.0 实测状态
 
@@ -1954,7 +1980,7 @@ docs/versions/v0.3.0.md
 
 ## v0.3.1
 
-### WEM Structured Source Validation
+### Structured Source Validation
 
 计划以 WEM 结构化字段作为第一个真实 Structured Source 验证场景，用于检验 `structured_data` 与 Unified Knowledge Source 的设计是否合理。
 
@@ -2453,13 +2479,13 @@ Current Stable Release:
 v0.3.0 Knowledge Source Foundation
 
 Current Development Target:
-v0.3.1 WEM Structured Source Validation
+v0.3.1 Structured Source Validation
 
 Development Status:
 v0.3.0 Final Review Passed
 
 Next:
-v0.3.1 WEM Structured Source Validation
+v0.3.1 Structured Source Validation
 ```
 
 ---
