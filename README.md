@@ -2,8 +2,9 @@
 
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
-**当前版本：v0.2.0 · AI Provider Foundation**  
-**当前阶段：AI Provider Foundation 已完成真实 WordPress + DeepSeek 测试，进入 v0.2.0 Final Review**
+**当前稳定版本：v0.2.0 · AI Provider Foundation**  
+**下一开发版本：v0.3.0 · Knowledge Source Foundation**  
+**当前阶段：v0.3.0 Design Ready，尚未开始 v0.3.0 功能代码开发**
 
 ## v0.2.0 实测状态
 
@@ -16,6 +17,31 @@
 - 断网、慢网与重复点击保护。
 
 测试未发现功能问题。Final Review 中仅发现保存设置成功通知重复显示，现已修复，版本号继续保持 `v0.2.0`。
+
+## v0.3.0 设计状态
+
+`v0.3.0 — Knowledge Source Foundation` 的开发定义已经完成，并经过多模型独立评审后收敛为以下六个核心能力：
+
+```text
+1. Post Type Discovery
+2. Enable / Disable Sources
+3. Generic Extractor
+4. Content Normalizer
+5. Manual Knowledge CPT
+6. Minimal Source Preview
+```
+
+当前仅完成设计与版本边界确认，**尚未加入 v0.3.0 功能代码**。正式开发定义见：
+
+```text
+docs/versions/v0.3.0.md
+```
+
+架构决策草案与评审问题保留在：
+
+```text
+docs/research/v0.3.0-knowledge-source-architecture-review.md
+```
 
 ---
 
@@ -1892,32 +1918,48 @@ docs/versions/v0.2.0.md
 
 ## v0.3.0
 
-### Knowledge Sources
+### Knowledge Source Foundation
 
-实现：
+设计已完成，下一步进入代码开发。范围严格限定为：
 
 ```text
-Product
-Solution
-FAQ
-Manual Knowledge
+Post Type Discovery
+Enable / Disable Sources
+Generic Extractor
+Content Normalizer
+Manual Knowledge CPT
+Minimal Source Preview
 ```
+
+本版本不包含 WEM、Chunk、Retrieval、RAG、Embedding、Vector 或 Knowledge Store。
+
+详细定义：
+
+```text
+docs/versions/v0.3.0.md
+```
+
+---
+
+## v0.3.1
+
+### WEM Structured Source Validation
+
+计划以 WEM 结构化字段作为第一个真实 Structured Source 验证场景，用于检验 `structured_data` 与 Unified Knowledge Source 的设计是否合理。
 
 ---
 
 ## v0.4.0
 
-### Knowledge Builder
+### Knowledge Store & Lifecycle
 
-实现：
+计划实现：
 
 ```text
-Adapter
-Normalizer
-Hash
-Chunk
-Store
-Lifecycle
+Source Persistence
+Source Hash Comparison
+Create / Update / Delete Lifecycle
+Incremental Rebuild
 ```
 
 ---
@@ -2396,11 +2438,17 @@ Not Used
 Custom Database Tables:
 0
 
-Current Test Target:
-Real WordPress environment verification
+Current Stable Release:
+v0.2.0 AI Provider Foundation
+
+Current Design Target:
+v0.3.0 Knowledge Source Foundation
+
+Design Status:
+Ready — code implementation not started
 
 Next:
-v0.3.0 Knowledge Sources
+v0.3.0 Code Implementation
 ```
 
 ---

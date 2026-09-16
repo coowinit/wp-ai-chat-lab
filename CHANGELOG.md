@@ -2,6 +2,35 @@
 
 本项目使用版本记录来保留从设计思想到正式产品的完整演进过程。
 
+## Unreleased — v0.3.0 · Knowledge Source Foundation (Design Ready)
+
+### Design
+
+- 完成 `docs/versions/v0.3.0.md`，正式定义 v0.3.0 的目标、边界、架构、测试计划与 Acceptance Criteria。
+- 综合多模型独立评审后，确认采用 Generic + Structured + Manual Knowledge 的长期方向，但 v0.3.0 只实现 Generic Knowledge Source Foundation。
+- 新增 Content Normalizer 作为 WordPress Content 与 Unified Knowledge Source 之间的基础清洗层。
+- 确定 v0.3.0 的六项核心能力：Post Type Discovery、Source Enable/Disable、Generic Extractor、Content Normalizer、Manual Knowledge CPT、Minimal Source Preview。
+- 确定 Generic Extractor 默认不读取任何 Post Meta；结构化字段未来通过显式白名单的 Structured Extractor 提供。
+- 确定 `wpaic_knowledge` 作为 AI 补充知识 CPT，第一阶段仅使用 Title、Content、Category 与 WordPress Status。
+- 确定 Source Hash 在 v0.3.0 只生成、不持久化、不比较；Knowledge Store 与 Lifecycle 延后到 v0.4.0。
+- 确定 WEM Structured Source 延后到 v0.3.1，用第二个真实实现验证当前 Source Schema 后，再决定是否正式抽象 Interface / Registry。
+- 新增 `docs/research/v0.3.0-knowledge-source-architecture-review.md`，保留本阶段架构决策草案与外部评审问题。
+
+### Intentionally Not Implemented Yet
+
+当前仓库仍使用 v0.2.0 插件代码。以下 v0.3.0 功能尚未开始实现：
+
+- Post Type Discovery
+- Knowledge Source Enable / Disable
+- Generic Extractor
+- Content Normalizer
+- Manual Knowledge CPT
+- Source Preview
+
+因此本节点属于 **Design Ready**，不是 v0.3.0 功能 Release。
+
+---
+
 ## v0.2.0 — AI Provider Foundation
 
 ### Added
