@@ -502,3 +502,94 @@
 .wpaic-retrieval-ranked-table td:nth-child(2) {
 	min-width: 68px;
 }
+
+/* v0.5.0 Stage 3 — Retrieval Quality Calibration */
+.wpaic-retrieval-strength {
+	background: #f6f7f7;
+	border-left: 4px solid #8c8f94;
+	margin: 0 0 14px;
+	padding: 12px 14px;
+}
+
+.wpaic-retrieval-strength.is-strong {
+	border-left-color: #00a32a;
+}
+
+.wpaic-retrieval-strength.is-medium {
+	border-left-color: #dba617;
+}
+
+.wpaic-retrieval-strength.is-weak,
+.wpaic-retrieval-strength.is-none {
+	border-left-color: #d63638;
+}
+
+.wpaic-strength-head {
+	align-items: center;
+	display: flex;
+	gap: 10px;
+}
+
+.wpaic-strength-badge {
+	background: #646970;
+	border-radius: 999px;
+	color: #fff;
+	font-size: 12px;
+	font-weight: 600;
+	padding: 2px 9px;
+	text-transform: uppercase;
+}
+
+.is-strong .wpaic-strength-badge {
+	background: #008a20;
+}
+
+.is-medium .wpaic-strength-badge {
+	background: #996800;
+}
+
+.is-weak .wpaic-strength-badge,
+.is-none .wpaic-strength-badge {
+	background: #b32d2e;
+}
+
+.wpaic-strength-stats {
+	display: grid;
+	gap: 8px;
+	grid-template-columns: repeat(4, minmax(100px, 1fr));
+	margin: 10px 0;
+}
+
+.wpaic-strength-stats div {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	padding: 8px 10px;
+}
+
+.wpaic-strength-stats dt {
+	color: #646970;
+	font-size: 12px;
+}
+
+.wpaic-strength-stats dd {
+	font-size: 16px;
+	font-weight: 600;
+	margin: 2px 0 0;
+}
+
+.wpaic-retrieval-unreliable {
+	background: #fff8e5;
+	border-left: 4px solid #dba617;
+	margin: 0 0 14px;
+	padding: 12px 14px;
+}
+
+.wpaic-retrieval-unreliable p {
+	margin-bottom: 0;
+}
+
+@media (max-width: 782px) {
+	.wpaic-strength-stats {
+		grid-template-columns: repeat(2, minmax(100px, 1fr));
+	}
+}

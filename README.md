@@ -3,12 +3,12 @@
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
 **当前稳定 Release：v0.4.0 · Knowledge Store & Lifecycle**  
-**当前开发：v0.5.0 · Local Retrieval（Stage 2 Validation Passed）**  
-**当前验证：Stage 1、Stage 2 已通过；下一步进入 Stage 3 Retrieval Quality Calibration**
+**当前开发：v0.5.0 · Local Retrieval（Stage 3 Code Implemented）**  
+**当前验证：Stage 1、Stage 2 已通过；Stage 3 Retrieval Quality Calibration 等待真实 Query Set 验证**
 
 ## v0.5.0 当前开发状态
 
-`v0.5.0 — Local Retrieval` 已完成 Stage 1 Query & Candidate Foundation 的真实环境验收，并进入 Stage 2 Weighted Scoring。
+`v0.5.0 — Local Retrieval` 已完成 Stage 1 Query & Candidate Foundation 与 Stage 2 Weighted Scoring 的真实环境验收，目前进入 Stage 3 Retrieval Quality Calibration。
 
 当前链路：
 
@@ -18,6 +18,7 @@ Question
 → Candidate Recall
 → Weighted Scoring
 → Stable Ranking
+→ Strength Evaluation
 → Top-K
 → Score Breakdown
 ```
@@ -36,7 +37,22 @@ Phrase Match Boost      +8
 Coverage Bonus Max     +10
 ```
 
-Playground 现在支持 Candidate Limit + Top K，并显示 Rank / Score / Score Breakdown。当前仍不做 Retrieval Strength / Minimum Threshold，它们留到 Stage 3 用真实 Query Set 校准。
+Playground 现在支持 Candidate Limit + Top K，并显示 Rank / Score / Score Breakdown。Stage 3 已在此基础上加入诊断级 Retrieval Strength 与 Threshold Calibration。
+
+Stage 3 第一轮诊断基线：
+
+```text
+Minimum Score  12
+Medium Score   18
+Strong Score   25
+Medium Coverage 50%
+Strong Coverage 75%
+Medium Gap      3
+Strong Gap      6
+```
+
+Strength 同时观察 Top Score、Top Coverage 与 Top/Second Score Gap；弱匹配仍保留候选供调试，不会隐藏结果。当前阈值通过 `wpaic_retrieval_strength_thresholds` Filter 可调整。
+
 
 完整设计、实现与验收记录见：
 
@@ -44,7 +60,7 @@ Playground 现在支持 Candidate Limit + Top K，并显示 Rank / Score / Score
 docs/versions/v0.5.0.md
 ```
 
-当前状态：**Stage 2 Validation Passed**。已在真实 WordPress 环境验证字段权重、Identifier Boost、Coverage Bonus、Top-K、Score Breakdown 与稳定排序；下一步进入 Stage 3 Retrieval Quality Calibration。
+当前状态：**Stage 3 Code Implemented — Awaiting Real-world Validation**。Stage 1、Stage 2 已通过；Stage 3 已加入诊断级 Strong / Medium / Weak / None、Minimum Score Floor、Top Coverage 与 Score Gap，用于真实 Query Set 校准。它不是 v0.6.0 Grounding Gate。
 
 ## v0.3.1 开发状态
 

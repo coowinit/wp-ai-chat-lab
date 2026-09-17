@@ -20,10 +20,14 @@ class WPAIC_Local_Retriever {
 	/** @var WPAIC_Retrieval_Scorer */
 	protected $scorer;
 
-	public function __construct( WPAIC_Retrieval_Query_Normalizer $normalizer, WPAIC_Retrieval_Candidate_Searcher $searcher, WPAIC_Retrieval_Scorer $scorer ) {
-		$this->normalizer = $normalizer;
-		$this->searcher   = $searcher;
-		$this->scorer     = $scorer;
+	/** @var WPAIC_Retrieval_Strength_Evaluator */
+	protected $strength_evaluator;
+
+	public function __construct( WPAIC_Retrieval_Query_Normalizer $normalizer, WPAIC_Retrieval_Candidate_Searcher $searcher, WPAIC_Retrieval_Scorer $scorer, WPAIC_Retrieval_Strength_Evaluator $strength_evaluator ) {
+		$this->normalizer           = $normalizer;
+		$this->searcher             = $searcher;
+		$this->scorer               = $scorer;
+		$this->strength_evaluator   = $strength_evaluator;
 	}
 
 	/**
@@ -52,6 +56,7 @@ class WPAIC_Local_Retriever {
 		}
 
 		usort( $scored, array( $this, 'compare_results' ) );
+		$strength    = $this->strength_evaluator->evaluate( $scored );
 		$top_results = array_slice( $scored, 0, $top_k );
 		$rank        = 1;
 		foreach ( $top_results as &$result ) {
@@ -75,6 +80,7 @@ class WPAIC_Local_Retriever {
 				'phrase_match_boost'     => $this->scorer->get_phrase_match_boost(),
 				'coverage_bonus_max'     => $this->scorer->get_coverage_bonus_max(),
 			),
+			'strength'         => $strength,
 			'results'          => $top_results,
 		);
 

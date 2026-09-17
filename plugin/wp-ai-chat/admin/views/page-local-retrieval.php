@@ -11,12 +11,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 <div class="wrap wpaic-wrap wpaic-retrieval-wrap">
 	<h1>WP AI Chat Lab</h1>
-	<p class="description">v<?php echo esc_html( WPAIC_VERSION ); ?> · Local Retrieval · Stage 2</p>
+	<p class="description">v<?php echo esc_html( WPAIC_VERSION ); ?> · Local Retrieval · Stage 3</p>
 
 	<div class="wpaic-grid wpaic-retrieval-grid">
 		<div class="wpaic-card">
 			<h2>本地检索 Playground</h2>
-			<p>从 Knowledge Store 中召回 <strong>active</strong> Knowledge Source，并使用透明的 Weighted Scoring 排名。Stage 2 只验证本地 Ranking，不调用 DeepSeek。</p>
+			<p>从 Knowledge Store 中召回 <strong>active</strong> Knowledge Source，完成 Weighted Scoring 后再输出诊断级 Retrieval Strength。Stage 3 用于校准检索质量，不调用 DeepSeek，也不是 Grounding Gate。</p>
 			<div class="wpaic-retrieval-controls">
 				<label for="wpaic-retrieval-question"><strong>Question</strong></label>
 				<textarea id="wpaic-retrieval-question" rows="4" placeholder="例如：What is the dimension of CWC-610?"></textarea>
@@ -40,21 +40,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 
 		<div class="wpaic-card">
-			<h2>Stage 2 边界</h2>
+			<h2>Stage 3 边界</h2>
 			<ul class="wpaic-plain-list">
 				<li>✓ Stage 1 Candidate Recall</li>
-				<li>✓ Field Weights</li>
-				<li>✓ Exact Identifier Boost</li>
-				<li>✓ Phrase Match Boost</li>
-				<li>✓ Query Coverage Bonus</li>
-				<li>✓ Top-K</li>
-				<li>✓ Score Breakdown</li>
+				<li>✓ Stage 2 Weighted Scoring</li>
+				<li>✓ Diagnostic Strength</li>
+				<li>✓ Minimum Score Floor</li>
+				<li>✓ Coverage + Score Gap</li>
+				<li>✓ No Reliable Local Match</li>
 				<li>✓ 只读 Knowledge Store</li>
 				<li>✓ 不调用 DeepSeek</li>
-				<li>— Strength / Threshold 留到 Stage 3 校准</li>
+				<li>— 不是 Grounding Gate</li>
 				<li>— 不做 Chunk / Embedding / Vector / RAG</li>
 			</ul>
-			<p class="description">初始字段权重：Structured Data 8 · Title 6 · Taxonomies 4 · Excerpt 3 · Content 1</p>
+			<p class="description">校准基线：Minimum 12 · Medium 18 · Strong 25；Coverage 50% / 75%；Score Gap 3 / 6。全部只是 Stage 3 初始诊断阈值，可通过 Filter 调整。</p>
 			<p class="description">当前 active Knowledge Store Rows：<?php echo esc_html( number_format_i18n( $active_count ) ); ?></p>
 		</div>
 	</div>

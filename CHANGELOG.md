@@ -1,4 +1,19 @@
-## v0.5.0 — Local Retrieval (Stage 2 Validation Passed)
+## v0.5.0 — Local Retrieval (Stage 3 Code Implemented)
+
+### v0.5.0 Stage 3 — Retrieval Quality Calibration（Code Implemented）
+
+- 新增 `WPAIC_Retrieval_Strength_Evaluator`。
+- 新增诊断级 `strong / medium / weak / none`。
+- Strength 同时观察 Top Score、Top Coverage 与 Top/Second Score Gap。
+- 新增 Minimum Score Floor、Medium / Strong Score Threshold。
+- 新增 Medium / Strong Coverage 与 Score Gap 校准基线。
+- 新增 `Reliable Match: Yes / No` 诊断信号。
+- `weak / none` 显示 `No Reliable Local Match`，但保留候选供校准。
+- 新增 `wpaic_retrieval_strength_thresholds` Filter。
+- Playground 显示 Top Score / Second Score / Score Gap / Top Coverage。
+- Stage 3 仍不调用 DeepSeek，也不是 Grounding Gate。
+- 不新增 Retrieval 数据表，不引入 Chunk / Embedding / Vector / RAG。
+
 
 ### Design
 
