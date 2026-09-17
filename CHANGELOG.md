@@ -1,4 +1,37 @@
-## v0.6.0 — Grounded AI (Development)
+## v0.7.0 — Usage Guard (Design)
+
+### Design
+
+- 完成 `docs/versions/v0.7.0.md` 第一版设计合同。
+- 明确核心原则：`Grounded ≠ Unlimited`，可靠 Evidence 只解决“能不能回答”，Usage Guard 再解决“有没有额度调用 AI”。
+- 设计三层 Provider Call Scope：Conversation AI Call Limit、Visitor Daily AI Call Limit、Site Daily AI Call Limit。
+- 默认设计基线：Conversation 10 / lifetime、Visitor 20 / day、Site 200 / day，`0` 表示该 Scope 不启用限制。
+- 明确 Usage Guard 统计 Provider Call，不统计普通 Message / Retrieval / clarify / no_answer。
+- 设计 `WPAIC_Usage_Context / WPAIC_Usage_Counter_Repository / WPAIC_Usage_Guard`。
+- 设计新增 `{$wpdb->prefix}wpaic_usage_counter` 单表，DB Version 从 `1.0` 提升到 `1.1`。
+- Usage Counter 记录 Provider Calls 与 Prompt / Completion / Total Tokens，但 v0.7.0 不做 Monthly Token / Cost Budget。
+- Visitor / Conversation Scope Key 持久化前采用 Hash，不使用 IP 作为 Visitor ID。
+- 启用 Scope 但缺少对应 Context 时 Fail Closed：`missing_usage_context`。
+- 设计稳定 Reason Codes：`within_limits / conversation_limit_reached / visitor_daily_limit_reached / site_daily_limit_reached / missing_usage_context / usage_guard_unavailable`。
+- 设计 Provider Boundary 前的原子 `reserve_provider_call()`；任意 Scope 超限则阻断 AI。
+- Provider Call Attempt 一旦真正发生即占用 Call Counter；成功返回后再提交真实 Token Usage。
+- Grounding Gate 先于 Usage Guard，Weak / Medium / None 不消耗 AI Quota。
+- v0.7.0 仍不做 Conversation / Message Persistence、Front-end Chat、Lead、Human Handoff、Cost Guard、Chunk / Embedding / Vector / RAG。
+- 开发拆分为 Stage 1 Usage Store & Policy Foundation、Stage 2 Provider Boundary Integration、Stage 3 Limit Calibration & Operational Validation。
+- Design Milestone 发布时插件功能代码仍保持 v0.6.0 Stable。
+
+---
+
+## v0.6.0 — Grounded AI (2026-09-17)
+
+### Final Review
+
+- Stage 1 Grounding Gate Foundation、Stage 2 Evidence Pack & Prompt Builder、Stage 3 Grounded Answer 均已通过真实 WordPress 环境验证。
+- Strong / Medium / Weak / None 四类 Retrieval 状态与 allow_answer / clarify / no_answer 应用层决策完成闭环验证。
+- 单来源 `CWC-610 dimension` 与多来源 `minimum order quantity` 均完成真实 DeepSeek Grounded Answer 验证。
+- Weak / Medium / None 路径继续保持 `AI Called = No / Token Usage = 0`。
+- Source Trace、Provider / Model、Token Usage 与 Elapsed Diagnostics 验证通过。
+- v0.6.0 Final Review 通过并作为 Stable Release 发布。
 
 ### Stage 3 — Grounded Answer
 

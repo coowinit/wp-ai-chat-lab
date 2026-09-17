@@ -2,9 +2,9 @@
 
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
-**当前稳定 Release：v0.5.0 · Local Retrieval**  
-**当前开发方向：v0.6.0 · Grounded AI**  
-**当前状态：v0.6.0 Stage 3 Grounded Answer；Validation Passed / Ready for Final Review**
+**当前稳定 Release：v0.6.0 · Grounded AI**  
+**当前开发方向：v0.7.0 · Usage Guard**  
+**当前状态：v0.7.0 Design Ready；插件代码仍保持 v0.6.0 Stable**
 
 ## v0.5.0 稳定版本状态
 
@@ -65,7 +65,7 @@ docs/versions/v0.5.0.md
 
 ## v0.6.0 开发状态
 
-`v0.6.0 — Grounded AI` 已完成设计定稿，Stage 1、Stage 2 与 Stage 3 均已通过真实 WordPress 环境验证并封板。**当前已进入 v0.6.0 Final Review 准备阶段。**
+`v0.6.0 — Grounded AI` 已完成设计、Stage 1 Grounding Gate、Stage 2 Evidence Pack / Prompt Builder、Stage 3 Grounded Answer 与 Final Review，并已作为正式 Stable Release 发布。
 
 当前已经建立：
 
@@ -195,12 +195,66 @@ minimum order quantity
 → Source Trace 保留 S1 / S2
 ```
 
-这证明 `allow_answer` 才会越过 Provider Boundary，而 `clarify / no_answer` 继续保持零 Token；多来源 Evidence 也能在真实 Provider Answer 中被正确约束和追踪。Stage 3 正式通过，下一步进入 **v0.6.0 Final Review**。
+这证明 `allow_answer` 才会越过 Provider Boundary，而 `clarify / no_answer` 继续保持零 Token；多来源 Evidence 也能在真实 Provider Answer 中被正确约束和追踪。Stage 3 与 Final Review 均已通过，v0.6.0 已正式发布。
 
 完整设计与阶段记录见：
 
 ```text
 docs/versions/v0.6.0.md
+```
+
+## v0.7.0 设计状态
+
+`v0.7.0 — Usage Guard` 已完成第一版设计定稿，当前插件功能代码仍保持 v0.6.0 Stable，不提前修改 Provider Pipeline。
+
+这一版开始解决：
+
+```text
+即使问题有可靠 Evidence，
+也不能让公共网站无限调用 AI。
+```
+
+核心链路计划扩展为：
+
+```text
+Question
+→ Local Retrieval
+→ Grounding Gate
+→ Evidence / Prompt
+→ Usage Guard
+→ AI Provider
+```
+
+第一版只做三个 Scope：
+
+```text
+Conversation AI Call Limit
+Visitor Daily AI Call Limit
+Site Daily AI Call Limit
+```
+
+设计默认基线：
+
+```text
+Conversation  10 / lifetime
+Visitor       20 / day
+Site         200 / day
+```
+
+Usage Guard 控制的是 **Provider Call**，不是用户消息数；`clarify / no_answer` 不增加 Usage。第一版建议新增一张 `wpaic_usage_counter` 表，把 DB Version 从 `1.0` 提升到 `1.1`，并同时记录 Provider Call 与真实 Token Usage，但暂不做 Monthly Token / Cost Budget。
+
+最重要的边界：
+
+```text
+Grounded First
+Usage Guard Second
+Provider Last
+```
+
+完整设计见：
+
+```text
+docs/versions/v0.7.0.md
 ```
 
 ## v0.3.1 开发状态
@@ -2402,9 +2456,18 @@ Answer
 实现：
 
 ```text
-Conversation Limit
-Visitor Limit
-Site Limit
+Conversation AI Call Limit
+Visitor Daily AI Call Limit
+Site Daily AI Call Limit
+```
+
+并建立：
+
+```text
+Usage Context
+Usage Counter Store
+Provider Boundary Reserve
+Token Usage Diagnostics
 ```
 
 ---
@@ -2838,13 +2901,19 @@ Custom Database Tables:
 1（Knowledge Store）
 
 Current Stable Release:
-v0.5.0 Local Retrieval
+v0.6.0 Grounded AI
 
 Release Status:
 Final Review Passed / Stable Release
 
+Current Development:
+v0.7.0 Usage Guard — Design Ready
+
+Plugin Code:
+v0.6.0 Stable（v0.7.0 Design Milestone 不修改功能代码）
+
 Next Direction:
-v0.6.0 Final Review
+v0.7.0 Stage 1 — Usage Store & Policy Foundation
 ```
 
 ---
