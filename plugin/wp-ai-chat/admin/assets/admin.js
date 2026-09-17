@@ -164,7 +164,7 @@
 			strong: 'Top Result 在分数、覆盖率与领先差距上都较明确。',
 			medium: '存在较可信的本地匹配，但仍建议继续用真实 Query Set 校准。',
 			weak: '存在候选，但相关性或区分度不足；当前不视为可靠本地匹配。',
-			none: '没有达到当前 Stage 3 校准基线的可靠本地匹配。'
+			none: '没有达到当前 v0.5.0 校准基线的可靠本地匹配。'
 		};
 		var html = '<div class="wpaic-retrieval-strength is-' + escapeHtml(label) + '">' +
 			'<div class="wpaic-strength-head"><strong>Retrieval Strength</strong><span class="wpaic-strength-badge">' + escapeHtml(titleMap[label] || 'None') + '</span></div>' +
@@ -183,7 +183,7 @@
 		'</div>';
 
 		if (!reliable && label !== 'none') {
-			html += '<div class="wpaic-retrieval-unreliable"><strong>No Reliable Local Match</strong><p>候选仍保留在下方用于 Stage 3 校准；这不是 v0.6.0 Grounding Gate 的最终“可回答 / 不可回答”判断。</p></div>';
+			html += '<div class="wpaic-retrieval-unreliable"><strong>No Reliable Local Match</strong><p>候选仍保留在下方用于检索质量校准；这不是 v0.6.0 Grounding Gate 的最终“可回答 / 不可回答”判断。</p></div>';
 		}
 		return html;
 	}
@@ -195,7 +195,7 @@
 		var strength = data.strength || {};
 
 		if (!results.length) {
-			rows = '<div class="wpaic-retrieval-empty"><strong>No Candidate Match</strong><p>当前 active Knowledge Store 中没有召回候选。Stage 3 不会为了“必须有结果”而伪造匹配。</p></div>';
+			rows = '<div class="wpaic-retrieval-empty"><strong>No Candidate Match</strong><p>当前 active Knowledge Store 中没有召回候选。v0.5.0 不会为了“必须有结果”而伪造匹配。</p></div>';
 		} else {
 			rows = '<div class="wpaic-retrieval-table-wrap"><table class="widefat striped wpaic-retrieval-table wpaic-retrieval-ranked-table">' +
 				'<thead><tr><th>Rank</th><th>Score</th><th>Title / Source</th><th>Matched Fields</th><th>Matched Terms</th><th>Score Breakdown</th><th>Snippet</th></tr></thead><tbody>' +
@@ -227,7 +227,7 @@
 				'<div><dt>Candidate Limit</dt><dd>' + escapeHtml(data.candidate_limit || 0) + '</dd></div>' +
 				'<div><dt>Elapsed</dt><dd>' + escapeHtml(data.elapsed_ms || 0) + ' ms</dd></div>' +
 			'</dl>' +
-			'<p class="description">Stage 3 的 Strong / Medium / Weak / None 只是诊断级校准结果，不等同于 AI Grounding Gate。</p>' +
+			'<p class="description">Strong / Medium / Weak / None 是 v0.5.0 的诊断级校准结果，不等同于 AI Grounding Gate。</p>' +
 		'</div>' + retrievalStrengthHtml(strength) + rows;
 	}
 

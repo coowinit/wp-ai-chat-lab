@@ -2,13 +2,13 @@
 
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
-**当前稳定 Release：v0.4.0 · Knowledge Store & Lifecycle**  
-**当前开发：v0.5.0 · Local Retrieval（Stage 3 Code Implemented）**  
-**当前验证：Stage 1、Stage 2 已通过；Stage 3 Retrieval Quality Calibration 等待真实 Query Set 验证**
+**当前稳定 Release：v0.5.0 · Local Retrieval**  
+**当前状态：Final Review Passed / Stable Release**  
+**下一方向：v0.6.0 · Grounded AI（尚未开始设计与实现）**
 
-## v0.5.0 当前开发状态
+## v0.5.0 稳定版本状态
 
-`v0.5.0 — Local Retrieval` 已完成 Stage 1 Query & Candidate Foundation 与 Stage 2 Weighted Scoring 的真实环境验收，目前进入 Stage 3 Retrieval Quality Calibration。
+`v0.5.0 — Local Retrieval` 已完成 Stage 1 Query & Candidate Foundation、Stage 2 Weighted Scoring 与 Stage 3 Retrieval Quality Calibration 的真实环境验收。
 
 当前链路：
 
@@ -60,7 +60,7 @@ Strength 同时观察 Top Score、Top Coverage 与 Top/Second Score Gap；弱匹
 docs/versions/v0.5.0.md
 ```
 
-当前状态：**Stage 3 Code Implemented — Awaiting Real-world Validation**。Stage 1、Stage 2 已通过；Stage 3 已加入诊断级 Strong / Medium / Weak / None、Minimum Score Floor、Top Coverage 与 Score Gap，用于真实 Query Set 校准。它不是 v0.6.0 Grounding Gate。
+当前状态：**Final Review Passed / Stable Release**。Stage 1、Stage 2、Stage 3 均已完成并通过真实环境验证；诊断级 Strong / Medium / Weak / None、Minimum Score Floor、Top Coverage 与 Score Gap 已建立，其中真实 Query 已覆盖 Strong / Weak / None 与单候选 Strong 等关键路径。它仍不是 v0.6.0 Grounding Gate。
 
 ## v0.3.1 开发状态
 
@@ -2655,10 +2655,10 @@ Lead / Support / Action
 
 ```text
 Version:
-v0.4.0 Stable / v0.5.0 Stage 1
+v0.4.0 Stable / v0.5.0 Stage 3
 
 Stage:
-Local Retrieval — Stage 1 Validation Passed
+Local Retrieval — Stage 3 Validation Passed
 
 Production:
 Tidio
@@ -2688,7 +2688,7 @@ Source Preview:
 Implemented — no AI call, no persistence
 
 Retrieval:
-Local First — v0.5.0 Stage 1 implemented and validated in real WordPress environment
+Local First — v0.5.0 Stage 1 / 2 / 3 implemented and validated in real WordPress environment
 
 Vector:
 Not Used
@@ -2697,13 +2697,13 @@ Custom Database Tables:
 1（Knowledge Store）
 
 Current Stable Release:
-v0.4.0 Knowledge Store & Lifecycle
+v0.5.0 Local Retrieval
 
-Development Status:
-v0.5.0 Local Retrieval — Stage 1 Validation Passed
+Release Status:
+Final Review Passed / Stable Release
 
-Next:
-v0.5.0 Stage 2 — Weighted Scoring
+Next Direction:
+v0.6.0 Grounded AI — Not Yet Designed
 ```
 
 ---

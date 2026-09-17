@@ -1,6 +1,26 @@
-## v0.5.0 — Local Retrieval (Stage 3 Code Implemented)
+## v0.5.0 — Local Retrieval (2026-09-17)
 
-### v0.5.0 Stage 3 — Retrieval Quality Calibration（Code Implemented）
+### Final Review
+
+- Stage 1 — Query & Candidate Foundation：Passed。
+- Stage 2 — Weighted Scoring：Passed。
+- Stage 3 — Retrieval Quality Calibration：Passed。
+- `CWC-610 dimension`：Strong / Reliable Yes，36 vs 14，Gap 22，Coverage 100%。
+- `minimum order quantity`：Strong / Reliable Yes，39 vs 9，Gap 30，Coverage 100%。
+- `dimension`：Weak / Reliable No，19 vs 19，Gap 0，验证高频模糊 Query 不会被误判为可靠匹配。
+- `CWC-610`：单候选 Strong / Reliable Yes，Score 28，Coverage 100%。
+- `ZXQ-99999-NOMATCH`：None / Reliable No。
+- Top-K 3 / 5 / 10 与 Stable Ranking 已通过真实环境验证。
+- Local Retrieval 后台页完成 100% 可用宽度优化，便于查看 Score Breakdown / Snippet。
+- PHP syntax check：通过。
+- JavaScript syntax check：通过。
+- Plugin Version / `WPAIC_VERSION`：`0.5.0`。
+- Knowledge Store 自定义表：仍为 1 张；Retrieval 不新增数据表。
+- Retrieval 不调用 DeepSeek；不执行 Chunk / Embedding / Vector / RAG。
+- v0.5.0 Final Review：通过，作为 Stable Release。
+
+
+### v0.5.0 Stage 3 — Retrieval Quality Calibration（Validation Passed）
 
 - 新增 `WPAIC_Retrieval_Strength_Evaluator`。
 - 新增诊断级 `strong / medium / weak / none`。
@@ -13,6 +33,15 @@
 - Playground 显示 Top Score / Second Score / Score Gap / Top Coverage。
 - Stage 3 仍不调用 DeepSeek，也不是 Grounding Gate。
 - 不新增 Retrieval 数据表，不引入 Chunk / Embedding / Vector / RAG。
+
+- Stage 3 真实环境校准验证通过。
+- `CWC-610 dimension`：36 / 14 / Gap 22 / Coverage 100% → Strong / Reliable Yes。
+- `minimum order quantity`：39 / 9 / Gap 30 / Coverage 100% → Strong / Reliable Yes。
+- `dimension`：19 / 19 / Gap 0 / Coverage 100% → Weak / Reliable No，验证高频模糊 Query 不会被误判为可靠匹配。
+- `CWC-610`：Candidate Count 1 / Score 28 / Coverage 100% → Strong / Reliable Yes。
+- `ZXQ-99999-NOMATCH`：Candidate Count 0 → None / Reliable No。
+- 当前校准基线暂不调整：Minimum 12 / Medium 18 / Strong 25 / Coverage 50%/75% / Gap 3/6。
+- Stage 3 正式封板，下一步进入 v0.5.0 Final Review。
 
 
 ### Design
