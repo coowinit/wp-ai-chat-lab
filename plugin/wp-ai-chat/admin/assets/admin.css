@@ -593,3 +593,79 @@
 		grid-template-columns: repeat(2, minmax(100px, 1fr));
 	}
 }
+
+
+/* v0.6.0 Stage 1 — Grounding Gate Playground */
+.wpaic-grounded-wrap {
+	max-width: 100%;
+}
+
+.wpaic-grounded-grid {
+	grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
+}
+
+.wpaic-grounded-grid > .wpaic-card {
+	min-width: 0;
+}
+
+.wpaic-grounding-controls textarea {
+	box-sizing: border-box;
+	max-width: none;
+	width: 100%;
+}
+
+.wpaic-grounding-gate {
+	background: #f6f7f7;
+	border-left: 4px solid #8c8f94;
+	margin: 0 0 18px;
+	padding: 12px 14px;
+}
+
+.wpaic-grounding-gate.is-allow_answer {
+	border-left-color: #00a32a;
+}
+
+.wpaic-grounding-gate.is-clarify {
+	border-left-color: #dba617;
+}
+
+.wpaic-grounding-gate.is-no_answer {
+	border-left-color: #d63638;
+}
+
+.wpaic-gate-badge {
+	background: #646970;
+	border-radius: 999px;
+	color: #fff;
+	font-size: 12px;
+	font-weight: 600;
+	padding: 2px 9px;
+}
+
+.is-allow_answer .wpaic-gate-badge {
+	background: #008a20;
+}
+
+.is-clarify .wpaic-gate-badge {
+	background: #996800;
+}
+
+.is-no_answer .wpaic-gate-badge {
+	background: #b32d2e;
+}
+
+.wpaic-gate-stats {
+	grid-template-columns: repeat(4, minmax(110px, 1fr));
+}
+
+@media (max-width: 900px) {
+	.wpaic-grounded-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media (max-width: 782px) {
+	.wpaic-gate-stats {
+		grid-template-columns: repeat(2, minmax(100px, 1fr));
+	}
+}

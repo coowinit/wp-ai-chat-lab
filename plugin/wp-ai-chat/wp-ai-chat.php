@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP AI Chat Lab
  * Description: Experimental WordPress AI foundation for controlled, knowledge-grounded chat, including AI providers, WordPress knowledge sources, and a rebuildable Knowledge Store.
- * Version: 0.5.0
+ * Version: 0.6.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: coowinit
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPAIC_VERSION', '0.5.0' );
+define( 'WPAIC_VERSION', '0.6.0' );
 define( 'WPAIC_PLUGIN_FILE', __FILE__ );
 define( 'WPAIC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WPAIC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -50,6 +50,8 @@ require_once WPAIC_PLUGIN_DIR . 'includes/retrieval/class-wpaic-retrieval-candid
 require_once WPAIC_PLUGIN_DIR . 'includes/retrieval/class-wpaic-retrieval-scorer.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/retrieval/class-wpaic-retrieval-strength-evaluator.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/retrieval/class-wpaic-local-retriever.php';
+
+require_once WPAIC_PLUGIN_DIR . 'includes/grounding/class-wpaic-grounding-gate.php';
 
 require_once WPAIC_PLUGIN_DIR . 'admin/class-wpaic-admin.php';
 
@@ -134,8 +136,12 @@ function wpaic_bootstrap() {
 	$strength_evaluator   = new WPAIC_Retrieval_Strength_Evaluator();
 	$local_retriever      = new WPAIC_Local_Retriever( $retrieval_normalizer, $candidate_searcher, $retrieval_scorer, $strength_evaluator );
 
+	// v0.6.0 Stage 1: application-layer Grounding Gate. It consumes only the
+	// Retrieval Result contract and never calls the AI Manager or Provider.
+	$grounding_gate = new WPAIC_Grounding_Gate();
+
 	if ( is_admin() ) {
-		new WPAIC_Admin( $manager, $discovery, $extractor, $store_repository, $lifecycle, $batch_sync, $local_retriever );
+		new WPAIC_Admin( $manager, $discovery, $extractor, $store_repository, $lifecycle, $batch_sync, $local_retriever, $grounding_gate );
 	}
 }
 add_action( 'plugins_loaded', 'wpaic_bootstrap' );

@@ -1,4 +1,26 @@
-## v0.6.0 — Grounded AI (Design)
+## v0.6.0 — Grounded AI (Development)
+
+### Stage 1 — Grounding Gate Foundation
+
+- 插件开发版本提升到 `0.6.0`。
+- 新增 `WPAIC_Grounding_Gate`，消费 v0.5.0 Local Retrieval Result，不直接依赖 AI Provider。
+- 新增 Gate Decision Contract：`decision / allow_ai / reason_code / reason_message / retrieval_strength / reliable_match / top_score / score_gap / top_coverage`。
+- 第一版保守 Gate：Strong + Reliable Yes → `allow_answer`；Medium / Weak → `clarify`；None → `no_answer`。
+- 新增 Reason Codes：`strong_reliable_match / medium_needs_clarification / weak_ambiguous_match / no_local_evidence`。
+- 新增后台 `Grounded AI` Playground，独立于 v0.5.0 “本地检索”页面。
+- Playground 先执行 Local Retrieval，再展示 Grounding Gate Decision 与 Retrieval Diagnostics。
+- 新增 `Allow AI (Policy)` 与实际 `AI Called` 的职责区分。
+- Stage 1 强制 `AI Called = false`、`Token Usage = 0`；即使 Gate 返回 `allow_answer`，也不会调用 `WPAIC_AI_Manager` / DeepSeek。
+- Stage 1 不构建 Evidence Pack、不构建 Prompt、不生成 AI Answer。
+- 不新增数据库表，不引入 Chunk / Embedding / Vector / RAG。
+- PHP syntax check / JavaScript syntax check 已通过。
+- Stage 1 已完成真实 WordPress 环境验证并正式封板。
+- `CWC-610 dimension`：Strong / Reliable Yes → `allow_answer`；`Allow AI (Policy) = Yes`，但 `AI Called = No / Token Usage = 0`。
+- `CWC-610 warranty`：Medium / Coverage 50% → `clarify`；验证 Partial Evidence 不会因为型号强匹配而放行缺乏属性证据的问题。
+- `dimension`：Weak / Gap 0 → `clarify`；验证高频模糊 Query 不允许 AI 猜测。
+- `ZXQ-99999-NOMATCH`：None → `no_answer`；验证无本地证据时明确阻断 AI。
+- 四种证据状态均确认 Stage 1 不调用 `WPAIC_AI_Manager` / DeepSeek，`Token Usage = 0`。
+- 当前状态：Stage 1 Validation Passed；下一阶段进入 Stage 2 — Evidence Pack & Prompt Builder。
 
 ### Design
 
@@ -18,7 +40,7 @@
 - v0.6.0 不新增数据库表，不做 Conversation Log / Prompt Log / Answer Log。
 - 开发拆分为 Stage 1 Grounding Gate Foundation、Stage 2 Evidence Pack & Prompt Builder、Stage 3 Grounded Answer。
 - Stage 1 与 Stage 2 明确不调用 DeepSeek；Stage 3 只有 Gate 允许时才调用 AI。
-- 当前插件代码仍保持 v0.5.0 Stable Release，尚未进入 v0.6.0 功能实现。
+- Design Milestone `v0.6.0-design.1` 发布时插件代码仍保持 v0.5.0；当前已进入 v0.6.0 Stage 1 功能实现。
 
 ---
 

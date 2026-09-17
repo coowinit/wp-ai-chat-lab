@@ -32,6 +32,9 @@ class WPAIC_Admin {
 	/** @var WPAIC_Local_Retriever */
 	protected $local_retriever;
 
+	/** @var WPAIC_Grounding_Gate */
+	protected $grounding_gate;
+
 	/** @var string */
 	protected $ai_page_hook = '';
 
@@ -44,6 +47,9 @@ class WPAIC_Admin {
 	/** @var string */
 	protected $retrieval_page_hook = '';
 
+	/** @var string */
+	protected $grounded_page_hook = '';
+
 	/**
 	 * @param WPAIC_AI_Manager                    $manager          AI manager.
 	 * @param WPAIC_Source_Discovery              $discovery        Source discovery.
@@ -52,8 +58,9 @@ class WPAIC_Admin {
 	 * @param WPAIC_Knowledge_Lifecycle_Manager   $lifecycle        Lifecycle orchestrator.
 	 * @param WPAIC_Knowledge_Batch_Sync          $batch_sync       Batch full-sync coordinator.
 	 * @param WPAIC_Local_Retriever                $local_retriever  Local retrieval coordinator.
+	 * @param WPAIC_Grounding_Gate                 $grounding_gate   Application-layer grounding gate.
 	 */
-	public function __construct( WPAIC_AI_Manager $manager, WPAIC_Source_Discovery $discovery, WPAIC_Generic_Extractor $extractor, WPAIC_Knowledge_Store_Repository $store_repository, WPAIC_Knowledge_Lifecycle_Manager $lifecycle, WPAIC_Knowledge_Batch_Sync $batch_sync, WPAIC_Local_Retriever $local_retriever ) {
+	public function __construct( WPAIC_AI_Manager $manager, WPAIC_Source_Discovery $discovery, WPAIC_Generic_Extractor $extractor, WPAIC_Knowledge_Store_Repository $store_repository, WPAIC_Knowledge_Lifecycle_Manager $lifecycle, WPAIC_Knowledge_Batch_Sync $batch_sync, WPAIC_Local_Retriever $local_retriever, WPAIC_Grounding_Gate $grounding_gate ) {
 		$this->manager          = $manager;
 		$this->discovery        = $discovery;
 		$this->extractor        = $extractor;
@@ -61,6 +68,7 @@ class WPAIC_Admin {
 		$this->lifecycle        = $lifecycle;
 		$this->batch_sync       = $batch_sync;
 		$this->local_retriever  = $local_retriever;
+		$this->grounding_gate   = $grounding_gate;
 
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
@@ -72,6 +80,7 @@ class WPAIC_Admin {
 		add_action( 'wp_ajax_wpaic_start_full_sync', array( $this, 'ajax_start_full_sync' ) );
 		add_action( 'wp_ajax_wpaic_run_full_sync_batch', array( $this, 'ajax_run_full_sync_batch' ) );
 		add_action( 'wp_ajax_wpaic_retrieval_search', array( $this, 'ajax_retrieval_search' ) );
+		add_action( 'wp_ajax_wpaic_grounding_gate_test', array( $this, 'ajax_grounding_gate_test' ) );
 	}
 
 	/**
@@ -124,6 +133,15 @@ class WPAIC_Admin {
 			'manage_options',
 			'wp-ai-chat-lab-retrieval',
 			array( $this, 'render_retrieval_page' )
+		);
+
+		$this->grounded_page_hook = add_submenu_page(
+			'wp-ai-chat-lab',
+			'Grounded AI',
+			'Grounded AI',
+			'manage_options',
+			'wp-ai-chat-lab-grounded',
+			array( $this, 'render_grounded_page' )
 		);
 	}
 
@@ -227,7 +245,7 @@ class WPAIC_Admin {
 	 * @return void
 	 */
 	public function enqueue_assets( $hook ) {
-		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook, $this->store_page_hook, $this->retrieval_page_hook ), true ) ) {
+		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook, $this->store_page_hook, $this->retrieval_page_hook, $this->grounded_page_hook ), true ) ) {
 			return;
 		}
 
@@ -266,6 +284,7 @@ class WPAIC_Admin {
 				'knowledgeNonce' => wp_create_nonce( 'wpaic_knowledge_preview' ),
 				'storeNonce'     => wp_create_nonce( 'wpaic_store_sync' ),
 				'retrievalNonce' => wp_create_nonce( 'wpaic_retrieval_search' ),
+				'groundingNonce' => wp_create_nonce( 'wpaic_grounding_gate_test' ),
 				'i18n'           => array(
 					'working' => '请求中…',
 					'error'   => '请求失败，请重试。',
@@ -409,6 +428,18 @@ class WPAIC_Admin {
 
 		$active_count = $this->store_repository->count_by_status( 'active' );
 		include WPAIC_PLUGIN_DIR . 'admin/views/page-local-retrieval.php';
+	}
+
+	/**
+	 * Render the v0.6.0 Stage 1 Grounding Gate Playground.
+	 *
+	 * @return void
+	 */
+	public function render_grounded_page() {
+		$this->guard_admin_page();
+
+		$active_count = $this->store_repository->count_by_status( 'active' );
+		include WPAIC_PLUGIN_DIR . 'admin/views/page-grounded-ai.php';
 	}
 
 	/**
@@ -655,6 +686,65 @@ class WPAIC_Admin {
 		}
 
 		wp_send_json_success( $result );
+	}
+
+	/**
+	 * Run v0.6.0 Stage 1 Retrieval + Grounding Gate diagnostics.
+	 *
+	 * This endpoint deliberately never calls WPAIC_AI_Manager. Even when the
+	 * gate returns allow_answer / allow_ai=true, Stage 1 only proves policy
+	 * permission and always reports AI Called = false.
+	 *
+	 * @return void
+	 */
+	public function ajax_grounding_gate_test() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array(
+					'code'    => 'wpaic_forbidden',
+					'message' => '你没有执行此操作的权限。',
+				),
+				403
+			);
+		}
+
+		check_ajax_referer( 'wpaic_grounding_gate_test', 'nonce' );
+
+		$question = isset( $_POST['question'] ) ? sanitize_textarea_field( wp_unslash( $_POST['question'] ) ) : '';
+		$question = trim( $question );
+		if ( '' === $question ) {
+			wp_send_json_error( array( 'code' => 'wpaic_grounding_empty_query', 'message' => '请输入要测试的问题。' ), 400 );
+		}
+
+		if ( $this->string_length( $question ) > 1000 ) {
+			wp_send_json_error( array( 'code' => 'wpaic_grounding_query_too_long', 'message' => '测试问题最多 1000 个字符，请缩短后重试。' ), 400 );
+		}
+
+		$candidate_limit = isset( $_POST['candidate_limit'] ) ? absint( $_POST['candidate_limit'] ) : 100;
+		$top_k           = isset( $_POST['top_k'] ) ? absint( $_POST['top_k'] ) : 5;
+		$retrieval       = $this->local_retriever->retrieve(
+			$question,
+			array(
+				'candidate_limit' => $candidate_limit,
+				'top_k'           => $top_k,
+			)
+		);
+
+		if ( is_wp_error( $retrieval ) ) {
+			$this->send_error( $retrieval );
+		}
+
+		$gate = $this->grounding_gate->evaluate( $retrieval );
+
+		wp_send_json_success(
+			array(
+				'stage'       => 'grounding_gate_foundation',
+				'retrieval'   => $retrieval,
+				'gate'        => $gate,
+				'ai_called'   => false,
+				'token_usage' => 0,
+			)
+		);
 	}
 
 	/**

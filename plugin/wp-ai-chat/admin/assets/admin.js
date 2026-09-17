@@ -231,6 +231,39 @@
 		'</div>' + retrievalStrengthHtml(strength) + rows;
 	}
 
+
+	function groundingGateHtml(data) {
+		data = data || {};
+		var retrieval = data.retrieval || {};
+		var gate = data.gate || {};
+		var decision = String(gate.decision || 'no_answer').toLowerCase();
+		var allowAi = !!gate.allow_ai;
+		var aiCalled = !!data.ai_called;
+		var coverage = Math.round((parseFloat(gate.top_coverage) || 0) * 100);
+		var labelMap = {
+			allow_answer: 'ALLOW ANSWER',
+			clarify: 'CLARIFY',
+			no_answer: 'NO ANSWER'
+		};
+		var gateHtml = '<div class="wpaic-grounding-gate is-' + escapeHtml(decision) + '">' +
+			'<div class="wpaic-strength-head"><strong>Grounding Gate Decision</strong><span class="wpaic-gate-badge">' + escapeHtml(labelMap[decision] || decision) + '</span></div>' +
+			'<p>' + escapeHtml(gate.reason_message || '') + '</p>' +
+			'<dl class="wpaic-strength-stats wpaic-gate-stats">' +
+				'<div><dt>Allow AI (Policy)</dt><dd>' + (allowAi ? 'Yes' : 'No') + '</dd></div>' +
+				'<div><dt>AI Called</dt><dd>' + (aiCalled ? 'Yes' : 'No') + '</dd></div>' +
+				'<div><dt>Token Usage</dt><dd>' + escapeHtml(data.token_usage || 0) + '</dd></div>' +
+				'<div><dt>Retrieval Strength</dt><dd>' + escapeHtml(String(gate.retrieval_strength || 'none').toUpperCase()) + '</dd></div>' +
+				'<div><dt>Reliable Match</dt><dd>' + (gate.reliable_match ? 'Yes' : 'No') + '</dd></div>' +
+				'<div><dt>Top Score</dt><dd>' + escapeHtml(gate.top_score || 0) + '</dd></div>' +
+				'<div><dt>Score Gap</dt><dd>' + escapeHtml(gate.score_gap || 0) + '</dd></div>' +
+				'<div><dt>Top Coverage</dt><dd>' + escapeHtml(coverage) + '%</dd></div>' +
+			'</dl>' +
+			'<p class="description">Reason Code: <code>' + escapeHtml(gate.reason_code || '') + '</code> · Stage 1 只验证 Gate，实际 Provider Call 被硬性关闭。</p>' +
+		'</div>';
+
+		return gateHtml + '<h3>Retrieval Diagnostics</h3>' + retrievalHtml(retrieval);
+	}
+
 	function ajaxJson(action, payload, nonce) {
 		var body = new URLSearchParams();
 		body.append('action', action);
@@ -379,6 +412,11 @@
 		var retrievalQuestion = document.getElementById('wpaic-retrieval-question');
 		var retrievalLimit = document.getElementById('wpaic-retrieval-candidate-limit');
 		var retrievalTopK = document.getElementById('wpaic-retrieval-top-k');
+		var groundingButton = document.getElementById('wpaic-run-grounding-gate');
+		var groundingResult = document.getElementById('wpaic-grounding-result');
+		var groundingQuestion = document.getElementById('wpaic-grounding-question');
+		var groundingLimit = document.getElementById('wpaic-grounding-candidate-limit');
+		var groundingTopK = document.getElementById('wpaic-grounding-top-k');
 
 		if (connectionButton && connectionResult) {
 			connectionButton.addEventListener('click', function () {
@@ -466,6 +504,28 @@
 					retrievalButton,
 					retrievalResult,
 					retrievalHtml
+				);
+			});
+		}
+
+
+		if (groundingButton && groundingResult && groundingQuestion) {
+			groundingButton.addEventListener('click', function () {
+				var value = groundingQuestion.value.trim();
+				var limit = groundingLimit ? parseInt(groundingLimit.value, 10) : 100;
+				var topK = groundingTopK ? parseInt(groundingTopK.value, 10) : 5;
+				if (!value) {
+					groundingResult.className = 'wpaic-result is-error';
+					groundingResult.innerHTML = '<strong>失败</strong><p>请输入要测试的问题。</p>';
+					return;
+				}
+				postRequest(
+					'wpaic_grounding_gate_test',
+					{ question: value, candidate_limit: limit || 100, top_k: topK || 5 },
+					WPAICAdmin.groundingNonce,
+					groundingButton,
+					groundingResult,
+					groundingGateHtml
 				);
 			});
 		}
