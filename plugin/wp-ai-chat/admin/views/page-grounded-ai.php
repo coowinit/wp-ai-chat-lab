@@ -1,6 +1,6 @@
 <?php
 /**
- * v0.7.0 Stage 2 — Provider Boundary Integration Playground.
+ * v0.7.0 Stage 3 — Operational Validation Playground.
  *
  * @var int               $active_count Active Knowledge Store rows.
  * @var array<string,int> $usage_limits Current Usage Guard limits.
@@ -19,7 +19,7 @@ $model_name          = ! is_wp_error( $provider ) && method_exists( $provider, '
 ?>
 <div class="wrap wpaic-wrap wpaic-grounded-wrap">
 	<h1>WP AI Chat Lab</h1>
-	<p class="description">v<?php echo esc_html( WPAIC_VERSION ); ?> · Stage 2 — Provider Boundary Integration</p>
+	<p class="description">v<?php echo esc_html( WPAIC_VERSION ); ?> · Stage 3 — Operational Validation</p>
 
 	<div class="wpaic-grid wpaic-grounded-grid">
 		<div class="wpaic-card">
@@ -43,11 +43,11 @@ $model_name          = ! is_wp_error( $provider ) && method_exists( $provider, '
 				</div>
 
 				<h3>Usage Context</h3>
-				<p class="description">Stage 2 使用明确测试 Key 验证真实 Provider Boundary。原始 Key 不写入 Usage Counter Table，持久化的是 HMAC-SHA256 Hash。</p>
+				<p class="description">Stage 3 继续使用明确测试 Key 做低额度真实 Provider Boundary 验证。原始 Key 不写入 Usage Counter Table，持久化的是 HMAC-SHA256 Hash。</p>
 				<div class="wpaic-usage-fields">
-					<label><strong>Conversation Key</strong><input type="text" id="wpaic-grounding-conversation-key" class="regular-text" value="grounded-stage2-conversation-1"></label>
-					<label><strong>Visitor Key</strong><input type="text" id="wpaic-grounding-visitor-key" class="regular-text" value="grounded-stage2-visitor-1"></label>
-					<label><strong>Site Key</strong><input type="text" id="wpaic-grounding-site-key" class="regular-text" value="grounded-stage2-site"></label>
+					<label><strong>Conversation Key</strong><input type="text" id="wpaic-grounding-conversation-key" class="regular-text" value="grounded-stage3-conversation-1"></label>
+					<label><strong>Visitor Key</strong><input type="text" id="wpaic-grounding-visitor-key" class="regular-text" value="grounded-stage3-visitor-1"></label>
+					<label><strong>Site Key</strong><input type="text" id="wpaic-grounding-site-key" class="regular-text" value="grounded-stage3-site"></label>
 				</div>
 
 				<p><button type="button" id="wpaic-run-grounding-gate" class="button button-primary">生成 Grounded Answer</button></p>
@@ -57,7 +57,7 @@ $model_name          = ! is_wp_error( $provider ) && method_exists( $provider, '
 		</div>
 
 		<div class="wpaic-card">
-			<h2>Stage 2 边界</h2>
+			<h2>Stage 3 边界</h2>
 			<ul class="wpaic-plain-list">
 				<li>✓ Grounding Gate 仍优先</li>
 				<li>✓ Evidence Pack / Prompt Builder</li>
@@ -67,7 +67,7 @@ $model_name          = ! is_wp_error( $provider ) && method_exists( $provider, '
 				<li>✓ 成功响应后记录真实 Token Usage</li>
 				<li>✓ Usage BLOCK → AI Called = No / Token = 0</li>
 				<li>✓ clarify / no_answer 不进入 Usage Guard</li>
-				<li>— Stage 3 再做低额度综合校准与异常验证</li>
+				<li>✓ 低额度校准 / Scope 组合 / Local Day 运维验收</li>
 				<li>— 不做 Conversation History / Front-end Chat</li>
 				<li>— 不做 Monthly Cost Guard</li>
 			</ul>

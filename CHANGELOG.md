@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.7.0 — Stage 3 Limit Calibration & Operational Validation (Round 1 / Round 2 Validation Passed)
+
+- Kept DB Version at `1.1`; no schema change.
+- Kept the existing three Usage Guard scopes only: Conversation, Visitor Daily, Site Daily.
+- Added Stage 3 Operational Snapshot with WordPress timezone, local time, daily period key, and fixed scope precedence.
+- Added administrator-only Manual Lab Reset for selected current-context counters.
+- Reset is intentionally narrow: Conversation deletes only its lifetime row; Visitor / Site delete only the current WordPress-local-day row for the exact hashed test key.
+- No table-wide truncate or global quota reset was added.
+- Usage Guard diagnostics now show Provider Calls plus Prompt / Completion / Total Token counters for each scope.
+- Added the Stage 3 calibration matrix directly to the Usage Guard Playground.
+- Stage 3 Round 1 real WordPress validation passed: `2 / 3 / 5` boundary calibration, atomic block behavior, Conversation-only reset isolation, and WordPress Local Day diagnostics all matched expectations.
+- Round 2 initially used A–E Context Presets; real usage showed that the labels were too abstract for a learning-oriented Lab.
+- Refined Round 2 into six explicit Chinese test scenarios while keeping the same Context Keys and the same real `evaluate()` / `reserve()` backend paths.
+- Added plain-language Scope explanations: Conversation = current chat, Visitor = same visitor today, Site = whole site today.
+- Each scenario now auto-fills its test Keys and explains “what changed / what to do / expected result”.
+- The fixed Round 2 sequence still reaches `C=2 / V=2 / S=5`, then verifies Conversation-over-Site, Visitor-over-Site, and Site-only blocking in the real reservation path.
+- Recommended temporary validation limits remain `2 / 3 / 5`; production defaults are not changed before real calibration.
+- Grounded AI Playground labels were advanced to Stage 3 Operational Validation while preserving the verified Stage 2 Provider Boundary pipeline.
+- No Chat UI, Lead, Human Handoff, Agent, Cost Guard, Embedding, Vector, or RAG capability was added.
+- Stage 3 Round 2 real WordPress validation passed: all six scenario-driven checks matched the expected counters and block reasons.
+- Confirmed Conversation isolation, Visitor isolation, fixed `Conversation → Visitor → Site` precedence, and atomic no-increment behavior on blocked paths.
+- Current status: Round 1 / Round 2 Validation Passed; final minimal real Provider Operational Validation remains before Stage 3 seal.
+
 ## v0.7.0 — Stage 2 Provider Boundary Integration (Validation Passed)
 
 - Connected the verified Usage Guard to `WPAIC_Grounded_Answer_Service`.

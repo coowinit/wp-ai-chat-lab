@@ -497,6 +497,7 @@
 		data = data || {};
 		var decision = String(data.decision || (data.reserved ? 'allow' : 'block')).toLowerCase();
 		var scopes = data.scopes || {};
+		var operational = data.operational || {};
 		var order = ['conversation', 'visitor', 'site'];
 		var labels = { conversation: 'Conversation', visitor: 'Visitor Today', site: 'Site Today' };
 		var scopeHtml = order.map(function (scope) {
@@ -506,19 +507,24 @@
 				'<h4>' + escapeHtml(labels[scope]) + '</h4>' +
 				'<dl>' +
 					'<dt>Enabled</dt><dd>' + (item.enabled ? 'Yes' : 'No') + '</dd>' +
-					'<dt>Used</dt><dd>' + escapeHtml(item.used || 0) + '</dd>' +
+					'<dt>Calls</dt><dd>' + escapeHtml(item.provider_calls !== undefined ? item.provider_calls : (item.used || 0)) + '</dd>' +
 					'<dt>Limit</dt><dd>' + escapeHtml(item.limit || 0) + '</dd>' +
 					'<dt>Remaining</dt><dd>' + escapeHtml(remaining) + '</dd>' +
+					'<dt>Prompt Tokens</dt><dd>' + escapeHtml(item.prompt_tokens || 0) + '</dd>' +
+					'<dt>Completion Tokens</dt><dd>' + escapeHtml(item.completion_tokens || 0) + '</dd>' +
+					'<dt>Total Tokens</dt><dd>' + escapeHtml(item.total_tokens || 0) + '</dd>' +
 					'<dt>Period</dt><dd>' + escapeHtml(item.period_key || '') + '</dd>' +
 				'</dl>' +
 				'<p class="description wpaic-usage-hash">Hash: <code>' + escapeHtml(item.key_hash || '(missing)') + '</code></p>' +
 			'</div>';
 		}).join('');
+		var ops = operational.wordpress_local_day ? '<p class="description"><strong>WordPress Local:</strong> ' + escapeHtml(operational.wordpress_local_time || '') + ' · ' + escapeHtml(operational.wordpress_timezone || '') + ' · Daily Period <code>' + escapeHtml(operational.wordpress_local_day) + '</code></p>' : '';
+		var reset = data.reset ? '<p><strong>Lab Reset:</strong> ' + escapeHtml((data.reset_scopes || []).join(', ') || '—') + ' · Deleted Rows: ' + escapeHtml(JSON.stringify(data.deleted_rows || {})) + '</p>' : '';
 		return '<div class="wpaic-usage-decision is-' + escapeHtml(decision) + '">' +
 			'<p><strong>Decision: ' + escapeHtml(decision.toUpperCase()) + '</strong></p>' +
 			'<p>Reason Code: <code>' + escapeHtml(data.reason_code || '') + '</code>' +
 			(data.blocked_scope ? ' · Blocked Scope: <strong>' + escapeHtml(data.blocked_scope) + '</strong>' : '') + '</p>' +
-			(data.simulated_provider_call ? '<p><strong>Simulation:</strong> Reserved 1 Provider Call. AI Called = No · Token Usage = 0.</p>' : '') +
+			(data.simulated_provider_call ? '<p><strong>Simulation:</strong> Reserved 1 Provider Call. AI Called = No · Token Usage = 0.</p>' : '') + reset + ops +
 			'<div class="wpaic-usage-scopes">' + scopeHtml + '</div>' +
 		'</div>';
 	}
@@ -560,10 +566,20 @@
 		var groundingSiteKey = document.getElementById('wpaic-grounding-site-key');
 		var usageCheckButton = document.getElementById('wpaic-usage-check');
 		var usageSimulateButton = document.getElementById('wpaic-usage-simulate');
+		var usageResetButton = document.getElementById('wpaic-usage-reset');
 		var usageResult = document.getElementById('wpaic-usage-result');
 		var usageConversationKey = document.getElementById('wpaic-usage-conversation-key');
 		var usageVisitorKey = document.getElementById('wpaic-usage-visitor-key');
 		var usageSiteKey = document.getElementById('wpaic-usage-site-key');
+		var resetConversation = document.getElementById('wpaic-reset-conversation');
+		var resetVisitor = document.getElementById('wpaic-reset-visitor');
+		var resetSite = document.getElementById('wpaic-reset-site');
+		var usageSceneTitle = document.getElementById('wpaic-usage-scene-title');
+		var usageSceneSummary = document.getElementById('wpaic-usage-scene-summary');
+		var usageSceneChange = document.getElementById('wpaic-usage-scene-change');
+		var usageSceneAction = document.getElementById('wpaic-usage-scene-action');
+		var usageSceneExpect = document.getElementById('wpaic-usage-scene-expect');
+		var usagePresetButtons = document.querySelectorAll('.wpaic-usage-preset');
 
 		if (connectionButton && connectionResult) {
 			connectionButton.addEventListener('click', function () {
@@ -685,6 +701,24 @@
 		}
 
 
+		if (usagePresetButtons.length && usageConversationKey && usageVisitorKey && usageSiteKey) {
+			usagePresetButtons.forEach(function (button) {
+				button.addEventListener('click', function () {
+					usageConversationKey.value = button.getAttribute('data-conversation') || '';
+					usageVisitorKey.value = button.getAttribute('data-visitor') || '';
+					usageSiteKey.value = button.getAttribute('data-site') || 'site';
+					usagePresetButtons.forEach(function (item) { item.classList.remove('is-active'); });
+					button.classList.add('is-active');
+
+					if (usageSceneTitle) usageSceneTitle.textContent = button.getAttribute('data-title') || '当前测试场景';
+					if (usageSceneSummary) usageSceneSummary.textContent = button.getAttribute('data-summary') || '';
+					if (usageSceneChange) usageSceneChange.textContent = button.getAttribute('data-change') || '';
+					if (usageSceneAction) usageSceneAction.textContent = button.getAttribute('data-action') || '';
+					if (usageSceneExpect) usageSceneExpect.textContent = button.getAttribute('data-expect') || '';
+				});
+			});
+		}
+
 		function usagePayload() {
 			return {
 				conversation_key: usageConversationKey ? usageConversationKey.value.trim() : '',
@@ -702,6 +736,22 @@
 		if (usageSimulateButton && usageResult) {
 			usageSimulateButton.addEventListener('click', function () {
 				postRequest('wpaic_usage_guard_simulate', usagePayload(), WPAICAdmin.usageNonce, usageSimulateButton, usageResult, usageGuardHtml);
+			});
+		}
+
+		if (usageResetButton && usageResult) {
+			usageResetButton.addEventListener('click', function () {
+				var payload = usagePayload();
+				payload.reset_conversation = resetConversation && resetConversation.checked ? '1' : '0';
+				payload.reset_visitor = resetVisitor && resetVisitor.checked ? '1' : '0';
+				payload.reset_site = resetSite && resetSite.checked ? '1' : '0';
+				if (payload.reset_conversation === '0' && payload.reset_visitor === '0' && payload.reset_site === '0') {
+					usageResult.className = 'wpaic-result is-error';
+					usageResult.innerHTML = '<strong>失败</strong><p>请至少选择一个要重置的 Usage Scope。</p>';
+					return;
+				}
+				if (!window.confirm('只重置当前测试 Key 对应的所选 Usage Counter，继续吗？')) return;
+				postRequest('wpaic_usage_guard_reset', payload, WPAICAdmin.usageNonce, usageResetButton, usageResult, usageGuardHtml);
 			});
 		}
 

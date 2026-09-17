@@ -173,6 +173,73 @@ class WPAIC_Usage_Counter_Repository {
 		return $this->get_scope_states( $context, $limits );
 	}
 
+	/**
+	 * Reset selected counters for the exact current lab context.
+	 *
+	 * This is intentionally narrow: Conversation deletes its lifetime row, while
+	 * Visitor / Site delete only the current WordPress-local-day row. It is used
+	 * by the administrator-only Stage 3 validation playground and never performs
+	 * a table-wide truncate.
+	 *
+	 * @param WPAIC_Usage_Context $context Usage context.
+	 * @param array<int,string>   $scopes  Selected scopes.
+	 * @return array<string,mixed>|WP_Error
+	 */
+	public function reset_context_counters( WPAIC_Usage_Context $context, array $scopes ) {
+		global $wpdb;
+		$table   = self::get_table_name();
+		$allowed = array( 'conversation', 'visitor', 'site' );
+		$scopes  = array_values( array_unique( array_intersect( $allowed, array_map( 'sanitize_key', $scopes ) ) ) );
+
+		if ( empty( $scopes ) ) {
+			return new WP_Error( 'usage_reset_no_scopes', '请至少选择一个要重置的 Usage Scope。' );
+		}
+
+		$targets = array();
+		foreach ( $scopes as $scope ) {
+			$hash = $context->get_hash( $scope );
+			if ( '' === $hash ) {
+				return new WP_Error( 'missing_usage_context', '重置所选 Usage Scope 时缺少必要 Context。', array( 'scope' => $scope ) );
+			}
+			$targets[] = array(
+				'scope'  => $scope,
+				'hash'   => $hash,
+				'period' => $this->get_period_key( $scope ),
+			);
+		}
+
+		$deleted = array();
+		$wpdb->query( 'START TRANSACTION' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		try {
+			foreach ( $targets as $target ) {
+				$result = $wpdb->query(
+					$wpdb->prepare(
+						"DELETE FROM {$table} WHERE scope_type=%s AND scope_key_hash=%s AND period_key=%s",
+						$target['scope'], $target['hash'], $target['period']
+					)
+				); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				if ( false === $result ) {
+					throw new RuntimeException( 'Usage counter reset failed for scope: ' . $target['scope'] );
+				}
+				$deleted[ $target['scope'] ] = (int) $result;
+			}
+			$wpdb->query( 'COMMIT' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		} catch ( Throwable $e ) {
+			$wpdb->query( 'ROLLBACK' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			return new WP_Error( 'usage_guard_unavailable', $e->getMessage() );
+		}
+
+		return array(
+			'reset'        => true,
+			'reset_scopes' => $scopes,
+			'deleted_rows' => $deleted,
+			'period_keys'  => array_reduce( $targets, function ( $carry, $target ) {
+				$carry[ $target['scope'] ] = $target['period'];
+				return $carry;
+			}, array() ),
+		);
+	}
+
 	/** @return array<string,array<string,mixed>> */
 	public function get_scope_states( WPAIC_Usage_Context $context, array $limits ) {
 		$out = array();

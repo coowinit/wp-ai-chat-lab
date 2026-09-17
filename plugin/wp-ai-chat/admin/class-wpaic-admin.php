@@ -111,6 +111,7 @@ class WPAIC_Admin {
 		add_action( 'wp_ajax_wpaic_grounding_gate_test', array( $this, 'ajax_grounding_gate_test' ) );
 		add_action( 'wp_ajax_wpaic_usage_guard_check', array( $this, 'ajax_usage_guard_check' ) );
 		add_action( 'wp_ajax_wpaic_usage_guard_simulate', array( $this, 'ajax_usage_guard_simulate' ) );
+		add_action( 'wp_ajax_wpaic_usage_guard_reset', array( $this, 'ajax_usage_guard_reset' ) );
 	}
 
 	/**
@@ -521,6 +522,9 @@ class WPAIC_Admin {
 		$usage_settings = is_array( $usage_settings ) ? $usage_settings : array();
 		$db_version = (string) get_option( WPAIC_OPTION_DB_VERSION, '' );
 		$usage_table = WPAIC_DB_Installer::get_usage_table_name();
+		$wp_timezone = wp_timezone_string();
+		$wp_local_day = current_time( 'Y-m-d' );
+		$wp_local_time = current_time( 'mysql' );
 		include WPAIC_PLUGIN_DIR . 'admin/views/page-usage-guard.php';
 	}
 
@@ -827,6 +831,7 @@ class WPAIC_Admin {
 		$this->guard_usage_ajax_request();
 		$context = $this->usage_context_from_request();
 		$result  = $this->usage_guard->evaluate( $context );
+		$result['operational'] = $this->usage_operational_context();
 		wp_send_json_success( $result );
 	}
 
@@ -839,7 +844,39 @@ class WPAIC_Admin {
 		$result['simulated_provider_call'] = ! empty( $result['reserved'] );
 		$result['ai_called'] = false;
 		$result['token_usage'] = 0;
+		$result['operational'] = $this->usage_operational_context();
 		wp_send_json_success( $result );
+	}
+
+	/** Reset only selected rows for the exact Stage 3 lab context. @return void */
+	public function ajax_usage_guard_reset() {
+		$this->guard_usage_ajax_request();
+		$context = $this->usage_context_from_request();
+		$scopes  = array();
+		foreach ( array( 'conversation', 'visitor', 'site' ) as $scope ) {
+			$field = 'reset_' . $scope;
+			if ( isset( $_POST[ $field ] ) && '1' === sanitize_text_field( wp_unslash( $_POST[ $field ] ) ) ) {
+				$scopes[] = $scope;
+			}
+		}
+
+		$result = $this->usage_repository->reset_context_counters( $context, $scopes );
+		if ( is_wp_error( $result ) ) { $this->send_error( $result ); }
+		$result['decision']    = 'reset';
+		$result['reason_code'] = 'lab_counters_reset';
+		$result['scopes']      = $this->usage_guard->get_scope_states( $context );
+		$result['operational'] = $this->usage_operational_context();
+		wp_send_json_success( $result );
+	}
+
+	/** @return array<string,mixed> */
+	protected function usage_operational_context() {
+		return array(
+			'wordpress_timezone'  => wp_timezone_string(),
+			'wordpress_local_day' => current_time( 'Y-m-d' ),
+			'wordpress_local_time'=> current_time( 'mysql' ),
+			'scope_precedence'    => array( 'conversation', 'visitor', 'site' ),
+		);
 	}
 
 	/** @return WPAIC_Usage_Context */
