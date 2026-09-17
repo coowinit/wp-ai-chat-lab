@@ -80,6 +80,101 @@
 			'<div class="wpaic-preview-section"><h3>Saved Normalized Content</h3><pre>' + escapeHtml(row.content || '(empty)') + '</pre></div>';
 	}
 
+	function fullSyncHtml(data) {
+		var stats = data.stats || {};
+		var phaseLabel = data.phase === 'reconcile' ? 'Reconciliation' : (data.phase === 'done' ? 'Done' : 'Source Sync');
+		var progress = Math.max(0, Math.min(100, parseInt(data.percent, 10) || 0));
+		var current = parseInt(data.phase_processed, 10) || 0;
+		var total = parseInt(data.phase_total, 10) || 0;
+		var errors = Array.isArray(data.errors) ? data.errors : [];
+		var errorHtml = '';
+
+		if (errors.length) {
+			errorHtml = '<div class="wpaic-full-sync-errors"><strong>Recent Errors</strong><ul>' + errors.map(function (item) {
+				return '<li>ID ' + escapeHtml(item.post_id) + ' · ' + escapeHtml(item.code || '') + ' · ' + escapeHtml(item.message || '') + '</li>';
+			}).join('') + '</ul></div>';
+		}
+
+		return '<div class="wpaic-full-sync-head">' +
+			'<strong>' + escapeHtml(phaseLabel) + '</strong>' +
+			'<span>' + escapeHtml(current) + ' / ' + escapeHtml(total) + '</span>' +
+		'</div>' +
+		'<div class="wpaic-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + progress + '"><span style="width:' + progress + '%"></span></div>' +
+		'<div class="wpaic-full-sync-stats">' +
+			'<div><span>Processed</span><strong>' + escapeHtml(stats.processed || 0) + '</strong></div>' +
+			'<div><span>Created</span><strong>' + escapeHtml(stats.created || 0) + '</strong></div>' +
+			'<div><span>Updated</span><strong>' + escapeHtml(stats.updated || 0) + '</strong></div>' +
+			'<div><span>Unchanged</span><strong>' + escapeHtml(stats.unchanged || 0) + '</strong></div>' +
+			'<div><span>Reactivated</span><strong>' + escapeHtml(stats.reactivated || 0) + '</strong></div>' +
+			'<div><span>Deactivated</span><strong>' + escapeHtml(stats.deactivated || 0) + '</strong></div>' +
+			'<div><span>Errors</span><strong>' + escapeHtml(stats.errors || 0) + '</strong></div>' +
+		'</div>' +
+		'<p class="description">Eligible Sources: ' + escapeHtml(data.sync_total || 0) + ' · Reconcile Candidates: ' + escapeHtml(data.reconcile_total || 0) + '</p>' +
+		(data.done ? '<p><strong>Full Sync 完成。</strong> 刷新页面可查看最新 Summary 与 Store Rows。</p>' : '') +
+		errorHtml;
+	}
+
+	function ajaxJson(action, payload, nonce) {
+		var body = new URLSearchParams();
+		body.append('action', action);
+		body.append('nonce', nonce);
+		Object.keys(payload || {}).forEach(function (key) {
+			body.append(key, payload[key]);
+		});
+
+		return fetch(WPAICAdmin.ajaxUrl, {
+			method: 'POST',
+			credentials: 'same-origin',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+			},
+			body: body.toString()
+		}).then(function (response) {
+			return response.json().catch(function () {
+				throw new Error(WPAICAdmin.i18n.error);
+			});
+		}).then(function (json) {
+			if (!json.success) {
+				var message = json.data && json.data.message ? json.data.message : WPAICAdmin.i18n.error;
+				var error = new Error(message);
+				error.code = json.data && json.data.code ? json.data.code : '';
+				throw error;
+			}
+			return json.data || {};
+		});
+	}
+
+	function runFullSync(button, resultEl) {
+		if (!button || button.disabled || !resultEl) return;
+
+		setBusy(button, true);
+		resultEl.className = 'wpaic-result is-loading';
+		resultEl.textContent = '正在准备 Full Sync…';
+
+		function render(data) {
+			resultEl.className = data.done ? 'wpaic-result is-success' : 'wpaic-result is-loading';
+			resultEl.innerHTML = fullSyncHtml(data);
+		}
+
+		function next(data) {
+			render(data);
+			if (data.done) {
+				setBusy(button, false);
+				return;
+			}
+			return ajaxJson('wpaic_run_full_sync_batch', { token: data.token }, WPAICAdmin.storeNonce)
+				.then(next);
+		}
+
+		ajaxJson('wpaic_start_full_sync', {}, WPAICAdmin.storeNonce)
+			.then(next)
+			.catch(function (error) {
+				resultEl.className = 'wpaic-result is-error';
+				resultEl.innerHTML = '<strong>Full Sync 失败</strong><p>' + escapeHtml(error.message || WPAICAdmin.i18n.error) + '</p>' + (error.code ? '<code>' + escapeHtml(error.code) + '</code>' : '');
+				setBusy(button, false);
+			});
+	}
+
 	function setBusy(button, busy) {
 		if (!button) return;
 		if (busy) {
@@ -160,6 +255,8 @@
 		var storeSyncButton = document.getElementById('wpaic-sync-store-source');
 		var storeSyncResult = document.getElementById('wpaic-store-sync-result');
 		var storePostId = document.getElementById('wpaic-store-post-id');
+		var fullSyncButton = document.getElementById('wpaic-start-full-sync');
+		var fullSyncResult = document.getElementById('wpaic-full-sync-result');
 
 		if (connectionButton && connectionResult) {
 			connectionButton.addEventListener('click', function () {
@@ -220,6 +317,12 @@
 					storeSyncResult,
 					storeSyncHtml
 				);
+			});
+		}
+
+		if (fullSyncButton && fullSyncResult) {
+			fullSyncButton.addEventListener('click', function () {
+				runFullSync(fullSyncButton, fullSyncResult);
 			});
 		}
 

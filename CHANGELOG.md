@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Fixed
+
+- 修复 Knowledge Store 分页链接中查询参数分隔符被错误编码为 `#038;`，导致点击页码无法切换的问题。
+
 ### v0.4.0 — Knowledge Store & Lifecycle (Design Ready)
 
 #### Design
@@ -50,10 +54,40 @@
 - Store Diagnostics 增加 Inactive Reason，并展示 Stage 2 Lifecycle 边界。
 - Stage 2 继续只使用 Single-source Sync；Batch / Reconcile 仍留到 Stage 3，自动保存 Hooks 仍留到 Stage 4。
 
-#### Stage 2 Validation Status
+#### Stage 2 Validation Passed
 
-- 当前状态：Code Implemented — Awaiting Real-world Validation。
-- 建议优先验证 `publish → draft → inactive → publish → reactivated`，再测试 trash、source disabled 与 permanent delete。
+- `publish → draft → inactive / not_published`：通过。
+- `draft → publish → reactivated`：通过。
+- `publish → trash → inactive / not_published`：通过。
+- 永久删除 Source → `source_deleted`：通过。
+- 禁用 Knowledge Source Type → `source_disabled`：通过。
+- 重新启用 Source Type → `reactivated`：通过。
+- Lifecycle 状态变化但 AI-visible 内容未变化时 Source Hash 保持稳定：通过。
+- Inactive Store Row 保留最后有效 Snapshot 与 Hash：通过。
+
+#### Stage 3 — Batch Sync & Reconciliation (Code Implemented)
+
+- 新增 `WPAIC_Knowledge_Batch_Sync`。
+- 新增可见 AJAX Full Sync，不引入 Cron / Queue。
+- Full Sync 在开始时冻结当前 eligible WordPress ID 集合，并按默认每批 20 条执行现有 Lifecycle Sync。
+- 新增 `wpaic_full_sync_batch_size` Filter，可在 5~50 之间调整批量大小。
+- Full Sync 支持中断后在短时锁有效期内继续当前任务，避免重复并发任务。
+- 新增进度与统计：Processed / Created / Updated / Unchanged / Reactivated / Deactivated / Errors。
+- 所有 Source Batch 完成后进入 Reconciliation。
+- Reconciliation 会检查 Store 中仍为 active、但已不属于当前 eligible Source 集合的 Row，并通过现有 Lifecycle Manager 软停用。
+- 可处理 Draft / Trash / Deleted / Source Disabled / Source Missing 等 stale active Row。
+- 新增 Last Full Sync 持久化摘要。
+- Knowledge Store 页面新增 Full Sync UI、进度条、最终 Summary 与 Last Full Sync。
+- 首次真实 Full Sync 已验证 138 条正式 Knowledge、Errors 0。
+- Knowledge Store Rows 从“最近 10 条”升级为完整分页浏览：默认每页 20 条，支持上一页 / 页码 / 下一页。
+- 列表继续按 `updated_at DESC, id DESC` 展示，分页只解决 Store 可见性，不引入搜索、筛选或批量管理。
+- Single-source Sync 继续保留作为诊断工具。
+- Stage 3 仍不加入自动保存 Hooks；Incremental Sync 留到 Stage 4。
+
+#### Stage 3 Validation Status
+
+- 当前状态：Real-world Validation In Progress。首次 Full Sync 已跑通，当前继续验证第二次 Full Sync 的 `unchanged` 幂等性与 Reconciliation。
+- 建议优先验证首次 Full Sync、多 Batch 进度、第二次 Full Sync 大量 `unchanged`、无重复 `source_id`，再验证 disabled / draft / deleted stale rows 的 Reconciliation。
 
 ---
 

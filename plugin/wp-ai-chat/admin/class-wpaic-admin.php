@@ -26,6 +26,9 @@ class WPAIC_Admin {
 	/** @var WPAIC_Knowledge_Lifecycle_Manager */
 	protected $lifecycle;
 
+	/** @var WPAIC_Knowledge_Batch_Sync */
+	protected $batch_sync;
+
 	/** @var string */
 	protected $ai_page_hook = '';
 
@@ -41,13 +44,15 @@ class WPAIC_Admin {
 	 * @param WPAIC_Generic_Extractor             $extractor        Generic source extractor.
 	 * @param WPAIC_Knowledge_Store_Repository    $store_repository Knowledge Store repository.
 	 * @param WPAIC_Knowledge_Lifecycle_Manager   $lifecycle        Lifecycle orchestrator.
+	 * @param WPAIC_Knowledge_Batch_Sync          $batch_sync       Batch full-sync coordinator.
 	 */
-	public function __construct( WPAIC_AI_Manager $manager, WPAIC_Source_Discovery $discovery, WPAIC_Generic_Extractor $extractor, WPAIC_Knowledge_Store_Repository $store_repository, WPAIC_Knowledge_Lifecycle_Manager $lifecycle ) {
+	public function __construct( WPAIC_AI_Manager $manager, WPAIC_Source_Discovery $discovery, WPAIC_Generic_Extractor $extractor, WPAIC_Knowledge_Store_Repository $store_repository, WPAIC_Knowledge_Lifecycle_Manager $lifecycle, WPAIC_Knowledge_Batch_Sync $batch_sync ) {
 		$this->manager          = $manager;
 		$this->discovery        = $discovery;
 		$this->extractor        = $extractor;
 		$this->store_repository = $store_repository;
 		$this->lifecycle        = $lifecycle;
+		$this->batch_sync       = $batch_sync;
 
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
@@ -56,6 +61,8 @@ class WPAIC_Admin {
 		add_action( 'wp_ajax_wpaic_test_chat', array( $this, 'ajax_test_chat' ) );
 		add_action( 'wp_ajax_wpaic_preview_source', array( $this, 'ajax_preview_source' ) );
 		add_action( 'wp_ajax_wpaic_sync_store_source', array( $this, 'ajax_sync_store_source' ) );
+		add_action( 'wp_ajax_wpaic_start_full_sync', array( $this, 'ajax_start_full_sync' ) );
+		add_action( 'wp_ajax_wpaic_run_full_sync_batch', array( $this, 'ajax_run_full_sync_batch' ) );
 	}
 
 	/**
@@ -206,18 +213,29 @@ class WPAIC_Admin {
 			return;
 		}
 
+		$css_file = WPAIC_PLUGIN_DIR . 'admin/assets/admin.css';
+		$js_file  = WPAIC_PLUGIN_DIR . 'admin/assets/admin.js';
+
+		// Stage builds can change admin assets without changing the semantic
+		// plugin version. Include a content hash in the asset version so an
+		// upgraded build cannot accidentally reuse an older cached admin.js.
+		$css_hash    = is_readable( $css_file ) ? md5_file( $css_file ) : false;
+		$js_hash     = is_readable( $js_file ) ? md5_file( $js_file ) : false;
+		$css_version = $css_hash ? WPAIC_VERSION . '.' . substr( $css_hash, 0, 8 ) : WPAIC_VERSION;
+		$js_version  = $js_hash ? WPAIC_VERSION . '.' . substr( $js_hash, 0, 8 ) : WPAIC_VERSION;
+
 		wp_enqueue_style(
 			'wpaic-admin',
 			WPAIC_PLUGIN_URL . 'admin/assets/admin.css',
 			array(),
-			WPAIC_VERSION
+			$css_version
 		);
 
 		wp_enqueue_script(
 			'wpaic-admin',
 			WPAIC_PLUGIN_URL . 'admin/assets/admin.js',
 			array(),
-			WPAIC_VERSION,
+			$js_version,
 			true
 		);
 
@@ -345,7 +363,16 @@ class WPAIC_Admin {
 			'inactive' => $this->store_repository->count_by_status( 'inactive' ),
 			'total'    => $this->store_repository->count_by_status(),
 		);
-		$store_rows = $this->store_repository->list_rows( 10 );
+
+		$store_per_page    = 20;
+		$store_total_pages = max( 1, (int) ceil( $store_summary['total'] / $store_per_page ) );
+		$store_page        = isset( $_GET['store_paged'] ) ? max( 1, absint( wp_unslash( $_GET['store_paged'] ) ) ) : 1;
+		$store_page        = min( $store_page, $store_total_pages );
+		$store_offset      = ( $store_page - 1 ) * $store_per_page;
+		$store_rows        = $this->store_repository->list_rows( $store_per_page, $store_offset );
+
+		$last_full_sync = get_option( WPAIC_OPTION_LAST_FULL_SYNC, array() );
+		$last_full_sync = is_array( $last_full_sync ) ? $last_full_sync : array();
 
 		include WPAIC_PLUGIN_DIR . 'admin/views/page-knowledge-store.php';
 	}
@@ -519,6 +546,39 @@ class WPAIC_Admin {
 	}
 
 	/**
+	 * Start or resume a visible Stage 3 Full Sync.
+	 *
+	 * @return void
+	 */
+	public function ajax_start_full_sync() {
+		$this->guard_store_ajax_request();
+
+		$result = $this->batch_sync->start();
+		if ( is_wp_error( $result ) ) {
+			$this->send_error( $result );
+		}
+
+		wp_send_json_success( $result );
+	}
+
+	/**
+	 * Process one Full Sync AJAX batch.
+	 *
+	 * @return void
+	 */
+	public function ajax_run_full_sync_batch() {
+		$this->guard_store_ajax_request();
+
+		$token  = isset( $_POST['token'] ) ? sanitize_text_field( wp_unslash( $_POST['token'] ) ) : '';
+		$result = $this->batch_sync->run_batch( $token );
+		if ( is_wp_error( $result ) ) {
+			$this->send_error( $result );
+		}
+
+		wp_send_json_success( $result );
+	}
+
+	/**
 	 * @return array<int,string>
 	 */
 	protected function get_enabled_sources() {
@@ -535,6 +595,25 @@ class WPAIC_Admin {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'wp-ai-chat-lab' ) );
 		}
+	}
+
+	/**
+	 * Guard Knowledge Store AJAX operations.
+	 *
+	 * @return void
+	 */
+	protected function guard_store_ajax_request() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array(
+					'code'    => 'wpaic_forbidden',
+					'message' => '你没有执行此操作的权限。',
+				),
+				403
+			);
+		}
+
+		check_ajax_referer( 'wpaic_store_sync', 'nonce' );
 	}
 
 	/**

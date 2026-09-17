@@ -126,13 +126,44 @@ class WPAIC_Knowledge_Store_Repository {
 	/**
 	 * Return a small diagnostic list only; this is not a management editor.
 	 *
-	 * @param int $limit Row limit.
+	 * @param int $limit  Row limit.
+	 * @param int $offset Row offset.
 	 * @return array<int,array<string,mixed>>
 	 */
-	public function list_rows( $limit = 10 ) {
-		$limit = max( 1, min( 50, absint( $limit ) ) );
-		$rows  = $this->wpdb->get_results(
-			$this->wpdb->prepare( "SELECT * FROM {$this->table} ORDER BY updated_at DESC, id DESC LIMIT %d", $limit ),
+	public function list_rows( $limit = 10, $offset = 0 ) {
+		$limit  = max( 1, min( 100, absint( $limit ) ) );
+		$offset = max( 0, absint( $offset ) );
+		$rows   = $this->wpdb->get_results(
+			$this->wpdb->prepare( "SELECT * FROM {$this->table} ORDER BY updated_at DESC, id DESC LIMIT %d OFFSET %d", $limit, $offset ),
+			ARRAY_A
+		);
+
+		if ( ! is_array( $rows ) ) {
+			return array();
+		}
+
+		return array_map( array( $this, 'hydrate_row' ), $rows );
+	}
+
+	/**
+	 * Return lightweight rows for one Store status. Used by Full Sync
+	 * reconciliation to find active snapshots that are no longer part of the
+	 * current eligible source set.
+	 *
+	 * @param string $status Store status.
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function list_status_rows( $status ) {
+		$status = sanitize_key( $status );
+		if ( '' === $status ) {
+			return array();
+		}
+
+		$rows = $this->wpdb->get_results(
+			$this->wpdb->prepare(
+				"SELECT source_id, object_id, post_type, store_status, source_hash FROM {$this->table} WHERE store_status = %s ORDER BY id ASC",
+				$status
+			),
 			ARRAY_A
 		);
 

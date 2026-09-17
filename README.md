@@ -3,8 +3,8 @@
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
 **当前稳定 Release：v0.3.1 · Structured Source Validation**  
-**当前开发：v0.4.0 · Knowledge Store & Lifecycle（Stage 2 Code Build）**  
-**当前验证：Stage 1 已通过；Stage 2 Lifecycle 等待真实环境验证**
+**当前开发：v0.4.0 · Knowledge Store & Lifecycle（Stage 3 Code Build）**  
+**当前验证：Stage 1 / Stage 2 已通过；Stage 3 Batch Sync & Reconciliation 等待真实环境验证**
 
 ## v0.3.1 开发状态
 
@@ -71,7 +71,7 @@ docs/versions/v0.3.1.md
 
 ## v0.4.0 设计状态
 
-`v0.4.0 — Knowledge Store & Lifecycle` 已完成正式设计。Stage 1 — Store Foundation 已通过真实环境验证，当前进入 Stage 2 — Lifecycle 第一轮代码实现。
+`v0.4.0 — Knowledge Store & Lifecycle` 已完成正式设计。Stage 1 — Store Foundation 与 Stage 2 — Lifecycle 均已通过真实环境验证，当前进入 Stage 3 — Batch Sync & Reconciliation 第一轮代码实现。
 
 这一阶段第一次把已经标准化的 Unified Knowledge Source 持久化为可重建的 AI Read Model：
 
@@ -123,7 +123,9 @@ Minimal Store Diagnostics
 
 覆盖升级不依赖重新激活：插件启动时会通过 DB Version 检查执行幂等 `dbDelta()`。真实环境已经验证 Product / Post / Manual Knowledge 可以持久化，`created → unchanged → updated → Hash Restore` 正常，且 `source_id` 不重复。
 
-Stage 2 当前新增 Eligibility Lifecycle：Draft / Trash / Disabled / Deleted 可把已有 Store Row 软停用，重新满足条件后 `reactivated`；Inactive Row 保留最后有效 AI-visible Snapshot。当前状态：**Stage 2 Code Implemented — Awaiting Real-world Validation**。
+Stage 2 Eligibility Lifecycle 已通过真实环境验证：Draft / Trash / Disabled / Deleted 均能把已有 Store Row 软停用，重新满足条件后 `reactivated`；Inactive Row 保留最后有效 AI-visible Snapshot 与 Hash。
+
+Stage 3 当前新增可见 AJAX Batch Full Sync、Progress / Summary 与最终 Reconciliation。真实网站首次 Full Sync 已处理 138 条正式 Knowledge、Errors 0；同时根据真实使用反馈，Knowledge Store Rows 已增加每页 20 条的轻量分页，避免 Full Sync 后 100+ Row 只能查看最近少量记录。当前状态：**Stage 3 Real-world Validation In Progress**。
 
 ## v0.2.0 实测状态
 

@@ -21,6 +21,7 @@ define( 'WPAIC_OPTION_SETTINGS', 'wpaic_settings' );
 define( 'WPAIC_OPTION_KNOWLEDGE_SOURCES', 'wpaic_enabled_sources' );
 define( 'WPAIC_DB_VERSION', '1.0' );
 define( 'WPAIC_OPTION_DB_VERSION', 'wpaic_db_version' );
+define( 'WPAIC_OPTION_LAST_FULL_SYNC', 'wpaic_last_full_sync' );
 
 require_once WPAIC_PLUGIN_DIR . 'includes/ai/interface-wpaic-ai-provider.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/ai/class-wpaic-deepseek-provider.php';
@@ -40,6 +41,7 @@ require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-structured-sourc
 require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-db-installer.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-knowledge-store-repository.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-knowledge-lifecycle-manager.php';
+require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-knowledge-batch-sync.php';
 
 require_once WPAIC_PLUGIN_DIR . 'admin/class-wpaic-admin.php';
 
@@ -66,6 +68,10 @@ function wpaic_ensure_options() {
 
 	if ( false === get_option( WPAIC_OPTION_KNOWLEDGE_SOURCES, false ) ) {
 		add_option( WPAIC_OPTION_KNOWLEDGE_SOURCES, array(), '', false );
+	}
+
+	if ( false === get_option( WPAIC_OPTION_LAST_FULL_SYNC, false ) ) {
+		add_option( WPAIC_OPTION_LAST_FULL_SYNC, array(), '', false );
 	}
 }
 
@@ -106,9 +112,10 @@ function wpaic_bootstrap() {
 
 	$store_repository = new WPAIC_Knowledge_Store_Repository();
 	$lifecycle        = new WPAIC_Knowledge_Lifecycle_Manager( $extractor, $discovery, $store_repository );
+	$batch_sync       = new WPAIC_Knowledge_Batch_Sync( $discovery, $store_repository, $lifecycle );
 
 	if ( is_admin() ) {
-		new WPAIC_Admin( $manager, $discovery, $extractor, $store_repository, $lifecycle );
+		new WPAIC_Admin( $manager, $discovery, $extractor, $store_repository, $lifecycle, $batch_sync );
 	}
 }
 add_action( 'plugins_loaded', 'wpaic_bootstrap' );
