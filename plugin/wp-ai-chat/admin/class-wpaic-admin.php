@@ -35,6 +35,12 @@ class WPAIC_Admin {
 	/** @var WPAIC_Grounding_Gate */
 	protected $grounding_gate;
 
+	/** @var WPAIC_Evidence_Pack_Builder */
+	protected $evidence_builder;
+
+	/** @var WPAIC_Grounded_Prompt_Builder */
+	protected $prompt_builder;
+
 	/** @var string */
 	protected $ai_page_hook = '';
 
@@ -59,8 +65,10 @@ class WPAIC_Admin {
 	 * @param WPAIC_Knowledge_Batch_Sync          $batch_sync       Batch full-sync coordinator.
 	 * @param WPAIC_Local_Retriever                $local_retriever  Local retrieval coordinator.
 	 * @param WPAIC_Grounding_Gate                 $grounding_gate   Application-layer grounding gate.
+	 * @param WPAIC_Evidence_Pack_Builder          $evidence_builder Evidence Pack builder.
+	 * @param WPAIC_Grounded_Prompt_Builder        $prompt_builder   Grounded Prompt builder.
 	 */
-	public function __construct( WPAIC_AI_Manager $manager, WPAIC_Source_Discovery $discovery, WPAIC_Generic_Extractor $extractor, WPAIC_Knowledge_Store_Repository $store_repository, WPAIC_Knowledge_Lifecycle_Manager $lifecycle, WPAIC_Knowledge_Batch_Sync $batch_sync, WPAIC_Local_Retriever $local_retriever, WPAIC_Grounding_Gate $grounding_gate ) {
+	public function __construct( WPAIC_AI_Manager $manager, WPAIC_Source_Discovery $discovery, WPAIC_Generic_Extractor $extractor, WPAIC_Knowledge_Store_Repository $store_repository, WPAIC_Knowledge_Lifecycle_Manager $lifecycle, WPAIC_Knowledge_Batch_Sync $batch_sync, WPAIC_Local_Retriever $local_retriever, WPAIC_Grounding_Gate $grounding_gate, WPAIC_Evidence_Pack_Builder $evidence_builder, WPAIC_Grounded_Prompt_Builder $prompt_builder ) {
 		$this->manager          = $manager;
 		$this->discovery        = $discovery;
 		$this->extractor        = $extractor;
@@ -69,6 +77,8 @@ class WPAIC_Admin {
 		$this->batch_sync       = $batch_sync;
 		$this->local_retriever  = $local_retriever;
 		$this->grounding_gate   = $grounding_gate;
+		$this->evidence_builder = $evidence_builder;
+		$this->prompt_builder   = $prompt_builder;
 
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
@@ -689,11 +699,11 @@ class WPAIC_Admin {
 	}
 
 	/**
-	 * Run v0.6.0 Stage 1 Retrieval + Grounding Gate diagnostics.
+	 * Run v0.6.0 Stage 2 Retrieval + Gate + Evidence / Prompt diagnostics.
 	 *
-	 * This endpoint deliberately never calls WPAIC_AI_Manager. Even when the
-	 * gate returns allow_answer / allow_ai=true, Stage 1 only proves policy
-	 * permission and always reports AI Called = false.
+	 * This endpoint deliberately never calls WPAIC_AI_Manager. When the gate
+	 * allows the pipeline, Stage 2 builds only a bounded Evidence Pack and
+	 * provider-agnostic Prompt Preview; AI Called remains false.
 	 *
 	 * @return void
 	 */
@@ -735,12 +745,41 @@ class WPAIC_Admin {
 		}
 
 		$gate = $this->grounding_gate->evaluate( $retrieval );
+		$evidence = array(
+			'status'       => 'skipped',
+			'source_count' => 0,
+			'total_chars'  => 0,
+			'limits'       => $this->evidence_builder->get_limits(),
+			'sources'      => array(),
+			'reason'       => 'gate_not_allowed',
+		);
+		$prompt = array(
+			'status'        => 'skipped',
+			'system_prompt' => '',
+			'user_prompt'   => '',
+			'evidence_ids'  => array(),
+			'char_count'    => 0,
+		);
+
+		if ( ! empty( $gate['allow_ai'] ) && 'allow_answer' === ( isset( $gate['decision'] ) ? $gate['decision'] : '' ) ) {
+			$evidence = $this->evidence_builder->build( $retrieval );
+			if ( is_wp_error( $evidence ) ) {
+				$this->send_error( $evidence );
+			}
+			$prompt = $this->prompt_builder->build( $question, $evidence );
+			if ( is_wp_error( $prompt ) ) {
+				$this->send_error( $prompt );
+			}
+			$prompt['status'] = 'built';
+		}
 
 		wp_send_json_success(
 			array(
-				'stage'       => 'grounding_gate_foundation',
+				'stage'       => 'evidence_pack_prompt_builder',
 				'retrieval'   => $retrieval,
 				'gate'        => $gate,
+				'evidence'    => $evidence,
+				'prompt'      => $prompt,
 				'ai_called'   => false,
 				'token_usage' => 0,
 			)

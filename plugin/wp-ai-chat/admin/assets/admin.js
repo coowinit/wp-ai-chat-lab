@@ -232,6 +232,45 @@
 	}
 
 
+	function evidencePackHtml(evidence) {
+		evidence = evidence || {};
+		var status = String(evidence.status || 'skipped');
+		var limits = evidence.limits || {};
+		var sources = Array.isArray(evidence.sources) ? evidence.sources : [];
+		if (status !== 'built') {
+			return '<div class="wpaic-evidence-pack is-skipped"><h3>Evidence Pack</h3><p><strong>Skipped</strong> — Grounding Gate 未允许进入 Evidence Pipeline。</p></div>';
+		}
+		var sourceHtml = sources.map(function (source) {
+			var coverage = Math.round((parseFloat(source.coverage) || 0) * 100);
+			var meta = '<code>' + escapeHtml(source.evidence_id || '') + '</code> · Score ' + escapeHtml(source.score || 0) + ' · Coverage ' + escapeHtml(coverage) + '% · ' + escapeHtml(source.char_count || 0) + ' chars';
+			var links = source.url ? '<p><a href="' + escapeHtml(source.url) + '" target="_blank" rel="noopener noreferrer">打开来源 ↗</a></p>' : '';
+			return '<div class="wpaic-evidence-source">' +
+				'<div class="wpaic-evidence-source-head"><strong>' + escapeHtml(source.evidence_id || '') + ' · ' + escapeHtml(source.title || '(Untitled)') + '</strong><span>' + meta + '</span></div>' +
+				'<p class="description"><code>' + escapeHtml(source.source_id || '') + '</code> · Matched: ' + escapeHtml((source.matched_terms || []).join(', ') || '—') + (source.truncated ? ' · Truncated' : '') + '</p>' +
+				'<pre class="wpaic-evidence-text">' + escapeHtml(source.text || '') + '</pre>' + links +
+			'</div>';
+		}).join('');
+		return '<div class="wpaic-evidence-pack"><h3>Evidence Pack</h3>' +
+			'<dl class="wpaic-strength-stats wpaic-evidence-stats">' +
+				'<div><dt>Sources</dt><dd>' + escapeHtml(evidence.source_count || 0) + '</dd></div>' +
+				'<div><dt>Total Chars</dt><dd>' + escapeHtml(evidence.total_chars || 0) + '</dd></div>' +
+				'<div><dt>Max Sources</dt><dd>' + escapeHtml(limits.max_sources || 0) + '</dd></div>' +
+				'<div><dt>Evidence Budget</dt><dd>' + escapeHtml(limits.max_total_chars || 0) + '</dd></div>' +
+			'</dl>' + sourceHtml + '</div>';
+	}
+
+	function promptPreviewHtml(prompt) {
+		prompt = prompt || {};
+		if (String(prompt.status || 'skipped') !== 'built') {
+			return '<div class="wpaic-prompt-preview is-skipped"><h3>Prompt Preview</h3><p><strong>Skipped</strong> — 没有可发送给 Provider 的 Prompt。</p></div>';
+		}
+		return '<div class="wpaic-prompt-preview"><h3>Prompt Preview</h3>' +
+			'<p class="description">Evidence IDs: ' + escapeHtml((prompt.evidence_ids || []).join(', ') || '—') + ' · Prompt Chars: ' + escapeHtml(prompt.char_count || 0) + '</p>' +
+			'<h4>System Prompt</h4><pre>' + escapeHtml(prompt.system_prompt || '') + '</pre>' +
+			'<h4>User Prompt</h4><pre>' + escapeHtml(prompt.user_prompt || '') + '</pre>' +
+		'</div>';
+	}
+
 	function groundingGateHtml(data) {
 		data = data || {};
 		var retrieval = data.retrieval || {};
@@ -258,10 +297,10 @@
 				'<div><dt>Score Gap</dt><dd>' + escapeHtml(gate.score_gap || 0) + '</dd></div>' +
 				'<div><dt>Top Coverage</dt><dd>' + escapeHtml(coverage) + '%</dd></div>' +
 			'</dl>' +
-			'<p class="description">Reason Code: <code>' + escapeHtml(gate.reason_code || '') + '</code> · Stage 1 只验证 Gate，实际 Provider Call 被硬性关闭。</p>' +
+			'<p class="description">Reason Code: <code>' + escapeHtml(gate.reason_code || '') + '</code> · Stage 2 只构建 Evidence / Prompt Preview，Provider Call 仍被硬性关闭。</p>' +
 		'</div>';
 
-		return gateHtml + '<h3>Retrieval Diagnostics</h3>' + retrievalHtml(retrieval);
+		return gateHtml + evidencePackHtml(data.evidence || {}) + promptPreviewHtml(data.prompt || {}) + '<h3>Retrieval Diagnostics</h3>' + retrievalHtml(retrieval);
 	}
 
 	function ajaxJson(action, payload, nonce) {

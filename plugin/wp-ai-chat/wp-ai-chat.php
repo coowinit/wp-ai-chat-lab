@@ -52,6 +52,8 @@ require_once WPAIC_PLUGIN_DIR . 'includes/retrieval/class-wpaic-retrieval-streng
 require_once WPAIC_PLUGIN_DIR . 'includes/retrieval/class-wpaic-local-retriever.php';
 
 require_once WPAIC_PLUGIN_DIR . 'includes/grounding/class-wpaic-grounding-gate.php';
+require_once WPAIC_PLUGIN_DIR . 'includes/grounding/class-wpaic-evidence-pack-builder.php';
+require_once WPAIC_PLUGIN_DIR . 'includes/grounding/class-wpaic-grounded-prompt-builder.php';
 
 require_once WPAIC_PLUGIN_DIR . 'admin/class-wpaic-admin.php';
 
@@ -138,10 +140,12 @@ function wpaic_bootstrap() {
 
 	// v0.6.0 Stage 1: application-layer Grounding Gate. It consumes only the
 	// Retrieval Result contract and never calls the AI Manager or Provider.
-	$grounding_gate = new WPAIC_Grounding_Gate();
+	$grounding_gate   = new WPAIC_Grounding_Gate();
+	$evidence_builder = new WPAIC_Evidence_Pack_Builder( $store_repository );
+	$prompt_builder   = new WPAIC_Grounded_Prompt_Builder();
 
 	if ( is_admin() ) {
-		new WPAIC_Admin( $manager, $discovery, $extractor, $store_repository, $lifecycle, $batch_sync, $local_retriever, $grounding_gate );
+		new WPAIC_Admin( $manager, $discovery, $extractor, $store_repository, $lifecycle, $batch_sync, $local_retriever, $grounding_gate, $evidence_builder, $prompt_builder );
 	}
 }
 add_action( 'plugins_loaded', 'wpaic_bootstrap' );

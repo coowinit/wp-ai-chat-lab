@@ -1,5 +1,32 @@
 ## v0.6.0 — Grounded AI (Development)
 
+### Stage 2 — Evidence Pack & Prompt Builder
+
+- 新增 `WPAIC_Evidence_Pack_Builder`：只在 Grounding Gate 返回 `allow_answer / allow_ai=true` 后构建 Evidence。
+- Evidence Pack 默认最多 3 个 Source；每 Source 最多 2400 字符；总 Evidence 最多 6000 字符。
+- Rank #1 固定作为 Primary Evidence。
+- Supporting Evidence 默认要求 Score ≥ 18 且 Coverage ≥ 75%，避免普通 Recall Candidate 污染 Prompt。
+- Evidence 内容优先级：Structured Data → Excerpt → Relevant Content Snippet。
+- Evidence Source 使用稳定 `S1 / S2 / S3` ID，并保留应用层 Source ID / Title / URL / Hash。
+- 新增 `WPAIC_Grounded_Prompt_Builder`，生成 provider-agnostic System Prompt 与 User Prompt Preview。
+- Prompt 明确规定 Evidence 仅作为不可信 Data，Evidence 内部指令文本不能覆盖 System Rule。
+- Prompt 要求只基于 Evidence 回答；Evidence 不支持的事实必须明确说明不足，不允许补充猜测。
+- Source Trace 由应用层提供，模型不得自行生成来源 ID 或 URL。
+- Grounded AI Playground 新增 Evidence Pack、Evidence Budget、Prompt Preview 诊断。
+- Gate 为 `clarify / no_answer` 时 Evidence / Prompt 明确 `Skipped`。
+- Stage 2 继续强制 `AI Called = false / Token Usage = 0`，不调用 DeepSeek。
+- 不新增数据库表，不引入 Chunk / Embedding / Vector / RAG。
+- PHP / JavaScript 静态语法检查通过。
+- Stage 2 已完成真实 WordPress 环境验证并正式封板。
+- `CWC-610 dimension`：Gate = `allow_answer`，Evidence Pack 仅保留正确 Product `wordpress_post_2413` 为 `S1`；Score 14 / Coverage 50% 的普通 Product 被正确过滤。
+- `dimension`：Gate = `clarify`，Evidence Pack / Prompt Preview 均 `Skipped`。
+- `CWC-610 warranty`：Medium Partial Evidence → `clarify`，Evidence Pack / Prompt Preview 均 `Skipped`。
+- `ZXQ-99999-NOMATCH`：`no_answer`，Evidence Pack / Prompt Preview 均 `Skipped`。
+- `minimum order quantity` 多来源验证通过：`manual_3100`（Score 39 / Coverage 100%）作为 `S1`，`manual_3104`（Score 21 / Coverage 100%）作为 `S2`；Prompt Preview 正确输出 `Evidence IDs: S1, S2`。
+- Supporting Evidence 门槛 `Score >= 18 / Coverage >= 75%` 真实环境验证通过，弱相关 Score 9 / 4 候选不会污染 Evidence Pack。
+- Stage 2 全程保持 `AI Called = false / Token Usage = 0`。
+- 当前状态：Stage 2 Validation Passed；下一阶段进入 Stage 3 — Grounded Answer。
+
 ### Stage 1 — Grounding Gate Foundation
 
 - 插件开发版本提升到 `0.6.0`。

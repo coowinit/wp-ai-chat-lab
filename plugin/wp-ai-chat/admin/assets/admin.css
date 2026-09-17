@@ -669,3 +669,58 @@
 		grid-template-columns: repeat(2, minmax(100px, 1fr));
 	}
 }
+
+/* v0.6.0 Stage 2 — Evidence Pack & Prompt Preview */
+.wpaic-evidence-pack,
+.wpaic-prompt-preview {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	margin: 14px 0;
+	padding: 14px;
+}
+
+.wpaic-evidence-pack.is-skipped,
+.wpaic-prompt-preview.is-skipped {
+	background: #f6f7f7;
+}
+
+.wpaic-evidence-stats {
+	margin-bottom: 12px;
+}
+
+.wpaic-evidence-source {
+	border-top: 1px solid #dcdcde;
+	padding: 12px 0;
+}
+
+.wpaic-evidence-source:first-of-type {
+	border-top: 0;
+}
+
+.wpaic-evidence-source-head {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 14px;
+	justify-content: space-between;
+}
+
+.wpaic-evidence-source-head span {
+	color: #646970;
+	font-size: 12px;
+}
+
+.wpaic-evidence-text,
+.wpaic-prompt-preview pre {
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	box-sizing: border-box;
+	max-height: 360px;
+	overflow: auto;
+	padding: 12px;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.wpaic-prompt-preview h4 {
+	margin-bottom: 6px;
+}

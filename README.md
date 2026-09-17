@@ -4,7 +4,7 @@
 
 **当前稳定 Release：v0.5.0 · Local Retrieval**  
 **当前开发方向：v0.6.0 · Grounded AI**  
-**当前状态：v0.6.0 Stage 1 Grounding Gate Foundation；Validation Passed**
+**当前状态：v0.6.0 Stage 2 Evidence Pack & Prompt Builder；Validation Passed / Ready for Stage 3**
 
 ## v0.5.0 稳定版本状态
 
@@ -65,7 +65,7 @@ docs/versions/v0.5.0.md
 
 ## v0.6.0 开发状态
 
-`v0.6.0 — Grounded AI` 已完成设计定稿，**Stage 1 — Grounding Gate Foundation 已通过真实 WordPress 环境验证并正式封板**。
+`v0.6.0 — Grounded AI` 已完成设计定稿，**Stage 1 — Grounding Gate Foundation 与 Stage 2 — Evidence Pack & Prompt Builder 均已通过真实 WordPress 环境验证并正式封板；下一步进入 Stage 3 — Grounded Answer**。
 
 当前已经建立：
 
@@ -108,9 +108,8 @@ Stage 1 即使得到 `allow_answer`，也只表示**策略上允许进入后续 
 
 ```text
 Stage 1 — Grounding Gate Foundation      ← Validation Passed
-Stage 2 — Evidence Pack & Prompt Builder ← Next
-Stage 2 — Evidence Pack & Prompt Builder
-Stage 3 — Grounded Answer
+Stage 2 — Evidence Pack & Prompt Builder ← Validation Passed
+Stage 3 — Grounded Answer                ← Next
 ```
 
 Stage 1 已在真实 WordPress 环境完成四类证据状态验证：
@@ -141,6 +140,8 @@ Token Usage = 0
 ```
 
 其中 `CWC-610 warranty` 专门验证了 Partial Evidence：系统可以确认产品本身，但当问题中的 `warranty` 缺少完整本地证据时，Gate 不会因为产品型号匹配很强就放行 AI。Stage 1 正式封板，下一阶段进入 **Stage 2 — Evidence Pack & Prompt Builder**。
+
+Stage 2 也已完成真实环境验收：`CWC-610 dimension` 只把正确 Product 作为 `S1` 放入 Evidence Pack，Score 14 / Coverage 50% 的普通候选被正确过滤；`dimension`、`CWC-610 warranty` 与 `ZXQ-99999-NOMATCH` 均验证非 `allow_answer` 状态会跳过 Evidence Pack 与 Prompt Preview。随后通过 `minimum order quantity` 构造并验证 `S1 + S2` 多来源 Evidence：`manual_3100`（Score 39 / Coverage 100%）作为 Primary Evidence，`manual_3104`（Score 21 / Coverage 100%）作为 Supporting Evidence，Prompt Preview 正确输出 `Evidence IDs: S1, S2`，弱相关候选仍被排除。Stage 2 正式封板，下一阶段进入 **Stage 3 — Grounded Answer**。
 
 完整设计与阶段记录见：
 
