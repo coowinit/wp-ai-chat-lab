@@ -2,9 +2,9 @@
 
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
-**当前稳定 Release：v0.3.0 · Knowledge Source Foundation**  
-**当前开发目标：v0.3.1 · Structured Source Validation**  
-**当前阶段：v0.3.1 Legacy Product First Code Build · 等待真实环境验证**
+**当前稳定 Release：v0.3.1 · Structured Source Validation**  
+**当前开发：v0.4.0 · Knowledge Store & Lifecycle（Design Ready）**  
+**下一实现：v0.4.0 Stage 1 · Store Foundation**
 
 ## v0.3.1 开发状态
 
@@ -28,7 +28,7 @@ WEM Field Definitions
 
 第一轮仍坚持 **Product First**；旧站无需迁移字段系统，新站后续继续利用 WEM Schema。
 
-当前已经完成第一轮最小代码实现：
+当前已经完成两阶段代码实现；Stage 1 Legacy Product 已在真实旧站验证通过：
 
 ```text
 product_number
@@ -49,11 +49,69 @@ Legacy Product Profile
 → Source Preview / Source Hash
 ```
 
-本轮**尚未实现 WEM Definition Provider**，等待 Legacy Product 真实环境验证通过后再进入第二个 Provider。完整设计与实现记录见：
+Stage 2 已加入 **WEM Field Registry Provider**。当前 Provider 顺序为：
+
+```text
+Legacy Profile
+→ fallback
+
+WEM Field Registry
+→ non-empty value overrides Legacy
+```
+
+因此同一个 `knowledge_key` 会按字段独立解析：WEM 非空值优先；WEM 空值保留 Legacy fallback。Stage 2 已在真实旧站 + WEM Content Fields 并存环境完成验证，并确认 Structured Data 与 Source Hash 行为符合预期。完整设计、实现与验收记录见：
 
 ```text
 docs/versions/v0.3.1.md
 ```
+
+真实环境最终确认：Legacy-only 站点可直接生成 Structured Data；WEM 与 Legacy 并存时，WEM 非空字段按 `knowledge_key` 覆盖 Legacy，WEM 空字段自动回退 Legacy；停用 WEM 后 Legacy 仍可独立工作。Structured Data 的变化会稳定反映到 Source Hash，恢复相同 AI-visible Knowledge 后 Hash 也恢复一致。
+
+当前状态是 **Final Review Passed / Stable Release**。
+
+## v0.4.0 设计状态
+
+`v0.4.0 — Knowledge Store & Lifecycle` 已完成第一版正式设计稿，当前仍未修改插件功能代码。
+
+这一阶段第一次把已经标准化的 Unified Knowledge Source 持久化为可重建的 AI Read Model：
+
+```text
+WordPress Source of Truth
+→ Unified Knowledge Source
+→ Source Hash
+→ Knowledge Store
+→ Lifecycle
+```
+
+核心设计已经冻结为：
+
+```text
+WordPress = Source of Truth
+Knowledge Store = Derived Snapshot
+Hash = Content Change
+Eligibility = Lifecycle State
+Inactive ≠ Delete
+Initial Sync = Batch
+Daily Maintenance = Incremental
+```
+
+计划只引入 **1 张** Knowledge Store 自定义表，不提前创建 Chunk、Embedding、Log 或 Vector 表。第一轮实现严格限定为：
+
+```text
+DB Installer
+Knowledge Store Table
+Repository
+Single-source Sync
+Minimal Store Diagnostics
+```
+
+完整设计合同见：
+
+```text
+docs/versions/v0.4.0.md
+```
+
+当前状态：**Design Ready — Awaiting Implementation**。
 
 ## v0.2.0 实测状态
 
@@ -2012,7 +2070,7 @@ docs/versions/v0.3.0.md
 第二阶段：WEM Field Definitions
 ```
 
-第一轮代码已完成 Legacy Product 最小链路，只将 `product_number` 与 `product_size` 映射为稳定 `knowledge_key`，用于验证 `structured_data`、Source Preview 与 Source Hash 是否能在不改写 Generic Extractor 的前提下正常工作。
+本版本已经完成两阶段真实验证：Legacy Product 最小链路将 `product_number` 与 `product_size` 映射为稳定 `knowledge_key`；随后加入 WEM Field Registry Provider，并验证 WEM 非空值优先、WEM 空值逐字段回退 Legacy。两条路径最终都进入相同 `structured_data` 与 Source Hash。
 
 ---
 
@@ -2020,13 +2078,24 @@ docs/versions/v0.3.0.md
 
 ### Knowledge Store & Lifecycle
 
-计划实现：
+当前设计已完成，核心目标是把 Unified Knowledge Source 保存为可重建的 AI Read Model，并把“内容变化”与“生命周期状态”分开处理：
 
 ```text
-Source Persistence
-Source Hash Comparison
-Create / Update / Delete Lifecycle
-Incremental Rebuild
+Unified Knowledge Source
+→ Knowledge Store
+→ Source Hash Comparison
+→ Create / Update / Unchanged
+→ Deactivate / Reactivate
+→ Batch Initial Sync
+→ Incremental Sync
+```
+
+本版本计划首次引入 **1 张 Knowledge Store 自定义表**。WordPress 原始内容继续是唯一 Source of Truth；Store 只是派生快照，不允许成为第二套业务内容后台。
+
+详细设计：
+
+```text
+docs/versions/v0.4.0.md
 ```
 
 ---
@@ -2470,10 +2539,10 @@ Lead / Support / Action
 
 ```text
 Version:
-v0.3.1 development build
+v0.3.1 Stable / v0.4.0 Design
 
 Stage:
-Structured Source Validation — Legacy Product Slice
+Knowledge Store & Lifecycle — Design Ready
 
 Production:
 Tidio
@@ -2482,13 +2551,19 @@ Development:
 WP AI Chat Lab
 
 Plugin Code:
-v0.3.1 First Code Build (validation pending)
+v0.3.1 Stable Release（v0.4.0 尚未修改功能代码）
 
 Primary Provider:
 DeepSeek (from v0.2.0)
 
 Knowledge Source:
-Generic WordPress + Manual Supplement + Legacy Product structured enhancement
+Generic WordPress + Manual Supplement + Legacy / WEM Product structured enhancement
+
+Structured Source:
+Legacy Product Profile + WEM Field Registry Provider
+
+Resolver Rule:
+WEM non-empty value > Legacy fallback, resolved per knowledge_key
 
 Content Normalizer:
 Implemented — basic deterministic cleaning
@@ -2506,16 +2581,13 @@ Custom Database Tables:
 0
 
 Current Stable Release:
-v0.3.0 Knowledge Source Foundation
-
-Current Development Target:
 v0.3.1 Structured Source Validation
 
 Development Status:
-v0.3.1 Legacy Product First Code Build — Awaiting Real-world Validation
+v0.4.0 Design Ready — Awaiting Implementation
 
 Next:
-Validate Legacy Product → then implement WEM Definition Provider
+v0.4.0 Stage 1 — Store Foundation
 ```
 
 ---

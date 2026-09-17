@@ -1,6 +1,29 @@
 ## [Unreleased]
 
-### v0.3.1 — Structured Source Validation（First Code Build）
+### v0.4.0 — Knowledge Store & Lifecycle (Design Ready)
+
+#### Design
+
+- 完成 `docs/versions/v0.4.0.md` 第一版正式设计合同。
+- 明确 WordPress 继续作为唯一 Source of Truth，Knowledge Store 只是可重建的 AI Read Model / Snapshot。
+- 计划首次引入 1 张 `{$wpdb->prefix}wpaic_knowledge_store` 自定义表；暂不建立 Chunk、Embedding、Vector 或 Log 表。
+- 明确 Source Hash 只判断 AI-visible 内容变化，Eligibility 单独判断 publish / enabled / exists 生命周期。
+- 定义最小 Lifecycle Action：`created / updated / unchanged / reactivated / deactivated / error`。
+- 确认第一版采用 soft deactivate，不直接物理删除 Store Row。
+- 设计 `WPAIC_Knowledge_Store_Repository` 与 `WPAIC_Knowledge_Lifecycle_Manager` 职责边界。
+- 设计覆盖升级可执行的 DB Version / `dbDelta()` 机制，避免依赖“停用再激活”。
+- Initial / Full Sync 采用可见 AJAX Batch；日常维护采用 Incremental Sync，不引入 Cron / Queue。
+- v0.4.0 第一轮实现限定为 Store Foundation：DB Installer、Table、Repository、Single-source Sync、Minimal Diagnostics。
+
+#### Boundaries
+
+- 当前仅完成设计，不修改 v0.3.1 稳定功能代码。
+- 不做 Retrieval、Fulltext Ranking、Chunk、Embedding、Vector、RAG、Grounding、AI Answer 或 Chat。
+- Knowledge Store 不提供业务内容编辑器，所有知识仍从 WordPress Source 重建。
+
+---
+
+## v0.3.1 — Structured Source Validation (2026-09-16)
 
 #### Design
 
@@ -21,17 +44,51 @@
 
 #### Boundaries
 
-- 当前代码轮次只验证 Legacy Product；尚未实现 WEM Definition Provider。
+- 当前代码轮次验证 Legacy Product + WEM Product 两种结构化字段来源；只允许已明确映射的 Product 字段。
 - 不扫描任意 Post Meta，不解析 functions.php，不加入图片、VR、Video 或 PDF IDs。
 - 不新增 Field Mapping UI、数据库表、Knowledge Store、Retrieval、RAG 或 AI 调用。
 
-#### Validation Pending
+#### Stage 1 Validation Passed
 
-- 旧站 Product 的 `structured_data` 真实预览。
-- `product_number` / `product_size` 变化与 Source Hash 联动。
-- 非 Allowlist Meta（如 `product_pic01`）变化不影响 Source Hash。
-- FAQ / Post / Manual Knowledge 回归测试。
-- Preview 仍不调用 DeepSeek。
+- Legacy Product `product_number → product_model`：通过。
+- Legacy Product `product_size → product_dimension`：通过。
+- Legacy Meta 不存在时安全返回空 `structured_data`：通过。
+- Structured Data 变化后 Source Hash 改变：通过。
+- 恢复原值后 Source Hash 恢复：通过。
+- 连续 Preview 相同 Knowledge 时 Source Hash 稳定：通过。
+
+#### Stage 2 Added
+
+- 新增 `WPAIC_WEM_Field_Registry_Provider`。
+- 从 WEM `wem_cf_field_groups` 与 `wem_cf_runtime_field_groups` 获取 Field Definitions。
+- 新增 WEM Product 最小 AI Allowlist：`product_model`、`product_dimension`。
+- 新增 `wpaic_wem_structured_allowlist` 扩展点。
+- Structured Field Resolver 改为保留同一 `knowledge_key` 的 Provider Candidate 顺序。
+- 实现逐字段 `WEM non-empty > Legacy fallback` 行为。
+- WEM Provider 仅在 WEM Content Fields 激活时启用；不会仅凭残留 Option 误启用。
+- 知识来源页版本文案改为动态读取 `WPAIC_VERSION`。
+
+#### Stage 2 Validation Passed
+
+- WEM 两个 Product 字段均非空时，Structured Data 正确使用 WEM 值：通过。
+- WEM 单字段为空时，按 `knowledge_key` 独立回退 Legacy：通过。
+- WEM 字段全部为空时，Legacy Product Profile 完整接管：通过。
+- 停用 WEM Content Fields 后，Legacy Structured Data 仍正常：通过。
+- WEM Structured Data 变化后 Source Hash 改变：通过。
+- 恢复相同 AI-visible Structured Data 后 Source Hash 恢复：通过。
+- 连续 Preview 相同 Knowledge 时 Source Hash 保持稳定：通过。
+- 普通 Post 等非 Product 来源未被 Structured Provider 污染：通过。
+- Preview 继续保持不调用 DeepSeek、不持久化 Source：通过。
+
+#### Final Review
+
+- PHP syntax check：通过。
+- JavaScript syntax check：通过。
+- Plugin Version / `WPAIC_VERSION`：`0.3.1`。
+- 知识来源页版本信息改为动态读取 `WPAIC_VERSION`：通过。
+- DeepSeek API URL 仍只存在于 DeepSeek Provider。
+- 自定义数据库建表语句：0。
+- v0.3.1 Final Review：通过。
 
 ---
 
