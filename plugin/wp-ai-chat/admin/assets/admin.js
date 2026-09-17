@@ -564,6 +564,14 @@
 		var groundingConversationKey = document.getElementById('wpaic-grounding-conversation-key');
 		var groundingVisitorKey = document.getElementById('wpaic-grounding-visitor-key');
 		var groundingSiteKey = document.getElementById('wpaic-grounding-site-key');
+		var groundedFinalPresetButtons = document.querySelectorAll('.wpaic-grounded-final-preset');
+		var groundedFinalTitle = document.getElementById('wpaic-grounded-final-title');
+		var groundedFinalSummary = document.getElementById('wpaic-grounded-final-summary');
+		var groundedFinalChange = document.getElementById('wpaic-grounded-final-change');
+		var groundedFinalAction = document.getElementById('wpaic-grounded-final-action');
+		var groundedFinalExpect = document.getElementById('wpaic-grounded-final-expect');
+		var groundedFinalResetButton = document.getElementById('wpaic-grounded-final-reset');
+		var groundedFinalResetResult = document.getElementById('wpaic-grounded-final-reset-result');
 		var usageCheckButton = document.getElementById('wpaic-usage-check');
 		var usageSimulateButton = document.getElementById('wpaic-usage-simulate');
 		var usageResetButton = document.getElementById('wpaic-usage-reset');
@@ -671,6 +679,45 @@
 			});
 		}
 
+
+		if (groundedFinalPresetButtons.length && groundingQuestion && groundingConversationKey && groundingVisitorKey && groundingSiteKey) {
+			groundedFinalPresetButtons.forEach(function (button) {
+				button.addEventListener('click', function () {
+					groundingQuestion.value = button.getAttribute('data-question') || '';
+					groundingConversationKey.value = 'grounded-stage3-final-conversation';
+					groundingVisitorKey.value = 'grounded-stage3-final-visitor';
+					groundingSiteKey.value = 'grounded-stage3-final-site';
+					groundedFinalPresetButtons.forEach(function (item) { item.classList.remove('is-active'); });
+					button.classList.add('is-active');
+					if (groundedFinalTitle) groundedFinalTitle.textContent = button.getAttribute('data-title') || '最终验收场景';
+					if (groundedFinalSummary) groundedFinalSummary.textContent = button.getAttribute('data-summary') || '';
+					if (groundedFinalChange) groundedFinalChange.textContent = button.getAttribute('data-change') || '';
+					if (groundedFinalAction) groundedFinalAction.textContent = button.getAttribute('data-action') || '';
+					if (groundedFinalExpect) groundedFinalExpect.textContent = button.getAttribute('data-expect') || '';
+				});
+			});
+		}
+
+		if (groundedFinalResetButton && groundedFinalResetResult && groundingConversationKey && groundingVisitorKey && groundingSiteKey) {
+			groundedFinalResetButton.addEventListener('click', function () {
+				if (!window.confirm('只重置 Stage 3 Final Validation 专用 Key 的 Conversation / Visitor / Site Counter，继续吗？')) return;
+				postRequest(
+					'wpaic_usage_guard_reset',
+					{
+						conversation_key: 'grounded-stage3-final-conversation',
+						visitor_key: 'grounded-stage3-final-visitor',
+						site_key: 'grounded-stage3-final-site',
+						reset_conversation: '1',
+						reset_visitor: '1',
+						reset_site: '1'
+					},
+					WPAICAdmin.usageNonce,
+					groundedFinalResetButton,
+					groundedFinalResetResult,
+					usageGuardHtml
+				);
+			});
+		}
 
 		if (groundingButton && groundingResult && groundingQuestion) {
 			groundingButton.addEventListener('click', function () {

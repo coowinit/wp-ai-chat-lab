@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.7.0 — Stage 3 Limit Calibration & Operational Validation (Round 1 / Round 2 Validation Passed)
+## v0.7.0 — Stage 3 Limit Calibration & Operational Validation (Validation Passed / Sealed)
 
 - Kept DB Version at `1.1`; no schema change.
 - Kept the existing three Usage Guard scopes only: Conversation, Visitor Daily, Site Daily.
@@ -21,7 +21,23 @@
 - No Chat UI, Lead, Human Handoff, Agent, Cost Guard, Embedding, Vector, or RAG capability was added.
 - Stage 3 Round 2 real WordPress validation passed: all six scenario-driven checks matched the expected counters and block reasons.
 - Confirmed Conversation isolation, Visitor isolation, fixed `Conversation → Visitor → Site` precedence, and atomic no-increment behavior on blocked paths.
-- Current status: Round 1 / Round 2 Validation Passed; final minimal real Provider Operational Validation remains before Stage 3 seal.
+- Added a six-step Final Operational Validation guide directly to Grounded AI Playground.
+- Added dedicated Final Validation Context Keys so the last regression pass does not reuse Round 1 / Round 2 counters.
+- Added one-click Final Validation counter reset using the existing administrator-only narrow reset path; no global reset capability was added.
+- Final sequence rechecks Strong real Provider calls, Weak / Medium clarify paths, None no-answer path, token accounting, and Strong-over-quota Provider blocking.
+- Final scenario buttons only prefill the known test question and context; they never auto-call the Provider.
+- Refined the Stage 3 validation UX after real review: the already-passed Round 2 tools are now explicitly marked `Passed` and collapsed as historical retest tools on the Usage Guard page.
+- Reworked Final Operational Validation into six plain-language user scenarios instead of Strong / Weak / Medium / None-first labels.
+- Each final scenario now explains `what happened / what to do / expected result`, while Candidate Limit, Top K, and Usage Context are moved into an advanced-details section.
+- Final Validation logic, Provider Boundary, Usage Guard, database schema, and dedicated Final Validation Keys are unchanged.
+- Final Operational Validation passed in the real WordPress + DeepSeek environment; all six plain-language regression scenarios matched expectations.
+- Strong request #1: Usage ALLOW, AI Called Yes, calls `1 / 1 / 1`, Prompt 557 / Completion 23 / Total 580.
+- Weak, Medium, and None paths all skipped Usage Guard, did not call the Provider, produced zero request tokens, and left counters unchanged.
+- Strong request #2: Usage ALLOW, AI Called Yes, calls `2 / 2 / 2`, cumulative Prompt 1114 / Completion 46 / Total 1160.
+- Strong request #3: `conversation_limit_reached`, AI Called No, request Token Usage 0, and all scope counters remained `2 / 2 / 2`.
+- Confirmed the final boundary: Grounding block consumes no Usage; Usage block never crosses the Provider Boundary; only Strong + quota available triggers a real Provider call.
+- Stage 3 is now formally `Validation Passed / Sealed`; no further Stage 3 features will be added.
+- Next step: v0.7.0 Final Review. Stage seal is Commit-only; no Release is created at this point.
 
 ## v0.7.0 — Stage 2 Provider Boundary Integration (Validation Passed)
 

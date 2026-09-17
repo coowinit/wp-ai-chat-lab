@@ -927,3 +927,160 @@
 	.wpaic-scenario-grid { grid-template-columns:1fr; }
 	.wpaic-scene-guide dl > div { grid-template-columns:1fr; gap:3px; }
 }
+
+/* v0.7.0 Stage 3 — Final Operational Validation. */
+.wpaic-final-validation { margin-top:22px; }
+.wpaic-grounded-final-preset.is-active {
+	border-color:#2271b1;
+	box-shadow:0 0 0 1px #2271b1;
+	background:#f0f6fc;
+}
+.wpaic-grounded-final-preset.is-active strong { color:#135e96; }
+.wpaic-final-guide { margin-top:16px; }
+.wpaic-final-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+#wpaic-grounded-final-reset-result:empty { display:none; }
+
+/* v0.7.0 Stage 3 — UX refinement for completed Round 2 and Final Validation. */
+.wpaic-pass-banner {
+	border-left:4px solid #00a32a;
+}
+.wpaic-pass-head {
+	display:flex;
+	align-items:flex-start;
+	justify-content:space-between;
+	gap:20px;
+}
+.wpaic-pass-head h2 { margin:0 0 6px; }
+.wpaic-pass-head p:last-child { margin-bottom:0; }
+.wpaic-pass-badge {
+	background:#edfaef;
+	border:1px solid #9ad7a6;
+	border-radius:999px;
+	color:#116329;
+	font-size:12px;
+	font-weight:700;
+	padding:6px 10px;
+	white-space:nowrap;
+}
+.wpaic-pass-grid {
+	display:grid;
+	grid-template-columns:repeat(4,minmax(0,1fr));
+	gap:10px;
+	margin-top:18px;
+}
+.wpaic-pass-grid > div {
+	background:#f6f7f7;
+	border:1px solid #dcdcde;
+	border-radius:4px;
+	padding:12px;
+}
+.wpaic-pass-grid strong,
+.wpaic-pass-grid span { display:block; }
+.wpaic-pass-grid span { color:#646970; font-size:12px; line-height:1.5; margin-top:4px; }
+
+.wpaic-history-details > summary,
+.wpaic-advanced-details > summary {
+	cursor:pointer;
+	list-style:none;
+}
+.wpaic-history-details > summary::-webkit-details-marker,
+.wpaic-advanced-details > summary::-webkit-details-marker { display:none; }
+.wpaic-history-details > summary {
+	display:flex;
+	align-items:center;
+	justify-content:space-between;
+	gap:12px;
+	font-size:14px;
+}
+.wpaic-history-details > summary span,
+.wpaic-advanced-details > summary span { color:#646970; font-size:12px; font-weight:400; }
+.wpaic-history-details[open] > summary { margin-bottom:18px; }
+.wpaic-history-body {
+	border-top:1px solid #dcdcde;
+	padding-top:18px;
+}
+.wpaic-history-separator {
+	border:0;
+	border-top:1px solid #dcdcde;
+	margin:24px 0;
+}
+
+.wpaic-final-intro {
+	background:#f0f6fc;
+	border-left:4px solid #2271b1;
+	margin:-4px 0 18px;
+	padding:14px 16px;
+}
+.wpaic-final-intro h2 { margin:0 0 6px; }
+.wpaic-final-intro p:last-child { margin-bottom:0; }
+.wpaic-final-flow {
+	display:grid;
+	grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr);
+	align-items:stretch;
+	gap:8px;
+	margin:18px 0;
+}
+.wpaic-final-flow > div:not(.wpaic-final-arrow) {
+	background:#f6f7f7;
+	border:1px solid #dcdcde;
+	border-radius:4px;
+	padding:12px;
+}
+.wpaic-final-flow strong,
+.wpaic-final-flow span { display:block; }
+.wpaic-final-flow span { color:#646970; font-size:12px; line-height:1.5; margin-top:4px; }
+.wpaic-final-arrow {
+	align-self:center;
+	color:#646970;
+	font-size:20px;
+}
+.wpaic-final-start {
+	align-items:center;
+	background:#fff8e5;
+	border:1px solid #e6c86e;
+	border-radius:4px;
+	display:flex;
+	justify-content:space-between;
+	gap:16px;
+	margin:18px 0;
+	padding:12px 14px;
+}
+.wpaic-final-start strong,
+.wpaic-final-start span { display:block; }
+.wpaic-final-start span { color:#50575e; margin-top:3px; }
+.wpaic-final-question-box {
+	background:#f6f7f7;
+	border:1px solid #dcdcde;
+	border-radius:4px;
+	margin:18px 0;
+	padding:16px;
+}
+.wpaic-final-question-box textarea {
+	box-sizing:border-box;
+	margin-top:8px;
+	max-width:none;
+	width:100%;
+}
+.wpaic-advanced-details {
+	border:1px solid #dcdcde;
+	border-radius:4px;
+	margin:16px 0;
+	padding:12px 14px;
+}
+.wpaic-advanced-details[open] > summary { margin-bottom:14px; }
+.wpaic-advanced-body {
+	border-top:1px solid #f0f0f1;
+	padding-top:14px;
+}
+
+@media (max-width: 1100px) {
+	.wpaic-pass-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+	.wpaic-final-flow { grid-template-columns:1fr; }
+	.wpaic-final-arrow { display:none; }
+}
+@media (max-width: 782px) {
+	.wpaic-pass-head,
+	.wpaic-final-start { align-items:stretch; flex-direction:column; }
+	.wpaic-pass-grid { grid-template-columns:1fr; }
+	.wpaic-history-details > summary { align-items:flex-start; flex-direction:column; }
+}

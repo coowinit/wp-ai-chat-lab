@@ -4,7 +4,7 @@
 
 **当前稳定 Release：v0.6.0 · Grounded AI**  
 **当前开发方向：v0.7.0 · Usage Guard**  
-**当前状态：v0.7.0 Stage 3 Round 1 / Round 2 Validation Passed；Final Operational Validation Pending**
+**当前状态：v0.7.0 Stage 3 — Validation Passed / Sealed；下一步进入 v0.7.0 Final Review**
 
 ## v0.5.0 稳定版本状态
 
@@ -205,7 +205,7 @@ docs/versions/v0.6.0.md
 
 ## v0.7.0 开发状态
 
-`v0.7.0 — Usage Guard` 的 **Stage 1 — Usage Store & Policy Foundation** 与 **Stage 2 — Provider Boundary Integration** 均已通过真实 WordPress 验收。当前已进入 **Stage 3 — Limit Calibration & Operational Validation**：不增加新的 Guard 类型，而是补齐低额度校准、Scope 组合验证、WordPress Local Day 诊断与可重复 Lab Reset。
+`v0.7.0 — Usage Guard` 的 **Stage 1 — Usage Store & Policy Foundation**、**Stage 2 — Provider Boundary Integration** 与 **Stage 3 — Limit Calibration & Operational Validation** 均已通过真实 WordPress 验收。Stage 3 已完成低额度校准、Scope 组合验证、WordPress Local Day 诊断、可重复 Lab Reset 与最终真实链路回归，并正式封板；下一步进入 **v0.7.0 Final Review**。
 
 这一版开始解决：
 
@@ -258,7 +258,7 @@ Missing Context Fail Closed                ✅
 Hashed Scope Key 稳定且不同 Key 相互隔离     ✅
 ```
 
-最终 Visitor 专项测试使用 `Conversation = 10 / Visitor = 3 / Site = 20`：同一个 `visitor-limit-test` 在三个不同 Conversation 中成功 Reserve 到 `3/3`，第四个新 Conversation 正确返回 `visitor_daily_limit_reached`；被阻断时新 Conversation 与 Site 均不再增加。Stage 1 因此正式封板。Stage 2 也已完成真实 Provider Boundary 验证并封板。Stage 3 Round 1 已完成真实 WordPress 校准验收；当前进入 Round 2 Scope Isolation + Scope Precedence。
+最终 Visitor 专项测试使用 `Conversation = 10 / Visitor = 3 / Site = 20`：同一个 `visitor-limit-test` 在三个不同 Conversation 中成功 Reserve 到 `3/3`，第四个新 Conversation 正确返回 `visitor_daily_limit_reached`；被阻断时新 Conversation 与 Site 均不再增加。Stage 1 因此正式封板。Stage 2 也已完成真实 Provider Boundary 验证并封板。Stage 3 Round 1、Round 2 与 Final Operational Validation 均已完成真实 WordPress 验收，Stage 3 现已正式封板。
 
 
 
@@ -359,7 +359,60 @@ Round 2 第一版曾使用 A–E Context Preset。实际试用后，为避免“
 
 Round 2 真实 WordPress 验收结果：6 个场景全部符合预期，新 Conversation 不重置 Visitor / Site，新 Visitor 不重置 Site，多 Scope 同时达到上限时稳定按 `Conversation → Visitor → Site` 返回，所有 BLOCK 路径继续保持 Atomic，未命中的 Scope 不增加。
 
-当前状态：**Round 1 / Round 2 Validation Passed · Final Operational Validation Pending**。Round 2 已确认 Scope Isolation、Scope Precedence 与 Atomic BLOCK 均符合预期；Stage 3 尚未最终封板，下一步只做最小真实 Provider Operational Validation；仍不做 Chat UI、Lead、Human Handoff、Agent、Cost Guard、Embedding、Vector 或 RAG。
+当前状态：**Stage 3 Validation Passed / Sealed**。Usage Guard 页面保留 Round 2 历史验收工具；Grounded AI 页面保留 Final Operational Validation 回归工具，供后续排查或版本回归使用。Stage 3 不再增加功能，下一步进入 v0.7.0 Final Review。
+
+最终测试入口改为“人话场景”，每一步都直接显示“发生了什么 / 现在怎么做 / 预期结果”：
+
+```text
+1. 有明确知识 → AI 正常回答
+   Strong + 有额度 → AI Called = Yes → C=1/2、V=1/3、S=1/5
+
+2. 问题太模糊 → 不调用 AI
+   Weak → clarify → Usage Guard Skipped → Counter 不变
+
+3. 资料不够明确 → 不调用 AI
+   Medium → clarify → Usage Guard Skipped → Counter 不变
+
+4. 完全没有资料 → 不调用 AI
+   None → no_answer → Usage Guard Skipped → Counter 不变
+
+5. 第二次正常回答 → 达到会话上限
+   Strong + 有额度 → AI Called = Yes → C=2/2、V=2/3、S=2/5
+
+6. 再问一次 → 被额度阻止
+   Strong → conversation_limit_reached → AI Called = No → 本次 Token = 0
+```
+
+场景 6 后计数仍应保持 `C=2/2、V=2/3、S=2/5`。Candidate Limit、Top K 与 Usage Context 被收进“高级测试参数”，正常验收无需修改。Final Validation 仍不做 Chat UI、Lead、Human Handoff、Agent、Cost Guard、Embedding、Vector 或 RAG。
+
+Final Operational Validation 已在真实 WordPress + DeepSeek 环境完成，6 个场景全部符合预期：
+
+```text
+场景 1：Strong → Usage ALLOW → AI Called = Yes
+         Calls = 1 / 1 / 1
+         Prompt 557 / Completion 23 / Total 580
+
+场景 2：Weak → clarify → Usage Guard Skipped
+         AI Called = No / Token = 0 / Counter 不变
+
+场景 3：Medium → clarify → Usage Guard Skipped
+         AI Called = No / Token = 0 / Counter 不变
+
+场景 4：None → no_answer → Usage Guard Skipped
+         AI Called = No / Token = 0 / Counter 不变
+
+场景 5：Strong → Usage ALLOW → AI Called = Yes
+         Calls = 2 / 2 / 2
+         累计 Prompt 1114 / Completion 46 / Total 1160
+
+场景 6：Strong → Usage BLOCK
+         Reason = conversation_limit_reached
+         AI Called = No / 本次 Token = 0
+         Calls 仍保持 2 / 2 / 2
+```
+
+这次最终回归再次确认：**Grounding 阻断不消耗 Usage；Usage BLOCK 不越过 Provider Boundary；只有 Strong + quota available 才会真实调用 Provider 并记录 Token。**
+
 
 ## v0.3.1 开发状态
 
@@ -3014,10 +3067,10 @@ Current Development:
 v0.7.0 Usage Guard — Stage 3 Limit Calibration & Operational Validation
 
 Plugin Code:
-v0.7.0 Stage 3 Validation Build
+v0.7.0 Stage 3 Sealed Build
 
 Next Direction:
-v0.7.0 Stage 3 — Limit Calibration & Operational Validation
+v0.7.0 Final Review
 ```
 
 ---
@@ -3039,7 +3092,7 @@ v0.7.0 Stage 3 — Limit Calibration & Operational Validation
 ```text
 Stage 1 — Usage Store & Policy Foundation      Validation Passed
 Stage 2 — Provider Boundary Integration        Validation Passed
-Stage 3 — Calibration & Operational Validation Round 1 / Round 2 Passed · Final Operational Validation Pending
+Stage 3 — Calibration & Operational Validation Passed / Sealed
 
 DB Version 1.1                                 Implemented
 wpaic_usage_counter                            Implemented
@@ -3053,8 +3106,10 @@ Operational Snapshot                            Implemented
 Manual Lab Reset (selected exact context)       Implemented
 Stage 3 Round 1 Real Validation                 Passed
 Stage 3 Round 2 Real Validation                 Passed
+Stage 3 Final Operational Validation            Passed
+Stage 3 Seal                                    Completed
 ```
 
 Stage 3 Round 1 已验证低额度边界、Local Day、Atomic BLOCK 与精确 Lab Reset。Round 2 继续使用 `Conversation 2 / Visitor 3 / Site 5`，测试入口已从抽象的 A–E Preset 优化为 1–6 个中文场景，用来验证跨 Conversation / Visitor 隔离和固定 Scope Precedence。
 
-当前：**Stage 3 Round 1 / Round 2 Validation Passed · Final Operational Validation Pending**。
+当前：**Stage 3 Validation Passed / Sealed · Ready for v0.7.0 Final Review**。
