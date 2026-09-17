@@ -1,3 +1,27 @@
+## v0.6.0 — Grounded AI (Design)
+
+### Design
+
+- 完成 `docs/versions/v0.6.0.md` 第一版设计合同。
+- 明确 v0.6.0 的核心原则：`Application Gate > Prompt`。
+- 明确硬边界：`No Reliable Knowledge → No AI Call`。
+- 设计 `Local Retrieval → Grounding Gate → Evidence Pack → Grounded Prompt → AI Manager → Grounded Answer` 主链路。
+- 设计 `WPAIC_Grounding_Gate`，第一版采用保守决策：Strong + Reliable Yes → `allow_answer`；Medium / Weak → `clarify`；None → `no_answer`。
+- Gate Decision 设计为可复用 Contract，并包含 reason code / retrieval strength / score / coverage / gap。
+- 设计 `WPAIC_Evidence_Pack_Builder`，Retrieval 同时作为 Relevance Filter 与 Token Firewall。
+- Evidence 第一版最多 3 个 Source，优先 Structured Data，并设计每 Source / 总字符预算。
+- 设计稳定 Source Ref：`S1 / S2 / S3`；Source URL 与 Source Trace 由应用层生成，不信任模型自行生成来源。
+- 设计 `WPAIC_Grounded_Prompt_Builder`，明确 Evidence-only Answer、资料不足时不补全、Evidence 内容只能视为数据不能覆盖 System Rule。
+- 设计 `WPAIC_Grounded_Answer_Service`，只通过现有 `WPAIC_AI_Manager` 调用 Provider，不把 Grounding 业务逻辑塞进 DeepSeek Provider。
+- 设计 deterministic `clarify / no_answer`：非 `allow_answer` 状态不调用 AI，也不产生 Token Cost。
+- v0.6.0 第一版限定 Single-turn / Single-intent Grounded QA，不做完整 Chat。
+- v0.6.0 不新增数据库表，不做 Conversation Log / Prompt Log / Answer Log。
+- 开发拆分为 Stage 1 Grounding Gate Foundation、Stage 2 Evidence Pack & Prompt Builder、Stage 3 Grounded Answer。
+- Stage 1 与 Stage 2 明确不调用 DeepSeek；Stage 3 只有 Gate 允许时才调用 AI。
+- 当前插件代码仍保持 v0.5.0 Stable Release，尚未进入 v0.6.0 功能实现。
+
+---
+
 ## v0.5.0 — Local Retrieval (2026-09-17)
 
 ### Final Review

@@ -3,8 +3,8 @@
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
 **当前稳定 Release：v0.5.0 · Local Retrieval**  
-**当前状态：Final Review Passed / Stable Release**  
-**下一方向：v0.6.0 · Grounded AI（尚未开始设计与实现）**
+**当前开发方向：v0.6.0 · Grounded AI**  
+**当前状态：Design Ready；插件代码仍保持 v0.5.0 稳定版**
 
 ## v0.5.0 稳定版本状态
 
@@ -61,6 +61,63 @@ docs/versions/v0.5.0.md
 ```
 
 当前状态：**Final Review Passed / Stable Release**。Stage 1、Stage 2、Stage 3 均已完成并通过真实环境验证；诊断级 Strong / Medium / Weak / None、Minimum Score Floor、Top Coverage 与 Score Gap 已建立，其中真实 Query 已覆盖 Strong / Weak / None 与单候选 Strong 等关键路径。它仍不是 v0.6.0 Grounding Gate。
+
+
+## v0.6.0 设计状态
+
+`v0.6.0 — Grounded AI` 已完成第一版设计合同，当前只进入设计里程碑，**尚未修改插件功能代码**。
+
+这一阶段开始解决：
+
+```text
+什么时候允许 AI 回答？
++
+如何让 AI 只基于可靠的本地 Evidence 回答？
+```
+
+核心架构：
+
+```text
+Question
+→ Local Retrieval
+→ Grounding Gate
+→ Evidence Pack
+→ Grounded Prompt
+→ AI Manager / Provider
+→ Grounded Answer
+→ Source Trace
+```
+
+最重要的规则是：
+
+```text
+Application Gate > Prompt
+No Reliable Knowledge → No AI Call
+```
+
+第一版采用保守 Gate：
+
+```text
+Strong + Reliable Yes → allow_answer
+Medium / Weak          → clarify
+None                   → no_answer
+```
+
+开发继续拆分为三阶段：
+
+```text
+Stage 1 — Grounding Gate Foundation
+Stage 2 — Evidence Pack & Prompt Builder
+Stage 3 — Grounded Answer
+```
+
+Stage 1 与 Stage 2 都不会调用 DeepSeek；只有 Stage 3 且 Gate 为 `allow_answer` 时才允许进入 AI Provider。v0.6.0 仍不做前台 Chat、Conversation、Lead、Human Handoff、Chunk、Embedding、Vector 或 RAG。
+
+完整设计合同见：
+
+```text
+docs/versions/v0.6.0.md
+```
 
 ## v0.3.1 开发状态
 
