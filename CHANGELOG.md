@@ -1,4 +1,4 @@
-## v0.5.0 — Local Retrieval (Stage 1 Validation Passed)
+## v0.5.0 — Local Retrieval (Stage 2 Validation Passed)
 
 ### Design
 
@@ -44,6 +44,35 @@
 - `ZXQ-99999-NOMATCH`：Candidate Count = 0，正确输出 No Candidate Match。
 - Query Normalize、Stop Words、连字符型号、Candidate Limit、Product / Manual Knowledge 通用召回均符合预期。
 - Stage 1 正式封板，下一阶段进入 Stage 2 — Weighted Scoring。
+
+### Stage 2 — Weighted Scoring
+
+- 新增 `WPAIC_Retrieval_Scorer`，在 PHP 层完成可解释 Weighted Scoring。
+- 初始字段权重：Structured Data 8 / Title 6 / Taxonomies 4 / Excerpt 3 / Content 1。
+- 新增 Exact Identifier Boost：仅对含数字、连字符或下划线的 identifier-like Term 生效，避免普通高频词获得隐藏优先级。
+- 新增 Phrase Match Boost。
+- 新增 Query Coverage Bonus。
+- 新增稳定 Ranking：Score → Coverage → Matched Terms → Matched Fields → source_id。
+- 新增 Top-K，默认 5，可通过 `wpaic_retrieval_top_k` Filter 调整，并在 Playground 选择 3 / 5 / 10。
+- Retrieval Result 新增 Rank / Score / Score Breakdown / source_hash。
+- Score Breakdown 显示 Field Scores / Exact Match / Phrase Match / Coverage。
+- Scorer 内部消费完整 Candidate Snapshot，但 Stage 2 返回 UI 时不再默认传输完整 content / structured_data。
+- Playground 新增 Scored Count 与 Top K。
+- Stage 2 继续只读 Knowledge Store，不调用 DeepSeek，不新增 Retrieval / Chunk / Embedding / Vector 表。
+- Retrieval Strength / Minimum Score Threshold 留到 Stage 3 真实质量校准。
+- 优化“本地检索”后台页面布局：仅 Retrieval 页面使用 WordPress 后台可用宽度的 100%，主结果区自适应扩展，右侧 Stage 边界保持紧凑宽度，减少 Ranking 表格横向隐藏。
+- 当前状态：Real-world Validation Passed。
+
+### Stage 2 Status
+
+- `CWC-610 dimension`：正确 Product `wordpress_post_2413` 稳定 Rank #1，Score = 36；普通只命中 `dimension` 的 Product 为 Score = 14，分差清晰。
+- 正确 Product Score Breakdown 验证：`structured_data +16 / title +6 / Exact cwc-610 +4 / Coverage 2/2 +10`。
+- `minimum order quantity`：正确 Manual Knowledge `manual_3091` 稳定 Rank #1，Score = 39；第 2 名 Score = 9，其余弱相关结果明显更低。
+- Top-K = 3 / 5 / 10 均通过：Candidate Count 与 Scored Count 保持不变，只改变最终返回结果数量。
+- 同一 Query 连续检索两次，Top 5 排名顺序保持一致，验证 Stable Ranking / Tie-breaker。
+- Candidate Count = 100 / Scored Count = 100 时 Top-K 正常截断，Candidate Pool 与最终结果集职责分离。
+- Full-width Retrieval Playground 调整后，Score Breakdown 与 Snippet 可完整横向查看，调试体验符合预期。
+- Stage 2 正式封板，下一阶段进入 Stage 3 — Retrieval Quality Calibration。
 
 ### Boundaries
 

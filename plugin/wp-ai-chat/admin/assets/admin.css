@@ -380,10 +380,29 @@
 	}
 }
 
+/* v0.5.0 Local Retrieval — use the full available WordPress admin width. */
+.wpaic-retrieval-wrap {
+	max-width: 100%;
+}
+
+.wpaic-retrieval-grid {
+	grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
+}
+
+.wpaic-retrieval-grid > .wpaic-card {
+	min-width: 0;
+}
+
+@media (max-width: 900px) {
+	.wpaic-retrieval-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
 /* v0.5.0 Stage 1 — Local Retrieval Playground */
 .wpaic-retrieval-controls textarea {
 	box-sizing: border-box;
-	max-width: 860px;
+	max-width: none;
 	width: 100%;
 }
 
@@ -400,7 +419,9 @@
 }
 
 .wpaic-retrieval-table-wrap {
+	max-width: 100%;
 	overflow-x: auto;
+	width: 100%;
 }
 
 .wpaic-retrieval-table th:first-child,
@@ -433,4 +454,51 @@
 
 .wpaic-retrieval-empty p {
 	margin-bottom: 0;
+}
+
+/* v0.5.0 Stage 2 — Weighted Scoring */
+.wpaic-retrieval-ranked-table th:nth-child(1),
+.wpaic-retrieval-ranked-table td:nth-child(1) {
+	width: 52px;
+}
+
+.wpaic-retrieval-ranked-table th:nth-child(2),
+.wpaic-retrieval-ranked-table td:nth-child(2) {
+	width: 68px;
+	text-align: center;
+}
+
+.wpaic-retrieval-ranked-table td:nth-child(3) {
+	min-width: 220px;
+}
+
+.wpaic-retrieval-ranked-table td:nth-child(4),
+.wpaic-retrieval-ranked-table td:nth-child(5) {
+	min-width: 130px;
+}
+
+.wpaic-retrieval-ranked-table td:nth-child(6) {
+	min-width: 220px;
+}
+
+.wpaic-retrieval-ranked-table td:nth-child(7) {
+	min-width: 300px;
+}
+
+.wpaic-retrieval-score {
+	font-size: 16px;
+}
+
+.wpaic-score-breakdown {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.wpaic-score-breakdown span {
+	display: block;
+	white-space: nowrap;
+}
+.wpaic-retrieval-ranked-table td:nth-child(2) {
+	min-width: 68px;
 }

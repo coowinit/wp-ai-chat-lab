@@ -3,8 +3,48 @@
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
 **当前稳定 Release：v0.4.0 · Knowledge Store & Lifecycle**  
-**当前开发：v0.5.0 · Local Retrieval（Stage 1 Validation Passed）**  
-**当前验证：v0.5.0 Stage 1 Query & Candidate Foundation 已通过真实环境验证**
+**当前开发：v0.5.0 · Local Retrieval（Stage 2 Validation Passed）**  
+**当前验证：Stage 1、Stage 2 已通过；下一步进入 Stage 3 Retrieval Quality Calibration**
+
+## v0.5.0 当前开发状态
+
+`v0.5.0 — Local Retrieval` 已完成 Stage 1 Query & Candidate Foundation 的真实环境验收，并进入 Stage 2 Weighted Scoring。
+
+当前链路：
+
+```text
+Question
+→ Query Normalize
+→ Candidate Recall
+→ Weighted Scoring
+→ Stable Ranking
+→ Top-K
+→ Score Breakdown
+```
+
+Stage 2 第一轮评分基线：
+
+```text
+Structured Data  8
+Title            6
+Taxonomies       4
+Excerpt          3
+Content          1
+
+Exact Identifier Boost  +4
+Phrase Match Boost      +8
+Coverage Bonus Max     +10
+```
+
+Playground 现在支持 Candidate Limit + Top K，并显示 Rank / Score / Score Breakdown。当前仍不做 Retrieval Strength / Minimum Threshold，它们留到 Stage 3 用真实 Query Set 校准。
+
+完整设计、实现与验收记录见：
+
+```text
+docs/versions/v0.5.0.md
+```
+
+当前状态：**Stage 2 Validation Passed**。已在真实 WordPress 环境验证字段权重、Identifier Boost、Coverage Bonus、Top-K、Score Breakdown 与稳定排序；下一步进入 Stage 3 Retrieval Quality Calibration。
 
 ## v0.3.1 开发状态
 

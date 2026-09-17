@@ -114,27 +114,60 @@
 		errorHtml;
 	}
 
+	function retrievalBreakdownHtml(breakdown) {
+		breakdown = breakdown || {};
+		var parts = [];
+		var fieldScores = breakdown.field_scores || {};
+		Object.keys(fieldScores).forEach(function (field) {
+			var score = parseInt(fieldScores[field], 10) || 0;
+			if (score > 0) {
+				parts.push('<span><code>' + escapeHtml(field) + '</code> +' + escapeHtml(score) + '</span>');
+			}
+		});
+
+		var exact = breakdown.exact_match || {};
+		var exactTerms = Array.isArray(exact.terms) ? exact.terms : [];
+		if ((parseInt(exact.boost, 10) || 0) > 0) {
+			parts.push('<span>Exact ' + escapeHtml(exactTerms.join(', ')) + ' +' + escapeHtml(exact.boost) + '</span>');
+		}
+
+		var phrase = breakdown.phrase_match || {};
+		var phraseFields = Array.isArray(phrase.fields) ? phrase.fields : [];
+		if ((parseInt(phrase.boost, 10) || 0) > 0) {
+			parts.push('<span>Phrase ' + escapeHtml(phraseFields.join(', ')) + ' +' + escapeHtml(phrase.boost) + '</span>');
+		}
+
+		var coverage = breakdown.coverage || {};
+		if ((parseInt(coverage.total, 10) || 0) > 0) {
+			parts.push('<span>Coverage ' + escapeHtml(coverage.matched || 0) + '/' + escapeHtml(coverage.total || 0) + ' +' + escapeHtml(coverage.bonus || 0) + '</span>');
+		}
+
+		return parts.length ? '<div class="wpaic-score-breakdown">' + parts.join('') + '</div>' : '—';
+	}
+
 	function retrievalHtml(data) {
 		var terms = Array.isArray(data.terms) ? data.terms : [];
-		var candidates = Array.isArray(data.candidates) ? data.candidates : [];
+		var results = Array.isArray(data.results) ? data.results : [];
 		var rows = '';
 
-		if (!candidates.length) {
-			rows = '<div class="wpaic-retrieval-empty"><strong>No Candidate Match</strong><p>当前 active Knowledge Store 中没有召回候选。Stage 1 不会为了“必须有结果”而伪造匹配。</p></div>';
+		if (!results.length) {
+			rows = '<div class="wpaic-retrieval-empty"><strong>No Candidate Match</strong><p>当前 active Knowledge Store 中没有召回候选。Stage 2 不会为了“必须有结果”而伪造匹配。</p></div>';
 		} else {
-			rows = '<div class="wpaic-retrieval-table-wrap"><table class="widefat striped wpaic-retrieval-table">' +
-				'<thead><tr><th>#</th><th>Title / Source</th><th>Matched Fields</th><th>Matched Terms</th><th>Snippet</th></tr></thead><tbody>' +
-				candidates.map(function (item, index) {
+			rows = '<div class="wpaic-retrieval-table-wrap"><table class="widefat striped wpaic-retrieval-table wpaic-retrieval-ranked-table">' +
+				'<thead><tr><th>Rank</th><th>Score</th><th>Title / Source</th><th>Matched Fields</th><th>Matched Terms</th><th>Score Breakdown</th><th>Snippet</th></tr></thead><tbody>' +
+				results.map(function (item, index) {
 					var source = '<code>' + escapeHtml(item.source_id || '') + '</code><br><span class="description">' + escapeHtml(item.post_type || '') + ' · ID ' + escapeHtml(item.object_id || 0) + '</span>';
 					var title = '<strong>' + escapeHtml(item.title || '(Untitled)') + '</strong><br>' + source;
 					if (item.url) {
 						title += '<br><a href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer">打开来源 ↗</a>';
 					}
 					return '<tr>' +
-						'<td>' + escapeHtml(index + 1) + '</td>' +
+						'<td><strong>' + escapeHtml(item.rank || (index + 1)) + '</strong></td>' +
+						'<td><strong class="wpaic-retrieval-score">' + escapeHtml(item.score || 0) + '</strong></td>' +
 						'<td>' + title + '</td>' +
 						'<td>' + escapeHtml((item.matched_fields || []).join(', ') || '—') + '</td>' +
 						'<td>' + escapeHtml((item.matched_terms || []).join(', ') || '—') + '</td>' +
+						'<td>' + retrievalBreakdownHtml(item.score_breakdown || {}) + '</td>' +
 						'<td>' + escapeHtml(item.snippet || '') + '</td>' +
 					'</tr>';
 				}).join('') + '</tbody></table></div>';
@@ -145,10 +178,12 @@
 				'<div class="wpaic-meta-wide"><dt>Normalized Query</dt><dd><code>' + escapeHtml(data.normalized_query || '') + '</code></dd></div>' +
 				'<div class="wpaic-meta-wide"><dt>Terms</dt><dd>' + escapeHtml(terms.join(', ') || '(none)') + '</dd></div>' +
 				'<div><dt>Candidate Count</dt><dd>' + escapeHtml(data.candidate_count || 0) + '</dd></div>' +
+				'<div><dt>Scored Count</dt><dd>' + escapeHtml(data.scored_count || 0) + '</dd></div>' +
+				'<div><dt>Top K</dt><dd>' + escapeHtml(data.top_k || 0) + '</dd></div>' +
 				'<div><dt>Candidate Limit</dt><dd>' + escapeHtml(data.candidate_limit || 0) + '</dd></div>' +
 				'<div><dt>Elapsed</dt><dd>' + escapeHtml(data.elapsed_ms || 0) + ' ms</dd></div>' +
 			'</dl>' +
-			'<p class="description">Stage 1 只表示“被召回”，当前顺序不是最终 Ranking。Weighted Scoring / Top-K 将在 Stage 2 加入。</p>' +
+			'<p class="description">Stage 2 排名由字段权重 + Exact Identifier Boost + Phrase Match Boost + Query Coverage Bonus 组成。Strength / Threshold 留到 Stage 3 用真实 Query Set 校准。</p>' +
 		'</div>' + rows;
 	}
 
@@ -299,6 +334,7 @@
 		var retrievalResult = document.getElementById('wpaic-retrieval-result');
 		var retrievalQuestion = document.getElementById('wpaic-retrieval-question');
 		var retrievalLimit = document.getElementById('wpaic-retrieval-candidate-limit');
+		var retrievalTopK = document.getElementById('wpaic-retrieval-top-k');
 
 		if (connectionButton && connectionResult) {
 			connectionButton.addEventListener('click', function () {
@@ -373,6 +409,7 @@
 			retrievalButton.addEventListener('click', function () {
 				var value = retrievalQuestion.value.trim();
 				var limit = retrievalLimit ? parseInt(retrievalLimit.value, 10) : 100;
+				var topK = retrievalTopK ? parseInt(retrievalTopK.value, 10) : 5;
 				if (!value) {
 					retrievalResult.className = 'wpaic-result is-error';
 					retrievalResult.innerHTML = '<strong>失败</strong><p>请输入要检索的问题。</p>';
@@ -380,7 +417,7 @@
 				}
 				postRequest(
 					'wpaic_retrieval_search',
-					{ question: value, candidate_limit: limit || 100 },
+					{ question: value, candidate_limit: limit || 100, top_k: topK || 5 },
 					WPAICAdmin.retrievalNonce,
 					retrievalButton,
 					retrievalResult,

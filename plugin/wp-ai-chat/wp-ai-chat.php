@@ -47,6 +47,7 @@ require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-knowledge-increm
 
 require_once WPAIC_PLUGIN_DIR . 'includes/retrieval/class-wpaic-retrieval-query-normalizer.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/retrieval/class-wpaic-retrieval-candidate-searcher.php';
+require_once WPAIC_PLUGIN_DIR . 'includes/retrieval/class-wpaic-retrieval-scorer.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/retrieval/class-wpaic-local-retriever.php';
 
 require_once WPAIC_PLUGIN_DIR . 'admin/class-wpaic-admin.php';
@@ -125,10 +126,11 @@ function wpaic_bootstrap() {
 	$batch_sync       = new WPAIC_Knowledge_Batch_Sync( $discovery, $store_repository, $lifecycle );
 	$incremental_sync = new WPAIC_Knowledge_Incremental_Sync( $discovery, $store_repository, $lifecycle );
 
-	// v0.5.0 Stage 1 Local Retrieval reads only from the persisted Knowledge Store.
+	// v0.5.0 Local Retrieval reads only from the persisted Knowledge Store.
 	$retrieval_normalizer = new WPAIC_Retrieval_Query_Normalizer();
 	$candidate_searcher   = new WPAIC_Retrieval_Candidate_Searcher( $store_repository );
-	$local_retriever      = new WPAIC_Local_Retriever( $retrieval_normalizer, $candidate_searcher );
+	$retrieval_scorer     = new WPAIC_Retrieval_Scorer();
+	$local_retriever      = new WPAIC_Local_Retriever( $retrieval_normalizer, $candidate_searcher, $retrieval_scorer );
 
 	if ( is_admin() ) {
 		new WPAIC_Admin( $manager, $discovery, $extractor, $store_repository, $lifecycle, $batch_sync, $local_retriever );

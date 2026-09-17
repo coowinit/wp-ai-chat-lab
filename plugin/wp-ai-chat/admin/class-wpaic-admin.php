@@ -613,7 +613,7 @@ class WPAIC_Admin {
 	}
 
 	/**
-	 * Run one read-only Stage 1 Local Retrieval request.
+	 * Run one read-only Local Retrieval request.
 	 *
 	 * @return void
 	 */
@@ -641,9 +641,13 @@ class WPAIC_Admin {
 		}
 
 		$candidate_limit = isset( $_POST['candidate_limit'] ) ? absint( $_POST['candidate_limit'] ) : 100;
+		$top_k           = isset( $_POST['top_k'] ) ? absint( $_POST['top_k'] ) : 5;
 		$result = $this->local_retriever->retrieve(
 			$question,
-			array( 'candidate_limit' => $candidate_limit )
+			array(
+				'candidate_limit' => $candidate_limit,
+				'top_k'           => $top_k,
+			)
 		);
 
 		if ( is_wp_error( $result ) ) {
