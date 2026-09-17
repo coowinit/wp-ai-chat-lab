@@ -271,6 +271,40 @@
 		'</div>';
 	}
 
+	function groundedAnswerHtml(data) {
+		data = data || {};
+		var aiCalled = !!data.ai_called;
+		var usage = data.usage || {};
+		var answer = String(data.answer || '');
+		var answerType = String(data.answer_type || (aiCalled ? 'ai' : 'deterministic'));
+		var trace = Array.isArray(data.source_trace) ? data.source_trace : [];
+		var answerBody = answer ? '<div class="wpaic-grounded-answer-text">' + escapeHtml(answer).replace(/\n/g, '<br>') + '</div>' : '<p class="description">没有可显示的回答。</p>';
+		var traceHtml = trace.map(function (source) {
+			var coverage = Math.round((parseFloat(source.coverage) || 0) * 100);
+			var link = source.url ? '<a href="' + escapeHtml(source.url) + '" target="_blank" rel="noopener noreferrer">打开来源 ↗</a>' : '无 URL';
+			return '<div class="wpaic-source-trace-item">' +
+				'<strong><code>' + escapeHtml(source.evidence_id || '') + '</code> · ' + escapeHtml(source.title || '(Untitled)') + '</strong>' +
+				'<p class="description"><code>' + escapeHtml(source.source_id || '') + '</code> · Score ' + escapeHtml(source.score || 0) + ' · Coverage ' + escapeHtml(coverage) + '% · ' + link + '</p>' +
+			'</div>';
+		}).join('');
+
+		return '<div class="wpaic-grounded-answer ' + (aiCalled ? 'is-ai' : 'is-deterministic') + '">' +
+			'<div class="wpaic-strength-head"><strong>Grounded Answer</strong><span class="wpaic-answer-badge">' + escapeHtml(aiCalled ? 'AI ANSWER' : answerType.toUpperCase()) + '</span></div>' +
+			answerBody +
+			'<dl class="wpaic-strength-stats wpaic-answer-stats">' +
+				'<div><dt>AI Called</dt><dd>' + (aiCalled ? 'Yes' : 'No') + '</dd></div>' +
+				'<div><dt>Provider</dt><dd>' + escapeHtml(data.provider || '—') + '</dd></div>' +
+				'<div><dt>Model</dt><dd>' + escapeHtml(data.model || '—') + '</dd></div>' +
+				'<div><dt>Total Tokens</dt><dd>' + escapeHtml(usage.total_tokens || data.token_usage || 0) + '</dd></div>' +
+				'<div><dt>Prompt Tokens</dt><dd>' + escapeHtml(usage.prompt_tokens || 0) + '</dd></div>' +
+				'<div><dt>Completion Tokens</dt><dd>' + escapeHtml(usage.completion_tokens || 0) + '</dd></div>' +
+				'<div><dt>Provider Elapsed</dt><dd>' + escapeHtml(data.provider_elapsed_ms || 0) + ' ms</dd></div>' +
+				'<div><dt>Pipeline Elapsed</dt><dd>' + escapeHtml(data.elapsed_ms || 0) + ' ms</dd></div>' +
+			'</dl>' +
+			(traceHtml ? '<div class="wpaic-source-trace"><h4>Source Trace</h4>' + traceHtml + '</div>' : '') +
+		'</div>';
+	}
+
 	function groundingGateHtml(data) {
 		data = data || {};
 		var retrieval = data.retrieval || {};
@@ -297,10 +331,10 @@
 				'<div><dt>Score Gap</dt><dd>' + escapeHtml(gate.score_gap || 0) + '</dd></div>' +
 				'<div><dt>Top Coverage</dt><dd>' + escapeHtml(coverage) + '%</dd></div>' +
 			'</dl>' +
-			'<p class="description">Reason Code: <code>' + escapeHtml(gate.reason_code || '') + '</code> · Stage 2 只构建 Evidence / Prompt Preview，Provider Call 仍被硬性关闭。</p>' +
+			'<p class="description">Reason Code: <code>' + escapeHtml(gate.reason_code || '') + '</code> · 只有 allow_answer 才允许越过 Provider Boundary；clarify / no_answer 保持零 Token。</p>' +
 		'</div>';
 
-		return gateHtml + evidencePackHtml(data.evidence || {}) + promptPreviewHtml(data.prompt || {}) + '<h3>Retrieval Diagnostics</h3>' + retrievalHtml(retrieval);
+		return gateHtml + evidencePackHtml(data.evidence || {}) + promptPreviewHtml(data.prompt || {}) + groundedAnswerHtml(data) + '<h3>Retrieval Diagnostics</h3>' + retrievalHtml(retrieval);
 	}
 
 	function ajaxJson(action, payload, nonce) {

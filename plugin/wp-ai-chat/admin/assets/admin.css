@@ -724,3 +724,77 @@
 .wpaic-prompt-preview h4 {
 	margin-bottom: 6px;
 }
+
+/* v0.6.0 Stage 3 — Grounded Answer */
+.wpaic-grounded-answer {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-left: 4px solid #8c8f94;
+	margin: 14px 0;
+	padding: 14px;
+}
+
+.wpaic-grounded-answer.is-ai {
+	border-left-color: #00a32a;
+}
+
+.wpaic-grounded-answer.is-deterministic {
+	border-left-color: #dba617;
+}
+
+.wpaic-answer-badge {
+	background: #646970;
+	border-radius: 999px;
+	color: #fff;
+	font-size: 12px;
+	font-weight: 600;
+	padding: 2px 9px;
+}
+
+.wpaic-grounded-answer.is-ai .wpaic-answer-badge {
+	background: #008a20;
+}
+
+.wpaic-grounded-answer.is-deterministic .wpaic-answer-badge {
+	background: #996800;
+}
+
+.wpaic-grounded-answer-text {
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	font-size: 14px;
+	line-height: 1.7;
+	margin: 12px 0;
+	padding: 12px 14px;
+}
+
+.wpaic-answer-stats {
+	grid-template-columns: repeat(4, minmax(110px, 1fr));
+}
+
+.wpaic-source-trace {
+	border-top: 1px solid #dcdcde;
+	margin-top: 14px;
+	padding-top: 12px;
+}
+
+.wpaic-source-trace h4 {
+	margin: 0 0 8px;
+}
+
+.wpaic-source-trace-item {
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	margin: 8px 0;
+	padding: 10px 12px;
+}
+
+.wpaic-source-trace-item p {
+	margin: 4px 0 0;
+}
+
+@media (max-width: 782px) {
+	.wpaic-answer-stats {
+		grid-template-columns: repeat(2, minmax(100px, 1fr));
+	}
+}

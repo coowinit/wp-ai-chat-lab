@@ -4,7 +4,7 @@
 
 **当前稳定 Release：v0.5.0 · Local Retrieval**  
 **当前开发方向：v0.6.0 · Grounded AI**  
-**当前状态：v0.6.0 Stage 2 Evidence Pack & Prompt Builder；Validation Passed / Ready for Stage 3**
+**当前状态：v0.6.0 Stage 3 Grounded Answer；Validation Passed / Ready for Final Review**
 
 ## v0.5.0 稳定版本状态
 
@@ -65,7 +65,7 @@ docs/versions/v0.5.0.md
 
 ## v0.6.0 开发状态
 
-`v0.6.0 — Grounded AI` 已完成设计定稿，**Stage 1 — Grounding Gate Foundation 与 Stage 2 — Evidence Pack & Prompt Builder 均已通过真实 WordPress 环境验证并正式封板；下一步进入 Stage 3 — Grounded Answer**。
+`v0.6.0 — Grounded AI` 已完成设计定稿，Stage 1、Stage 2 与 Stage 3 均已通过真实 WordPress 环境验证并封板。**当前已进入 v0.6.0 Final Review 准备阶段。**
 
 当前已经建立：
 
@@ -109,7 +109,7 @@ Stage 1 即使得到 `allow_answer`，也只表示**策略上允许进入后续 
 ```text
 Stage 1 — Grounding Gate Foundation      ← Validation Passed
 Stage 2 — Evidence Pack & Prompt Builder ← Validation Passed
-Stage 3 — Grounded Answer                ← Next
+Stage 3 — Grounded Answer                ← Validation Passed
 ```
 
 Stage 1 已在真实 WordPress 环境完成四类证据状态验证：
@@ -142,6 +142,60 @@ Token Usage = 0
 其中 `CWC-610 warranty` 专门验证了 Partial Evidence：系统可以确认产品本身，但当问题中的 `warranty` 缺少完整本地证据时，Gate 不会因为产品型号匹配很强就放行 AI。Stage 1 正式封板，下一阶段进入 **Stage 2 — Evidence Pack & Prompt Builder**。
 
 Stage 2 也已完成真实环境验收：`CWC-610 dimension` 只把正确 Product 作为 `S1` 放入 Evidence Pack，Score 14 / Coverage 50% 的普通候选被正确过滤；`dimension`、`CWC-610 warranty` 与 `ZXQ-99999-NOMATCH` 均验证非 `allow_answer` 状态会跳过 Evidence Pack 与 Prompt Preview。随后通过 `minimum order quantity` 构造并验证 `S1 + S2` 多来源 Evidence：`manual_3100`（Score 39 / Coverage 100%）作为 Primary Evidence，`manual_3104`（Score 21 / Coverage 100%）作为 Supporting Evidence，Prompt Preview 正确输出 `Evidence IDs: S1, S2`，弱相关候选仍被排除。Stage 2 正式封板，下一阶段进入 **Stage 3 — Grounded Answer**。
+
+Stage 3 第一轮已经新增 `WPAIC_Grounded_Answer_Service`，将单轮流程正式串联为：
+
+```text
+Question
+→ Local Retrieval
+→ Grounding Gate
+→ allow_answer only
+→ Evidence Pack
+→ Grounded Prompt
+→ WPAIC_AI_Manager
+→ DeepSeek Provider
+→ Grounded Answer + Source Trace + Usage
+```
+
+关键边界：`clarify / no_answer` 在 Service 中直接返回确定性结果，绝不会越过 Provider Boundary；只有 `allow_answer` 才能调用 AI Manager。真实 AI 路径会返回 Provider、Model、Prompt / Completion / Total Tokens、Provider Elapsed、Pipeline Elapsed 与应用层 Source Trace。当前默认 `max_tokens = 640 / temperature = 0.1`，可通过 `wpaic_grounded_answer_ai_options` Filter 调整。
+
+Stage 3 已完成真实 WordPress 环境验证：
+
+```text
+CWC-610 dimension
+→ allow_answer
+→ AI Called = Yes
+→ DeepSeek / deepseek-flash
+→ 580 Total Tokens
+→ 正确回答 610*9mm [S1]
+→ Source Trace = wordpress_post_2413
+
+dimension
+→ clarify
+→ deterministic answer
+→ AI Called = No
+→ Total Tokens = 0
+
+CWC-610 warranty
+→ Medium / clarify
+→ AI Called = No
+→ Total Tokens = 0
+
+ZXQ-99999-NOMATCH
+→ no_answer
+→ AI Called = No
+→ Total Tokens = 0
+
+minimum order quantity
+→ allow_answer
+→ AI Called = Yes
+→ 369 Total Tokens
+→ 回答明确说明没有具体 MOQ 数值证据
+→ 正确引用 [S1][S2]
+→ Source Trace 保留 S1 / S2
+```
+
+这证明 `allow_answer` 才会越过 Provider Boundary，而 `clarify / no_answer` 继续保持零 Token；多来源 Evidence 也能在真实 Provider Answer 中被正确约束和追踪。Stage 3 正式通过，下一步进入 **v0.6.0 Final Review**。
 
 完整设计与阶段记录见：
 
@@ -2742,10 +2796,10 @@ Lead / Support / Action
 
 ```text
 Version:
-v0.4.0 Stable / v0.5.0 Stage 3
+v0.5.0 Stable / v0.6.0 Stage 3
 
 Stage:
-Local Retrieval — Stage 3 Validation Passed
+Grounded AI — Stage 3 Validation Passed
 
 Production:
 Tidio
@@ -2754,7 +2808,7 @@ Development:
 WP AI Chat Lab
 
 Plugin Code:
-v0.5.0 Stage 1 Build
+v0.6.0 Stage 3 Build
 
 Primary Provider:
 DeepSeek (from v0.2.0)
@@ -2790,7 +2844,7 @@ Release Status:
 Final Review Passed / Stable Release
 
 Next Direction:
-v0.6.0 Grounded AI — Not Yet Designed
+v0.6.0 Final Review
 ```
 
 ---

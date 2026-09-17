@@ -1,6 +1,6 @@
 <?php
 /**
- * v0.6.0 Stage 2 — Evidence Pack & Prompt Builder Playground.
+ * v0.6.0 Stage 3 — Grounded Answer Playground.
  *
  * @package WP_AI_Chat_Lab
  */
@@ -8,19 +8,24 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+
+$provider            = $this->manager->get_current_provider();
+$provider_name       = is_wp_error( $provider ) ? 'Unavailable' : $provider->get_name();
+$provider_configured = ! is_wp_error( $provider ) && $provider->is_configured();
+$model_name          = ! is_wp_error( $provider ) && method_exists( $provider, 'get_model' ) ? $provider->get_model() : '';
 ?>
 <div class="wrap wpaic-wrap wpaic-grounded-wrap">
 	<h1>WP AI Chat Lab</h1>
-	<p class="description">v<?php echo esc_html( WPAIC_VERSION ); ?> · Stage 2 — Evidence Pack &amp; Prompt Builder</p>
+	<p class="description">v<?php echo esc_html( WPAIC_VERSION ); ?> · Stage 3 — Grounded Answer</p>
 
 	<div class="wpaic-grid wpaic-grounded-grid">
 		<div class="wpaic-card">
 			<h2>Grounded AI Playground</h2>
-			<p>先执行 Local Retrieval 与 Grounding Gate。只有 <code>allow_answer</code> 才构建 Evidence Pack 与 Prompt Preview；Stage 2 <strong>仍不会调用 DeepSeek</strong>。</p>
+			<p>执行 Local Retrieval → Grounding Gate → Evidence Pack → Prompt Builder。只有 <code>allow_answer</code> 才会真正调用 AI Provider；<code>clarify / no_answer</code> 继续保持零 Token。</p>
 
 			<div class="wpaic-grounding-controls">
 				<label for="wpaic-grounding-question"><strong>Question</strong></label>
-				<textarea id="wpaic-grounding-question" rows="4" placeholder="例如：CWC-610 dimension"></textarea>
+				<textarea id="wpaic-grounding-question" rows="4" maxlength="1000" placeholder="例如：CWC-610 dimension"></textarea>
 
 				<div class="wpaic-retrieval-options">
 					<label for="wpaic-grounding-candidate-limit"><strong>Candidate Limit</strong></label>
@@ -34,28 +39,31 @@ if ( ! defined( 'ABSPATH' ) ) {
 					</select>
 				</div>
 
-				<p><button type="button" id="wpaic-run-grounding-gate" class="button button-primary">测试 Evidence Pipeline</button></p>
+				<p><button type="button" id="wpaic-run-grounding-gate" class="button button-primary">生成 Grounded Answer</button></p>
+				<p class="description">只有 Gate = <code>allow_answer</code> 时按钮才可能产生真实 API 调用与 Token Usage。</p>
 			</div>
 			<div id="wpaic-grounding-result" class="wpaic-result" aria-live="polite"></div>
 		</div>
 
 		<div class="wpaic-card">
-			<h2>Stage 2 边界</h2>
+			<h2>Stage 3 边界</h2>
 			<ul class="wpaic-plain-list">
 				<li>✓ Stage 1 Grounding Gate</li>
-				<li>✓ Evidence Pack Builder</li>
-				<li>✓ Primary Evidence = Rank #1</li>
-				<li>✓ Supporting Evidence Quality Floor</li>
-				<li>✓ Evidence Budget / Token Firewall</li>
-				<li>✓ S1 / S2 / S3 Source Trace</li>
-				<li>✓ Evidence 作为 Data，不作为 Instruction</li>
-				<li>✓ Prompt Preview</li>
-				<li>✓ AI Called 始终为 No</li>
-				<li>✓ Token Usage 始终为 0</li>
-				<li>— Stage 3 才允许真实 AI Call</li>
+				<li>✓ Stage 2 Evidence Pack / Prompt Builder</li>
+				<li>✓ 只有 allow_answer 才调用 Provider</li>
+				<li>✓ AI Manager 统一 Provider 入口</li>
+				<li>✓ Grounded Answer + Source Trace</li>
+				<li>✓ Provider / Model / Usage / Elapsed</li>
+				<li>✓ clarify / no_answer 保持 AI Called = No</li>
+				<li>✓ Source URL 由应用层维护</li>
+				<li>— 不做 Conversation History</li>
+				<li>— 不做前台 Chat / Human Handoff</li>
+				<li>— 不做 Chunk / Embedding / Vector / RAG</li>
 			</ul>
-			<p class="description">默认预算：最多 3 个 Evidence Source；每个最多 2400 字符；总 Evidence 最多 6000 字符。</p>
-			<p class="description">Supporting Evidence 默认至少 Score 18 且 Coverage 75%，避免普通召回结果污染 Prompt。</p>
+			<p class="description">Provider：<strong><?php echo esc_html( $provider_name ); ?></strong></p>
+			<p class="description">Model：<code><?php echo esc_html( $model_name ? $model_name : '—' ); ?></code></p>
+			<p class="description">API Key：<?php echo $provider_configured ? '<strong>已配置</strong>' : '<strong>未配置</strong>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></p>
+			<p class="description">默认 Grounded Answer：max_tokens 640，temperature 0.1；可通过 Filter 调整。</p>
 			<p class="description">当前 active Knowledge Store Rows：<?php echo esc_html( number_format_i18n( $active_count ) ); ?></p>
 		</div>
 	</div>

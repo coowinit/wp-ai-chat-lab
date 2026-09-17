@@ -1,5 +1,30 @@
 ## v0.6.0 — Grounded AI (Development)
 
+### Stage 3 — Grounded Answer
+
+- 新增 `WPAIC_Grounded_Answer_Service`，统一编排 Retrieval → Gate → Evidence → Prompt → AI Manager → Grounded Answer。
+- `clarify / no_answer` 在 Service 内直接返回 deterministic result，不构建 Provider Request，不产生 Token。
+- 只有 `allow_answer / allow_ai=true` 才允许越过 Provider Boundary。
+- Grounded Answer 继续只通过 `WPAIC_AI_Manager` 调用当前 Provider，不直接依赖 `WPAIC_DeepSeek_Provider`，不自行读取 API Key。
+- 默认 AI 参数：`max_tokens = 640 / temperature = 0.1`，提供 `wpaic_grounded_answer_ai_options` Filter。
+- 新增统一 Grounded Answer Result：`answer / source_trace / provider / model / usage / finish_reason / provider_elapsed_ms / elapsed_ms / ai_called`。
+- Source Trace 由应用层根据 Evidence Pack 生成，模型不能决定真实 Source ID / Title / URL。
+- Grounded AI Playground 升级到 Stage 3：`allow_answer` 会产生真实 Provider 调用；`clarify / no_answer` 继续保持 `AI Called = No / Token Usage = 0`。
+- Playground 新增 Grounded Answer、Source Trace、Provider / Model、Prompt / Completion / Total Tokens、Provider / Pipeline Elapsed 诊断。
+- Prompt Preview 与 Evidence Pack 继续保留，方便逐层核对实际发送给 Provider 的输入。
+- Provider 未配置 API Key 时，allow_answer 路径明确返回配置错误，不会静默退化为自由回答。
+- 不新增数据库表，不新增 Answer / Prompt / Usage Log；仍限定 Single-turn / Single-intent QA。
+- 不做 Conversation / Front-end Chat / Lead / Human Handoff / Chunk / Embedding / Vector / RAG。
+- PHP / JavaScript 静态语法检查通过。
+- Stage 3 已完成真实 WordPress 环境验证并正式封板。
+- `CWC-610 dimension`：Gate = `allow_answer`，真实调用 DeepSeek / `deepseek-flash`；Prompt 557 Tokens、Completion 23、Total 580；答案正确返回 `610*9mm [S1]`，Source Trace 指向 `wordpress_post_2413`。
+- `dimension`：Weak → `clarify`，返回 deterministic clarification；`AI Called = No / Total Tokens = 0`。
+- `CWC-610 warranty`：Medium Partial Evidence → `clarify`；`AI Called = No / Total Tokens = 0`，未因产品型号强匹配而猜测 warranty。
+- `ZXQ-99999-NOMATCH`：None → `no_answer`；`AI Called = No / Total Tokens = 0`。
+- `minimum order quantity`：S1 + S2 多来源 Evidence 真实调用通过；DeepSeek 正确说明 Evidence 未提供具体 MOQ 数值，并引用 `[S1][S2]`；Prompt 301、Completion 68、Total 369。
+- Source Trace 在单来源与多来源真实回答路径均正确由应用层输出。
+- Stage 3 当前状态：Validation Passed / Ready for v0.6.0 Final Review。
+
 ### Stage 2 — Evidence Pack & Prompt Builder
 
 - 新增 `WPAIC_Evidence_Pack_Builder`：只在 Grounding Gate 返回 `allow_answer / allow_ai=true` 后构建 Evidence。
