@@ -458,6 +458,37 @@
 			});
 	}
 
+
+	function usageGuardHtml(data) {
+		data = data || {};
+		var decision = String(data.decision || (data.reserved ? 'allow' : 'block')).toLowerCase();
+		var scopes = data.scopes || {};
+		var order = ['conversation', 'visitor', 'site'];
+		var labels = { conversation: 'Conversation', visitor: 'Visitor Today', site: 'Site Today' };
+		var scopeHtml = order.map(function (scope) {
+			var item = scopes[scope] || {};
+			var remaining = item.remaining === null || item.remaining === undefined ? 'Unlimited' : item.remaining;
+			return '<div class="wpaic-usage-scope">' +
+				'<h4>' + escapeHtml(labels[scope]) + '</h4>' +
+				'<dl>' +
+					'<dt>Enabled</dt><dd>' + (item.enabled ? 'Yes' : 'No') + '</dd>' +
+					'<dt>Used</dt><dd>' + escapeHtml(item.used || 0) + '</dd>' +
+					'<dt>Limit</dt><dd>' + escapeHtml(item.limit || 0) + '</dd>' +
+					'<dt>Remaining</dt><dd>' + escapeHtml(remaining) + '</dd>' +
+					'<dt>Period</dt><dd>' + escapeHtml(item.period_key || '') + '</dd>' +
+				'</dl>' +
+				'<p class="description wpaic-usage-hash">Hash: <code>' + escapeHtml(item.key_hash || '(missing)') + '</code></p>' +
+			'</div>';
+		}).join('');
+		return '<div class="wpaic-usage-decision is-' + escapeHtml(decision) + '">' +
+			'<p><strong>Decision: ' + escapeHtml(decision.toUpperCase()) + '</strong></p>' +
+			'<p>Reason Code: <code>' + escapeHtml(data.reason_code || '') + '</code>' +
+			(data.blocked_scope ? ' · Blocked Scope: <strong>' + escapeHtml(data.blocked_scope) + '</strong>' : '') + '</p>' +
+			(data.simulated_provider_call ? '<p><strong>Simulation:</strong> Reserved 1 Provider Call. AI Called = No · Token Usage = 0.</p>' : '') +
+			'<div class="wpaic-usage-scopes">' + scopeHtml + '</div>' +
+		'</div>';
+	}
+
 	function aiRequest(action, payload, button, resultEl) {
 		postRequest(action, payload, WPAICAdmin.nonce, button, resultEl, function (data) {
 			return '<strong>成功</strong>' +
@@ -490,6 +521,12 @@
 		var groundingQuestion = document.getElementById('wpaic-grounding-question');
 		var groundingLimit = document.getElementById('wpaic-grounding-candidate-limit');
 		var groundingTopK = document.getElementById('wpaic-grounding-top-k');
+		var usageCheckButton = document.getElementById('wpaic-usage-check');
+		var usageSimulateButton = document.getElementById('wpaic-usage-simulate');
+		var usageResult = document.getElementById('wpaic-usage-result');
+		var usageConversationKey = document.getElementById('wpaic-usage-conversation-key');
+		var usageVisitorKey = document.getElementById('wpaic-usage-visitor-key');
+		var usageSiteKey = document.getElementById('wpaic-usage-site-key');
 
 		if (connectionButton && connectionResult) {
 			connectionButton.addEventListener('click', function () {
@@ -600,6 +637,27 @@
 					groundingResult,
 					groundingGateHtml
 				);
+			});
+		}
+
+
+		function usagePayload() {
+			return {
+				conversation_key: usageConversationKey ? usageConversationKey.value.trim() : '',
+				visitor_key: usageVisitorKey ? usageVisitorKey.value.trim() : '',
+				site_key: usageSiteKey ? usageSiteKey.value.trim() : 'site'
+			};
+		}
+
+		if (usageCheckButton && usageResult) {
+			usageCheckButton.addEventListener('click', function () {
+				postRequest('wpaic_usage_guard_check', usagePayload(), WPAICAdmin.usageNonce, usageCheckButton, usageResult, usageGuardHtml);
+			});
+		}
+
+		if (usageSimulateButton && usageResult) {
+			usageSimulateButton.addEventListener('click', function () {
+				postRequest('wpaic_usage_guard_simulate', usagePayload(), WPAICAdmin.usageNonce, usageSimulateButton, usageResult, usageGuardHtml);
 			});
 		}
 

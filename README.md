@@ -4,7 +4,7 @@
 
 **当前稳定 Release：v0.6.0 · Grounded AI**  
 **当前开发方向：v0.7.0 · Usage Guard**  
-**当前状态：v0.7.0 Design Ready；插件代码仍保持 v0.6.0 Stable**
+**当前状态：v0.7.0 Stage 1 Validation Passed；Ready for Stage 2 Provider Boundary Integration**
 
 ## v0.5.0 稳定版本状态
 
@@ -203,9 +203,9 @@ minimum order quantity
 docs/versions/v0.6.0.md
 ```
 
-## v0.7.0 设计状态
+## v0.7.0 开发状态
 
-`v0.7.0 — Usage Guard` 已完成第一版设计定稿，当前插件功能代码仍保持 v0.6.0 Stable，不提前修改 Provider Pipeline。
+`v0.7.0 — Usage Guard` 已完成设计定稿，并完成 **Stage 1 — Usage Store & Policy Foundation** 的真实环境验收。当前已新增 Usage Counter Table、Usage Context、Usage Repository、Usage Guard、Limits Settings 与后台 Usage Diagnostics；真实 Grounded Answer Provider Boundary Integration 仍留给 Stage 2。
 
 这一版开始解决：
 
@@ -241,7 +241,24 @@ Visitor       20 / day
 Site         200 / day
 ```
 
-Usage Guard 控制的是 **Provider Call**，不是用户消息数；`clarify / no_answer` 不增加 Usage。第一版建议新增一张 `wpaic_usage_counter` 表，把 DB Version 从 `1.0` 提升到 `1.1`，并同时记录 Provider Call 与真实 Token Usage，但暂不做 Monthly Token / Cost Budget。
+Usage Guard 控制的是 **Provider Call**，不是用户消息数；`clarify / no_answer` 不增加 Usage。Stage 1 已新增 `wpaic_usage_counter` 表，把 DB Version 从 `1.0` 提升到 `1.1`；当前先验证 Provider Call Reservation 与 Scope Policy，真实 Token Usage 会在 Stage 2 接入 Provider Boundary 后记录。
+
+Stage 1 真实环境已验证：
+
+```text
+只读检查不会增加 Counter                  ✅
+Reservation 三个启用 Scope 原子 +1         ✅
+Conversation lifetime limit                ✅
+Visitor daily limit                        ✅
+Site daily limit                           ✅
+更换 Conversation 后 Visitor / Site 保持累计 ✅
+Missing Context Fail Closed                ✅
+任一 Scope BLOCK 后其他 Scope 不增加        ✅
+后台 Limit 修改后实时 Policy 生效           ✅
+Hashed Scope Key 稳定且不同 Key 相互隔离     ✅
+```
+
+最终 Visitor 专项测试使用 `Conversation = 10 / Visitor = 3 / Site = 20`：同一个 `visitor-limit-test` 在三个不同 Conversation 中成功 Reserve 到 `3/3`，第四个新 Conversation 正确返回 `visitor_daily_limit_reached`；被阻断时新 Conversation 与 Site 均不再增加。Stage 1 因此正式封板，下一步进入 **Stage 2 — Provider Boundary Integration**。
 
 最重要的边界：
 
@@ -2929,3 +2946,17 @@ v0.7.0 Stage 1 — Usage Store & Policy Foundation
 > **怎样才能让 WordPress 自己真正拥有一套简单、可靠、可维护、成本可控的 AI 能力。**
 
 这也是 WP AI Chat Lab 从 v0.1.0 开始最重要的设计基线。
+
+### v0.7.0 Stage 1 当前状态
+
+```text
+DB Version 1.1                         Implemented
+wpaic_usage_counter                   Implemented
+Usage Context / Hashed Scope Keys     Implemented
+Conversation / Visitor / Site Limits  Implemented
+Fail Closed                           Implemented
+Atomic Reservation Simulation         Implemented
+Provider Boundary Integration         Not Yet (Stage 2)
+```
+
+当前：**Code Implemented / Awaiting Real-world Validation**。

@@ -798,3 +798,18 @@
 		grid-template-columns: repeat(2, minmax(100px, 1fr));
 	}
 }
+
+/* v0.7.0 Stage 1 Usage Guard */
+.wpaic-usage-fields { display:grid; grid-template-columns:repeat(3,minmax(220px,1fr)); gap:16px; margin:18px 0; }
+.wpaic-usage-fields label { display:flex; flex-direction:column; gap:6px; }
+.wpaic-usage-fields input { width:100%; }
+.wpaic-usage-decision { border-left:4px solid #2271b1; padding:14px 16px; background:#f6f7f7; margin-top:12px; }
+.wpaic-usage-decision.is-block { border-left-color:#d63638; }
+.wpaic-usage-decision.is-allow { border-left-color:#00a32a; }
+.wpaic-usage-scopes { display:grid; grid-template-columns:repeat(3,minmax(180px,1fr)); gap:12px; margin-top:12px; }
+.wpaic-usage-scope { border:1px solid #dcdcde; background:#fff; padding:12px; }
+.wpaic-usage-scope h4 { margin:0 0 8px; }
+.wpaic-usage-scope dl { margin:0; display:grid; grid-template-columns:1fr auto; gap:4px 10px; }
+.wpaic-usage-scope dt,.wpaic-usage-scope dd { margin:0; }
+.wpaic-usage-hash { word-break:break-all; font-size:11px; }
+@media (max-width: 900px) { .wpaic-usage-fields,.wpaic-usage-scopes { grid-template-columns:1fr; } }

@@ -1,3 +1,34 @@
+# Changelog
+
+## v0.7.0 — Stage 1 Usage Store & Policy Foundation (Validation Passed)
+
+- Plugin development version advanced to `0.7.0`.
+- DB schema advanced from `1.0` to `1.1`.
+- Added `wp_wpaic_usage_counter` as the second custom table.
+- Added `WPAIC_Usage_Context` with HMAC-SHA256 scope-key hashing.
+- Added `WPAIC_Usage_Counter_Repository`.
+- Added `WPAIC_Usage_Guard`.
+- Added Conversation lifetime, Visitor daily, and Site daily Provider Call limits.
+- Added `0 = unlimited/disabled` semantics per scope.
+- Added fail-closed handling for missing enabled-scope context.
+- Added atomic multi-scope Provider Call reservation simulation using a short DB transaction.
+- Added Usage Guard admin settings and diagnostics playground.
+- Added explicit test keys `lab-conversation-1`, `lab-visitor-1`, and `site`.
+- Stage 1 simulation increments Usage counters but does **not** call DeepSeek and records zero tokens.
+- Real Provider Boundary integration remains deferred to Stage 2.
+- Stage 1 completed real WordPress validation and was formally sealed.
+- Read-only `evaluate` confirmed that counters do not change.
+- Successful reservation confirmed atomic +1 across Conversation / Visitor / Site enabled scopes.
+- Conversation lifetime limit confirmed with `conversation_limit_reached`.
+- Visitor daily limit confirmed with `visitor_daily_limit_reached` by keeping the same visitor key across new conversation keys.
+- Site daily limit confirmed with `site_daily_limit_reached` by keeping the same site key across new conversation / visitor keys.
+- Blocked reservations confirmed to leave all non-blocking scopes unchanged.
+- Changing conversation key resets only Conversation scope while Visitor / Site counters persist.
+- Missing enabled-scope context confirmed fail-closed with `missing_usage_context`.
+- Saved limit values were confirmed to be read by Guard policy immediately after save/refresh.
+- Scope-key hashes remained stable for the same raw key and differed for different keys.
+- Stage 1 status: Validation Passed; ready for Stage 2 Provider Boundary Integration.
+
 ## v0.7.0 — Usage Guard (Design)
 
 ### Design

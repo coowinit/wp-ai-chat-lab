@@ -22,6 +22,16 @@ class WPAIC_DB_Installer {
 	}
 
 	/**
+	 * Return the Usage Counter table name for the current site.
+	 *
+	 * @return string
+	 */
+	public static function get_usage_table_name() {
+		global $wpdb;
+		return $wpdb->prefix . 'wpaic_usage_counter';
+	}
+
+	/**
 	 * Create or upgrade the Knowledge Store schema.
 	 *
 	 * dbDelta() makes this operation idempotent so both activation and normal
@@ -68,8 +78,29 @@ class WPAIC_DB_Installer {
 
 		dbDelta( $sql );
 
-		$exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) );
-		if ( $table_name === $exists ) {
+		$usage_table = self::get_usage_table_name();
+		$usage_sql = "CREATE TABLE {$usage_table} (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			scope_type varchar(32) NOT NULL,
+			scope_key_hash char(64) NOT NULL,
+			period_key varchar(32) NOT NULL,
+			provider_calls bigint(20) unsigned NOT NULL DEFAULT 0,
+			prompt_tokens bigint(20) unsigned NOT NULL DEFAULT 0,
+			completion_tokens bigint(20) unsigned NOT NULL DEFAULT 0,
+			total_tokens bigint(20) unsigned NOT NULL DEFAULT 0,
+			last_called_at datetime NULL,
+			created_at datetime NOT NULL,
+			updated_at datetime NOT NULL,
+			PRIMARY KEY  (id),
+			UNIQUE KEY scope_period (scope_type,scope_key_hash,period_key),
+			KEY scope_type_period (scope_type,period_key)
+		) {$charset_collate};";
+
+		dbDelta( $usage_sql );
+
+		$exists       = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) );
+		$usage_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $usage_table ) );
+		if ( $table_name === $exists && $usage_table === $usage_exists ) {
 			update_option( WPAIC_OPTION_DB_VERSION, WPAIC_DB_VERSION, false );
 		}
 	}

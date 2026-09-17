@@ -44,6 +44,12 @@ class WPAIC_Admin {
 	/** @var WPAIC_Grounded_Answer_Service */
 	protected $grounded_answer;
 
+	/** @var WPAIC_Usage_Counter_Repository */
+	protected $usage_repository;
+
+	/** @var WPAIC_Usage_Guard */
+	protected $usage_guard;
+
 	/** @var string */
 	protected $ai_page_hook = '';
 
@@ -59,6 +65,9 @@ class WPAIC_Admin {
 	/** @var string */
 	protected $grounded_page_hook = '';
 
+	/** @var string */
+	protected $usage_page_hook = '';
+
 	/**
 	 * @param WPAIC_AI_Manager                    $manager          AI manager.
 	 * @param WPAIC_Source_Discovery              $discovery        Source discovery.
@@ -71,8 +80,10 @@ class WPAIC_Admin {
 	 * @param WPAIC_Evidence_Pack_Builder          $evidence_builder Evidence Pack builder.
 	 * @param WPAIC_Grounded_Prompt_Builder        $prompt_builder   Grounded Prompt builder.
 	 * @param WPAIC_Grounded_Answer_Service        $grounded_answer  Grounded Answer orchestrator.
+	 * @param WPAIC_Usage_Counter_Repository       $usage_repository Usage counter repository.
+	 * @param WPAIC_Usage_Guard                    $usage_guard      Usage policy guard.
 	 */
-	public function __construct( WPAIC_AI_Manager $manager, WPAIC_Source_Discovery $discovery, WPAIC_Generic_Extractor $extractor, WPAIC_Knowledge_Store_Repository $store_repository, WPAIC_Knowledge_Lifecycle_Manager $lifecycle, WPAIC_Knowledge_Batch_Sync $batch_sync, WPAIC_Local_Retriever $local_retriever, WPAIC_Grounding_Gate $grounding_gate, WPAIC_Evidence_Pack_Builder $evidence_builder, WPAIC_Grounded_Prompt_Builder $prompt_builder, WPAIC_Grounded_Answer_Service $grounded_answer ) {
+	public function __construct( WPAIC_AI_Manager $manager, WPAIC_Source_Discovery $discovery, WPAIC_Generic_Extractor $extractor, WPAIC_Knowledge_Store_Repository $store_repository, WPAIC_Knowledge_Lifecycle_Manager $lifecycle, WPAIC_Knowledge_Batch_Sync $batch_sync, WPAIC_Local_Retriever $local_retriever, WPAIC_Grounding_Gate $grounding_gate, WPAIC_Evidence_Pack_Builder $evidence_builder, WPAIC_Grounded_Prompt_Builder $prompt_builder, WPAIC_Grounded_Answer_Service $grounded_answer, WPAIC_Usage_Counter_Repository $usage_repository, WPAIC_Usage_Guard $usage_guard ) {
 		$this->manager          = $manager;
 		$this->discovery        = $discovery;
 		$this->extractor        = $extractor;
@@ -84,6 +95,8 @@ class WPAIC_Admin {
 		$this->evidence_builder = $evidence_builder;
 		$this->prompt_builder   = $prompt_builder;
 		$this->grounded_answer  = $grounded_answer;
+		$this->usage_repository = $usage_repository;
+		$this->usage_guard      = $usage_guard;
 
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
@@ -96,6 +109,8 @@ class WPAIC_Admin {
 		add_action( 'wp_ajax_wpaic_run_full_sync_batch', array( $this, 'ajax_run_full_sync_batch' ) );
 		add_action( 'wp_ajax_wpaic_retrieval_search', array( $this, 'ajax_retrieval_search' ) );
 		add_action( 'wp_ajax_wpaic_grounding_gate_test', array( $this, 'ajax_grounding_gate_test' ) );
+		add_action( 'wp_ajax_wpaic_usage_guard_check', array( $this, 'ajax_usage_guard_check' ) );
+		add_action( 'wp_ajax_wpaic_usage_guard_simulate', array( $this, 'ajax_usage_guard_simulate' ) );
 	}
 
 	/**
@@ -158,6 +173,15 @@ class WPAIC_Admin {
 			'wp-ai-chat-lab-grounded',
 			array( $this, 'render_grounded_page' )
 		);
+
+		$this->usage_page_hook = add_submenu_page(
+			'wp-ai-chat-lab',
+			'Usage Guard',
+			'Usage Guard',
+			'manage_options',
+			'wp-ai-chat-lab-usage',
+			array( $this, 'render_usage_page' )
+		);
 	}
 
 	/**
@@ -174,6 +198,22 @@ class WPAIC_Admin {
 					'provider' => 'deepseek',
 					'model'    => WPAIC_DeepSeek_Provider::DEFAULT_MODEL,
 					'api_key'  => '',
+				),
+			)
+		);
+
+
+
+		register_setting(
+			'wpaic_usage_settings_group',
+			WPAIC_OPTION_USAGE_SETTINGS,
+			array(
+				'type'              => 'array',
+				'sanitize_callback' => array( $this, 'sanitize_usage_settings' ),
+				'default'           => array(
+					'conversation_limit'   => 10,
+					'visitor_daily_limit'  => 20,
+					'site_daily_limit'     => 200,
 				),
 			)
 		);
@@ -231,6 +271,21 @@ class WPAIC_Admin {
 	}
 
 	/**
+	 * Sanitize Usage Guard limits. Zero disables that scope.
+	 *
+	 * @param mixed $input Submitted limits.
+	 * @return array<string,int>
+	 */
+	public function sanitize_usage_settings( $input ) {
+		$input = is_array( $input ) ? $input : array();
+		return array(
+			'conversation_limit'  => isset( $input['conversation_limit'] ) ? min( 100000, absint( $input['conversation_limit'] ) ) : 10,
+			'visitor_daily_limit' => isset( $input['visitor_daily_limit'] ) ? min( 100000, absint( $input['visitor_daily_limit'] ) ) : 20,
+			'site_daily_limit'    => isset( $input['site_daily_limit'] ) ? min( 1000000, absint( $input['site_daily_limit'] ) ) : 200,
+		);
+	}
+
+	/**
 	 * Only persist discoverable post types. An empty list is valid and means
 	 * the administrator has intentionally disabled every generic source.
 	 *
@@ -260,7 +315,7 @@ class WPAIC_Admin {
 	 * @return void
 	 */
 	public function enqueue_assets( $hook ) {
-		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook, $this->store_page_hook, $this->retrieval_page_hook, $this->grounded_page_hook ), true ) ) {
+		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook, $this->store_page_hook, $this->retrieval_page_hook, $this->grounded_page_hook, $this->usage_page_hook ), true ) ) {
 			return;
 		}
 
@@ -300,6 +355,7 @@ class WPAIC_Admin {
 				'storeNonce'     => wp_create_nonce( 'wpaic_store_sync' ),
 				'retrievalNonce' => wp_create_nonce( 'wpaic_retrieval_search' ),
 				'groundingNonce' => wp_create_nonce( 'wpaic_grounding_gate_test' ),
+				'usageNonce'     => wp_create_nonce( 'wpaic_usage_guard_test' ),
 				'i18n'           => array(
 					'working' => '请求中…',
 					'error'   => '请求失败，请重试。',
@@ -455,6 +511,16 @@ class WPAIC_Admin {
 
 		$active_count = $this->store_repository->count_by_status( 'active' );
 		include WPAIC_PLUGIN_DIR . 'admin/views/page-grounded-ai.php';
+	}
+
+	/** Render v0.7.0 Stage 1 Usage Guard Playground. @return void */
+	public function render_usage_page() {
+		$this->guard_admin_page();
+		$usage_settings = get_option( WPAIC_OPTION_USAGE_SETTINGS, array() );
+		$usage_settings = is_array( $usage_settings ) ? $usage_settings : array();
+		$db_version = (string) get_option( WPAIC_OPTION_DB_VERSION, '' );
+		$usage_table = WPAIC_DB_Installer::get_usage_table_name();
+		include WPAIC_PLUGIN_DIR . 'admin/views/page-usage-guard.php';
 	}
 
 	/**
@@ -748,6 +814,43 @@ class WPAIC_Admin {
 		}
 
 		wp_send_json_success( $result );
+	}
+
+	/** Run a read-only Usage Guard check. @return void */
+	public function ajax_usage_guard_check() {
+		$this->guard_usage_ajax_request();
+		$context = $this->usage_context_from_request();
+		$result  = $this->usage_guard->evaluate( $context );
+		wp_send_json_success( $result );
+	}
+
+	/** Simulate one Provider Call reservation without calling AI. @return void */
+	public function ajax_usage_guard_simulate() {
+		$this->guard_usage_ajax_request();
+		$context = $this->usage_context_from_request();
+		$result  = $this->usage_guard->reserve( $context );
+		if ( is_wp_error( $result ) ) { $this->send_error( $result ); }
+		$result['simulated_provider_call'] = ! empty( $result['reserved'] );
+		$result['ai_called'] = false;
+		$result['token_usage'] = 0;
+		wp_send_json_success( $result );
+	}
+
+	/** @return WPAIC_Usage_Context */
+	protected function usage_context_from_request() {
+		return new WPAIC_Usage_Context( array(
+			'conversation_key' => isset( $_POST['conversation_key'] ) ? wp_unslash( $_POST['conversation_key'] ) : '',
+			'visitor_key'      => isset( $_POST['visitor_key'] ) ? wp_unslash( $_POST['visitor_key'] ) : '',
+			'site_key'         => isset( $_POST['site_key'] ) ? wp_unslash( $_POST['site_key'] ) : 'site',
+		) );
+	}
+
+	/** @return void */
+	protected function guard_usage_ajax_request() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'code' => 'wpaic_forbidden', 'message' => '你没有执行此操作的权限。' ), 403 );
+		}
+		check_ajax_referer( 'wpaic_usage_guard_test', 'nonce' );
 	}
 
 	/**
