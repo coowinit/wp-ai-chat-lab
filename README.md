@@ -2,9 +2,9 @@
 
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
-**当前稳定 Release：v0.3.1 · Structured Source Validation**  
-**当前开发：v0.4.0 · Knowledge Store & Lifecycle（Stage 3 Code Build）**  
-**当前验证：Stage 1 / Stage 2 已通过；Stage 3 Batch Sync & Reconciliation 等待真实环境验证**
+**当前稳定 Release：v0.4.0 · Knowledge Store & Lifecycle**  
+**当前开发：v0.5.0 · Local Retrieval（Design Pending）**  
+**当前验证：v0.4.0 Stage 1~4 全部通过真实环境验证，Final Review Passed**
 
 ## v0.3.1 开发状态
 
@@ -71,7 +71,7 @@ docs/versions/v0.3.1.md
 
 ## v0.4.0 设计状态
 
-`v0.4.0 — Knowledge Store & Lifecycle` 已完成正式设计。Stage 1 — Store Foundation 与 Stage 2 — Lifecycle 均已通过真实环境验证，当前进入 Stage 3 — Batch Sync & Reconciliation 第一轮代码实现。
+`v0.4.0 — Knowledge Store & Lifecycle` 已完成设计、四阶段实现、真实环境验证与 Final Review，现作为当前稳定 Release。
 
 这一阶段第一次把已经标准化的 Unified Knowledge Source 持久化为可重建的 AI Read Model：
 
@@ -125,7 +125,9 @@ Minimal Store Diagnostics
 
 Stage 2 Eligibility Lifecycle 已通过真实环境验证：Draft / Trash / Disabled / Deleted 均能把已有 Store Row 软停用，重新满足条件后 `reactivated`；Inactive Row 保留最后有效 AI-visible Snapshot 与 Hash。
 
-Stage 3 当前新增可见 AJAX Batch Full Sync、Progress / Summary 与最终 Reconciliation。真实网站首次 Full Sync 已处理 138 条正式 Knowledge、Errors 0；同时根据真实使用反馈，Knowledge Store Rows 已增加每页 20 条的轻量分页，避免 Full Sync 后 100+ Row 只能查看最近少量记录。当前状态：**Stage 3 Real-world Validation In Progress**。
+Stage 3 已通过真实环境验证：首次 Full Sync 成功处理 138 条正式 Knowledge、Errors 0；连续重复 Full Sync 均得到 Created 0 / Updated 0 / Unchanged 138，Store Total 保持 139；禁用 Product 后 81 条 Product 由 Reconciliation 批量变为 inactive / source_disabled，重新启用后一次 Full Sync 得到 Reactivated 81 / Unchanged 57 / Errors 0。Knowledge Store Rows 同时完成每页 20 条的轻量分页。
+
+Stage 4 Incremental Sync 已通过真实环境验证：相关 WordPress Source 保存后通过 `wp_after_insert_post` 只同步当前 Source；永久删除通过 `deleted_post` 自动标记 `source_deleted`。已验证 `updated / unchanged / deactivated / reactivated / created / source_deleted`，Legacy / WEM Structured Data 变化能正确进入 Hash 与 Store；日常单条保存不会改变 Last Full Sync，也不会触发整站 Batch。当前状态：**v0.4.0 Final Review Passed / Stable Release**。
 
 ## v0.2.0 实测状态
 
@@ -2553,10 +2555,10 @@ Lead / Support / Action
 
 ```text
 Version:
-v0.3.1 Stable / v0.4.0 Development
+v0.4.0 Stable / v0.5.0 Design Pending
 
 Stage:
-Knowledge Store & Lifecycle — Stage 2 Lifecycle
+Knowledge Store & Lifecycle — Final Review Passed
 
 Production:
 Tidio
@@ -2565,7 +2567,7 @@ Development:
 WP AI Chat Lab
 
 Plugin Code:
-v0.4.0 Stage 2 Code Build
+v0.4.0 Final Release
 
 Primary Provider:
 DeepSeek (from v0.2.0)
@@ -2595,13 +2597,13 @@ Custom Database Tables:
 1（Knowledge Store）
 
 Current Stable Release:
-v0.3.1 Structured Source Validation
+v0.4.0 Knowledge Store & Lifecycle
 
 Development Status:
-Stage 1 Passed / Stage 2 Code Implemented — Awaiting Real-world Validation
+v0.4.0 Stage 1~4 Passed / Final Review Passed
 
 Next:
-v0.4.0 Stage 2 — Lifecycle Validation
+v0.5.0 — Local Retrieval Design
 ```
 
 ---

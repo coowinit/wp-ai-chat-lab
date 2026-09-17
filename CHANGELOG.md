@@ -1,12 +1,12 @@
-## [Unreleased]
+## v0.4.0 — Knowledge Store & Lifecycle (2026-09-17)
 
 ### Fixed
 
 - 修复 Knowledge Store 分页链接中查询参数分隔符被错误编码为 `#038;`，导致点击页码无法切换的问题。
+- 后台 JS / CSS 资源版本加入文件内容哈希，避免同一 `v0.4.0` 多阶段开发时浏览器继续使用旧缓存。
 
-### v0.4.0 — Knowledge Store & Lifecycle (Design Ready)
+### Design
 
-#### Design
 
 - 完成 `docs/versions/v0.4.0.md` 第一版正式设计合同。
 - 明确 WordPress 继续作为唯一 Source of Truth，Knowledge Store 只是可重建的 AI Read Model / Snapshot。
@@ -84,10 +84,55 @@
 - Single-source Sync 继续保留作为诊断工具。
 - Stage 3 仍不加入自动保存 Hooks；Incremental Sync 留到 Stage 4。
 
-#### Stage 3 Validation Status
+#### Stage 3 Validation Passed
 
-- 当前状态：Real-world Validation In Progress。首次 Full Sync 已跑通，当前继续验证第二次 Full Sync 的 `unchanged` 幂等性与 Reconciliation。
-- 建议优先验证首次 Full Sync、多 Batch 进度、第二次 Full Sync 大量 `unchanged`、无重复 `source_id`，再验证 disabled / draft / deleted stale rows 的 Reconciliation。
+- 首次真实 Full Sync：Processed 138 / Errors 0。
+- 连续重复 Full Sync：Created 0 / Updated 0 / Unchanged 138，Store Total 保持 139，不产生重复 Row。
+- 禁用 Product 后，81 条 Product 由 Reconciliation 批量变为 `inactive / source_disabled`；Active 138 → 57，Inactive 1 → 82，Total 仍为 139。
+- 重新启用 Product 后：Reactivated 81 / Unchanged 57 / Errors 0。
+- Knowledge Store Rows 分页在 139 条真实 Store Row 上验证通过。
+- Stage 3 — Batch Sync & Reconciliation：Passed。
+
+#### Stage 4 — Incremental Sync (Code Implemented)
+
+- 新增 `WPAIC_Knowledge_Incremental_Sync`。
+- 监听 `wp_after_insert_post`，在 WordPress 正常保存流程完成后只同步当前 Source。
+- 监听 `deleted_post`，永久删除 Source 后自动将已有 Snapshot 标记为 `source_deleted`。
+- 新增 Source 在 `publish + enabled` 条件下可通过日常保存直接 `created`，无需等待下一次 Full Sync。
+- 已有 Store Row 保存时继续复用 Lifecycle Manager，可自动产生 `unchanged / updated / deactivated / reactivated`。
+- Draft / Trash / Republish 等状态变化只更新当前 Source，不触发整站扫描。
+- Legacy / WEM Structured Data 保存后继续通过同一 Extractor / Resolver / Hash / Store 链路更新当前 Row。
+- 自动忽略 revision、autosave 与 auto-draft；未启用且从未进入 Store 的普通内容不会产生无意义同步。
+- 新增轻量 `wpaic_last_incremental_sync` Option，仅保存最近一次 Incremental Sync 诊断结果，不增加日志表。
+- Knowledge Store 页面新增最近 Incremental Sync 信息，并更新为 Stage 4 边界说明。
+- Full Sync 继续保留用于 Initial Sync 与 Reconciliation；Incremental Sync 不调用 Full Sync。
+- Stage 4 仍不做 Retrieval / Fulltext / Chunk / Embedding / Vector / RAG / AI Answer。
+
+#### Stage 4 Validation Passed
+
+- 修改已有 Product 后自动 `updated`：通过。
+- AI-visible Knowledge 未变化再次保存 → `unchanged`：通过。
+- Product `publish → draft` → `inactive / deactivated / not_published`：通过。
+- Draft 重新发布 → `active / reactivated`：通过。
+- Legacy / WEM Structured Data 变化 → `updated` 且 Source Hash 改变：通过。
+- 新建并发布 Manual Knowledge → 自动 `created`：通过。
+- Manual Knowledge 移入回收站 → `deactivated / not_published`：通过。
+- Manual Knowledge 永久删除 → 自动 `source_deleted`：通过。
+- Incremental Sync 不触发 Full Sync，Last Full Sync 保持不变：通过。
+
+#### Final Review
+
+- Stage 1 — Store Foundation：Passed。
+- Stage 2 — Lifecycle：Passed。
+- Stage 3 — Batch Sync & Reconciliation：Passed。
+- Stage 4 — Incremental Sync：Passed。
+- PHP syntax check：通过。
+- JavaScript syntax check：通过。
+- Plugin Version / `WPAIC_VERSION`：`0.4.0`。
+- Knowledge Store 自定义表：1 张。
+- Chunk / Embedding / Vector 表：0。
+- Preview / Store / Sync 不调用 DeepSeek。
+- v0.4.0 Final Review：通过。
 
 ---
 

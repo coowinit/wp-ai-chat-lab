@@ -11,10 +11,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $last_completed = ! empty( $last_full_sync['completed_at'] ) ? (string) $last_full_sync['completed_at'] : '';
 $last_stats     = ! empty( $last_full_sync['stats'] ) && is_array( $last_full_sync['stats'] ) ? $last_full_sync['stats'] : array();
+$last_incremental_completed = ! empty( $last_incremental_sync['completed_at'] ) ? (string) $last_incremental_sync['completed_at'] : '';
+$last_incremental_action    = ! empty( $last_incremental_sync['action'] ) ? (string) $last_incremental_sync['action'] : '';
+$last_incremental_source    = ! empty( $last_incremental_sync['source_id'] ) ? (string) $last_incremental_sync['source_id'] : '';
+$last_incremental_object_id = ! empty( $last_incremental_sync['object_id'] ) ? absint( $last_incremental_sync['object_id'] ) : 0;
+$last_incremental_reason    = ! empty( $last_incremental_sync['inactive_reason'] ) ? (string) $last_incremental_sync['inactive_reason'] : '';
+$last_incremental_error     = ! empty( $last_incremental_sync['error_message'] ) ? (string) $last_incremental_sync['error_message'] : '';
 ?>
 <div class="wrap wpaic-wrap">
 	<h1>WP AI Chat Lab</h1>
-	<p class="description">v<?php echo esc_html( WPAIC_VERSION ); ?> · Knowledge Store &amp; Lifecycle · Stage 3</p>
+	<p class="description">v<?php echo esc_html( WPAIC_VERSION ); ?> · Knowledge Store &amp; Lifecycle · Stage 4</p>
 
 	<div class="wpaic-grid wpaic-store-summary-grid">
 		<div class="wpaic-card">
@@ -28,20 +34,26 @@ $last_stats     = ! empty( $last_full_sync['stats'] ) && is_array( $last_full_sy
 			<?php if ( $last_completed ) : ?>
 				<p class="description">最近 Full Sync：<?php echo esc_html( $last_completed ); ?> UTC<?php if ( $last_stats ) : ?> · Processed <?php echo esc_html( isset( $last_stats['processed'] ) ? (int) $last_stats['processed'] : 0 ); ?> · Errors <?php echo esc_html( isset( $last_stats['errors'] ) ? (int) $last_stats['errors'] : 0 ); ?><?php endif; ?></p>
 			<?php else : ?>
-				<p class="description">尚未执行 Full Sync。Stage 3 会分批同步当前正式 Knowledge，并在最后执行 Reconciliation。</p>
+				<p class="description">尚未执行 Full Sync。Full Sync 用于初次建库与整站 Reconciliation。</p>
+			<?php endif; ?>
+
+			<?php if ( $last_incremental_completed ) : ?>
+				<p class="description"><strong>最近 Incremental Sync：</strong><?php echo esc_html( $last_incremental_completed ); ?> UTC · ID <?php echo esc_html( $last_incremental_object_id ); ?> · <?php echo esc_html( $last_incremental_action ? $last_incremental_action : '—' ); ?><?php if ( $last_incremental_source ) : ?> · <?php echo esc_html( $last_incremental_source ); ?><?php endif; ?><?php if ( $last_incremental_reason ) : ?> · <?php echo esc_html( $last_incremental_reason ); ?><?php endif; ?><?php if ( $last_incremental_error ) : ?> · Error: <?php echo esc_html( $last_incremental_error ); ?><?php endif; ?></p>
+			<?php else : ?>
+				<p class="description">尚未记录 Incremental Sync。Stage 4 会在相关 WordPress Source 保存或永久删除后，只同步当前这一条 Source。</p>
 			<?php endif; ?>
 		</div>
 
 		<div class="wpaic-card">
-			<h2>Stage 3 边界</h2>
+			<h2>Stage 4 边界</h2>
 			<ul class="wpaic-plain-list">
 				<li>✓ Stage 1 Store Foundation</li>
 				<li>✓ Stage 2 Lifecycle</li>
-				<li>✓ AJAX Batch Full Sync</li>
-				<li>✓ Progress / Summary</li>
-				<li>✓ Reconcile stale active rows</li>
+				<li>✓ Stage 3 Batch Sync &amp; Reconciliation</li>
+				<li>✓ Incremental Save Hook</li>
+				<li>✓ Permanent Delete Hook</li>
+				<li>✓ 只同步当前 Source，不触发 Full Sync</li>
 				<li>✓ 不调用 DeepSeek</li>
-				<li>— Incremental Hooks 留到 Stage 4</li>
 				<li>— 不做 Retrieval / Chunk / Vector / RAG</li>
 			</ul>
 		</div>
@@ -49,7 +61,7 @@ $last_stats     = ! empty( $last_full_sync['stats'] ) && is_array( $last_full_sy
 
 	<div class="wpaic-card wpaic-full-sync-card">
 		<h2>Full Sync</h2>
-		<p>把当前已启用、已发布的 Knowledge Source 分批同步到 Knowledge Store；所有 Batch 完成后，再 Reconcile Store 中仍为 active、但当前已删除、未发布或已禁用的旧 Row。</p>
+		<p>把当前已启用、已发布的 Knowledge Source 分批同步到 Knowledge Store；所有 Batch 完成后，再 Reconcile Store 中仍为 active、但当前已删除、未发布或已禁用的旧 Row。Stage 4 日常保存已改为 Incremental Sync，Full Sync 继续用于初次建库与整站校准。</p>
 		<p class="description">默认每批处理 20 条。同步过程可见，不使用 Cron / Queue。页面中断后，在锁未过期时再次点击可继续已有任务。</p>
 		<p>
 			<button type="button" id="wpaic-start-full-sync" class="button button-primary">同步全部知识</button>
@@ -59,7 +71,7 @@ $last_stats     = ! empty( $last_full_sync['stats'] ) && is_array( $last_full_sy
 
 	<div class="wpaic-card wpaic-store-sync-card">
 		<h2>Single-source Sync</h2>
-		<p>保留单条 Lifecycle Sync 作为诊断工具。Full Sync 与单条 Sync 共用同一套 Extractor、Resolver、Source Hash 与 Lifecycle Manager。</p>
+		<p>保留单条 Lifecycle Sync 作为诊断工具。Full Sync、Incremental Sync 与单条 Sync 共用同一套 Extractor、Resolver、Source Hash 与 Lifecycle Manager。</p>
 
 		<div class="wpaic-preview-controls">
 			<label for="wpaic-store-post-id"><strong>内容 ID</strong></label>

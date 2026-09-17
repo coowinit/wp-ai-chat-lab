@@ -374,6 +374,9 @@ class WPAIC_Admin {
 		$last_full_sync = get_option( WPAIC_OPTION_LAST_FULL_SYNC, array() );
 		$last_full_sync = is_array( $last_full_sync ) ? $last_full_sync : array();
 
+		$last_incremental_sync = get_option( WPAIC_OPTION_LAST_INCREMENTAL_SYNC, array() );
+		$last_incremental_sync = is_array( $last_incremental_sync ) ? $last_incremental_sync : array();
+
 		include WPAIC_PLUGIN_DIR . 'admin/views/page-knowledge-store.php';
 	}
 
