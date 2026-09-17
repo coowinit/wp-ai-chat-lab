@@ -1,5 +1,27 @@
 # Changelog
 
+
+## v0.7.0 — Usage Guard (2026-09-17)
+
+### Final Review — Passed / Stable Release
+
+- Stage 1 — Usage Store & Policy Foundation：真实 WordPress 验收通过。
+- Stage 2 — Provider Boundary Integration：真实 DeepSeek Provider Boundary 验收通过。
+- Stage 3 — Limit Calibration & Operational Validation：Round 1、Round 2 与 Final Operational Validation 全部通过并封板。
+- 最终真实链路确认：`Grounding → Usage Guard → Provider → Token Accounting`。
+- Weak / Medium / None 均在 Grounding 层阻断，不消耗 Usage，不调用 Provider，Request Token = 0。
+- Strong + quota available 才执行真实 Provider Call；Conversation 达限后稳定返回 `conversation_limit_reached`，Provider 不调用。
+- Final Validation 两次成功调用累计 Prompt 1114 / Completion 46 / Total 1160，第三次被 Usage Guard 阻断后计数与累计 Token 均保持不变。
+- Plugin Version / `WPAIC_VERSION`：`0.7.0`。
+- DB Version：`1.1`；自定义表保持 2 张：Knowledge Store + Usage Counter。
+- PHP 48 个文件语法检查通过；Admin JavaScript 语法检查通过。
+- 完整仓库与 WordPress 安装包内容一致性检查通过；未发现打包泄露的 API Key / Bearer Secret。
+- 管理后台 AJAX 继续受 `manage_options` + nonce 保护。
+- v0.7.0 不包含 Chat UI、Lead、Human Handoff、Agent、Cost Guard、Embedding、Vector 或 RAG。
+- Final Review 结论：**Passed / Stable Release**。
+- 运维注意：Visitor / Site Daily Period 跟随 WordPress Timezone；正式前台接入前应确认站点时区符合业务预期。
+- v0.8.0 前置硬化：在公共 Chat 流量接入前确认 Usage Counter 的事务 / 行锁能力，并进一步收紧底层数据库写入失败的 fail-closed 行为。
+
 ## v0.7.0 — Stage 3 Limit Calibration & Operational Validation (Validation Passed / Sealed)
 
 - Kept DB Version at `1.1`; no schema change.

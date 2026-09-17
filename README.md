@@ -2,9 +2,9 @@
 
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
-**当前稳定 Release：v0.6.0 · Grounded AI**  
-**当前开发方向：v0.7.0 · Usage Guard**  
-**当前状态：v0.7.0 Stage 3 — Validation Passed / Sealed；下一步进入 v0.7.0 Final Review**
+**当前稳定 Release：v0.7.0 · Usage Guard**  
+**下一开发方向：v0.8.0 · Chat Integration（Planned，尚未开始）**  
+**当前状态：v0.7.0 Final Review Passed / Stable Release**
 
 ## v0.5.0 稳定版本状态
 
@@ -359,7 +359,7 @@ Round 2 第一版曾使用 A–E Context Preset。实际试用后，为避免“
 
 Round 2 真实 WordPress 验收结果：6 个场景全部符合预期，新 Conversation 不重置 Visitor / Site，新 Visitor 不重置 Site，多 Scope 同时达到上限时稳定按 `Conversation → Visitor → Site` 返回，所有 BLOCK 路径继续保持 Atomic，未命中的 Scope 不增加。
 
-当前状态：**Stage 3 Validation Passed / Sealed**。Usage Guard 页面保留 Round 2 历史验收工具；Grounded AI 页面保留 Final Operational Validation 回归工具，供后续排查或版本回归使用。Stage 3 不再增加功能，下一步进入 v0.7.0 Final Review。
+当前状态：**v0.7.0 Final Review Passed / Stable Release**。Stage 3 已正式封板；Usage Guard 页面保留 Round 2 历史验收工具，Grounded AI 页面保留 Final Operational Validation 回归工具，供后续排查或版本回归使用。v0.7.0 不再增加功能，下一阶段仅进入 v0.8.0 Chat Integration 的设计与前置硬化。
 
 最终测试入口改为“人话场景”，每一步都直接显示“发生了什么 / 现在怎么做 / 预期结果”：
 
@@ -3016,10 +3016,10 @@ Lead / Support / Action
 
 ```text
 Version:
-v0.7.0 Development / v0.6.0 Stable
+v0.7.0 Stable
 
 Stage:
-Usage Guard — Stage 2 Code Implemented
+Usage Guard — Final Review Passed
 
 Production:
 Tidio
@@ -3028,7 +3028,7 @@ Development:
 WP AI Chat Lab
 
 Plugin Code:
-v0.6.0 Stage 3 Build
+v0.7.0 Final Release Build
 
 Primary Provider:
 DeepSeek (from v0.2.0)
@@ -3058,19 +3058,16 @@ Custom Database Tables:
 2（Knowledge Store + Usage Counter）
 
 Current Stable Release:
-v0.6.0 Grounded AI
+v0.7.0 Usage Guard
 
 Release Status:
 Final Review Passed / Stable Release
 
 Current Development:
-v0.7.0 Usage Guard — Stage 3 Limit Calibration & Operational Validation
-
-Plugin Code:
-v0.7.0 Stage 3 Sealed Build
+v0.8.0 Chat Integration — Planned / Not Started
 
 Next Direction:
-v0.7.0 Final Review
+v0.8.0 Design Review + Public Chat Integration Prerequisites
 ```
 
 ---
@@ -3112,4 +3109,10 @@ Stage 3 Seal                                    Completed
 
 Stage 3 Round 1 已验证低额度边界、Local Day、Atomic BLOCK 与精确 Lab Reset。Round 2 继续使用 `Conversation 2 / Visitor 3 / Site 5`，测试入口已从抽象的 A–E Preset 优化为 1–6 个中文场景，用来验证跨 Conversation / Visitor 隔离和固定 Scope Precedence。
 
-当前：**Stage 3 Validation Passed / Sealed · Ready for v0.7.0 Final Review**。
+当前：**v0.7.0 Final Review Passed / Stable Release**。Stage 1、Stage 2、Stage 3 均已完成真实环境验收；本版本正式停止扩展，下一步进入 v0.8.0 的设计阶段。
+
+#### v0.7.0 发布后的两个运维注意点
+
+1. **Daily Limit 以 WordPress Timezone 为准。** Visitor / Site 的 `period_key` 使用 WordPress 本地日期。如果站点时区配置为 `+00:00`，每日额度就会按 UTC 日期切换；正式接入前应确认站点时区是否符合业务预期。
+2. **v0.8.0 前台 Chat Integration 前需要做一次数据库并发硬化。** 当前真实环境已经验证 Atomic Reservation 的正常路径，但公共流量接入前应明确确认 Usage Counter 表使用支持事务 / 行锁的存储引擎，并进一步把底层数据库写入失败收紧为显式 fail-closed。这属于 v0.8.0 的前置硬化，不回改已封板的 v0.7.0 Stage 3。
+
