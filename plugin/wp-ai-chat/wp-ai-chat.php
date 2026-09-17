@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: WP AI Chat Lab
- * Description: Experimental WordPress AI foundation for controlled, knowledge-grounded chat, including AI providers and WordPress knowledge sources.
- * Version: 0.3.1
+ * Description: Experimental WordPress AI foundation for controlled, knowledge-grounded chat, including AI providers, WordPress knowledge sources, and a rebuildable Knowledge Store.
+ * Version: 0.4.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: coowinit
@@ -13,12 +13,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPAIC_VERSION', '0.3.1' );
+define( 'WPAIC_VERSION', '0.4.0' );
 define( 'WPAIC_PLUGIN_FILE', __FILE__ );
 define( 'WPAIC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WPAIC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'WPAIC_OPTION_SETTINGS', 'wpaic_settings' );
 define( 'WPAIC_OPTION_KNOWLEDGE_SOURCES', 'wpaic_enabled_sources' );
+define( 'WPAIC_DB_VERSION', '1.0' );
+define( 'WPAIC_OPTION_DB_VERSION', 'wpaic_db_version' );
 
 require_once WPAIC_PLUGIN_DIR . 'includes/ai/interface-wpaic-ai-provider.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/ai/class-wpaic-deepseek-provider.php';
@@ -34,6 +36,10 @@ require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-wem-field-regist
 require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-structured-field-resolver.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-structured-value-normalizer.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-structured-source-enhancer.php';
+
+require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-db-installer.php';
+require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-knowledge-store-repository.php';
+require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-knowledge-lifecycle-manager.php';
 
 require_once WPAIC_PLUGIN_DIR . 'admin/class-wpaic-admin.php';
 
@@ -70,6 +76,7 @@ function wpaic_ensure_options() {
  */
 function wpaic_activate() {
 	wpaic_ensure_options();
+	WPAIC_DB_Installer::install();
 }
 register_activation_hook( __FILE__, 'wpaic_activate' );
 
@@ -80,6 +87,7 @@ register_activation_hook( __FILE__, 'wpaic_activate' );
  */
 function wpaic_bootstrap() {
 	wpaic_ensure_options();
+	WPAIC_DB_Installer::maybe_upgrade();
 
 	$manager     = new WPAIC_AI_Manager();
 	$manual      = new WPAIC_Manual_Knowledge();
@@ -96,8 +104,11 @@ function wpaic_bootstrap() {
 	$structured_normalizer = new WPAIC_Structured_Value_Normalizer( $normalizer );
 	$structured_enhancer  = new WPAIC_Structured_Source_Enhancer( $structured_resolver, $structured_normalizer );
 
+	$store_repository = new WPAIC_Knowledge_Store_Repository();
+	$lifecycle        = new WPAIC_Knowledge_Lifecycle_Manager( $extractor, $discovery, $store_repository );
+
 	if ( is_admin() ) {
-		new WPAIC_Admin( $manager, $discovery, $extractor );
+		new WPAIC_Admin( $manager, $discovery, $extractor, $store_repository, $lifecycle );
 	}
 }
 add_action( 'plugins_loaded', 'wpaic_bootstrap' );

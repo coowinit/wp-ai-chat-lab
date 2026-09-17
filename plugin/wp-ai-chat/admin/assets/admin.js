@@ -53,6 +53,25 @@
 			'<div class="wpaic-preview-section"><h3>Normalized Content</h3><pre>' + escapeHtml(data.content || '(empty)') + '</pre></div>';
 	}
 
+
+	function storeSyncHtml(data) {
+		var row = data.row || {};
+		var actionClass = data.action === 'created' ? 'is-created' : (data.action === 'updated' ? 'is-updated' : 'is-unchanged');
+		return '<div class="wpaic-preview-summary"><span class="wpaic-status ' + actionClass + '">Action: ' + escapeHtml(data.action || '') + '</span></div>' +
+			'<dl class="wpaic-meta wpaic-meta-source">' +
+				'<div><dt>Source ID</dt><dd>' + escapeHtml(data.source_id) + '</dd></div>' +
+				'<div><dt>Object ID</dt><dd>' + escapeHtml(data.object_id) + '</dd></div>' +
+				'<div><dt>Store Status</dt><dd>' + escapeHtml(data.store_status) + '</dd></div>' +
+				'<div><dt>Elapsed</dt><dd>' + escapeHtml(data.elapsed_ms) + ' ms</dd></div>' +
+				'<div class="wpaic-meta-wide"><dt>Old Hash</dt><dd><code>' + escapeHtml(data.old_hash || '(none)') + '</code></dd></div>' +
+				'<div class="wpaic-meta-wide"><dt>New Hash</dt><dd><code>' + escapeHtml(data.new_hash || '') + '</code></dd></div>' +
+			'</dl>' +
+			'<div class="wpaic-preview-section"><h3>Saved Title</h3><div class="wpaic-preview-box">' + escapeHtml(row.title || '') + '</div></div>' +
+			'<div class="wpaic-preview-section"><h3>Saved Taxonomies</h3><pre>' + escapeHtml(prettyJson(row.taxonomies)) + '</pre></div>' +
+			'<div class="wpaic-preview-section"><h3>Saved Structured Data</h3><pre>' + escapeHtml(prettyJson(row.structured_data)) + '</pre></div>' +
+			'<div class="wpaic-preview-section"><h3>Saved Normalized Content</h3><pre>' + escapeHtml(row.content || '(empty)') + '</pre></div>';
+	}
+
 	function setBusy(button, busy) {
 		if (!button) return;
 		if (busy) {
@@ -130,6 +149,9 @@
 		var previewButton = document.getElementById('wpaic-preview-source');
 		var previewResult = document.getElementById('wpaic-source-preview-result');
 		var previewPostId = document.getElementById('wpaic-preview-post-id');
+		var storeSyncButton = document.getElementById('wpaic-sync-store-source');
+		var storeSyncResult = document.getElementById('wpaic-store-sync-result');
+		var storePostId = document.getElementById('wpaic-store-post-id');
 
 		if (connectionButton && connectionResult) {
 			connectionButton.addEventListener('click', function () {
@@ -170,6 +192,26 @@
 					return;
 				}
 				runPreview(previewButton, postId);
+			});
+		}
+
+
+		if (storeSyncButton && storeSyncResult && storePostId) {
+			storeSyncButton.addEventListener('click', function () {
+				var postId = parseInt(storePostId.value, 10);
+				if (!postId || postId < 1) {
+					storeSyncResult.className = 'wpaic-result is-error';
+					storeSyncResult.innerHTML = '<strong>失败</strong><p>请输入有效的 WordPress 内容 ID。</p>';
+					return;
+				}
+				postRequest(
+					'wpaic_sync_store_source',
+					{ post_id: postId },
+					WPAICAdmin.storeNonce,
+					storeSyncButton,
+					storeSyncResult,
+					storeSyncHtml
+				);
 			});
 		}
 

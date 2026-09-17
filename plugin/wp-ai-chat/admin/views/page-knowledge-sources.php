@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 <div class="wrap wpaic-wrap">
 	<h1>WP AI Chat Lab</h1>
-	<p class="description">v<?php echo esc_html( WPAIC_VERSION ); ?> · Structured Source Validation</p>
+	<p class="description">v<?php echo esc_html( WPAIC_VERSION ); ?> · Knowledge Store &amp; Lifecycle</p>
 
 	<?php settings_errors( 'wpaic_knowledge_messages' ); ?>
 
@@ -91,13 +91,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 		<div class="wpaic-card">
 			<h2>v<?php echo esc_html( WPAIC_VERSION ); ?> 边界</h2>
-			<p>这一版验证 Generic Source + 显式 Structured Source，仍不进入 Retrieval / RAG。</p>
+			<p>v0.4.0 在现有 Source 基础上加入可重建 Knowledge Store；本页面仍只负责 Source 配置与 Preview。</p>
 			<ul class="wpaic-plain-list">
-				<li>✓ 不创建 Knowledge 自定义数据表</li>
-				<li>✓ 预览不调用 DeepSeek</li>
+				<li>✓ Source Preview 继续不调用 DeepSeek，也不直接持久化</li>
+				<li>✓ Knowledge Store 使用独立派生表，不改变 WordPress Source of Truth</li>
 				<li>✓ Generic 默认不读取任意 Post Meta</li>
 				<li>✓ Legacy / WEM 仅通过显式 AI Allowlist 进入 Structured Data</li>
-				<li>— 不做 Field Mapping UI / WooCommerce / ACF</li>
+				<li>— Stage 1 只做 Single-source Store Sync</li>
 				<li>— 不做 Chunk / Retrieval / RAG / Vector</li>
 			</ul>
 		</div>

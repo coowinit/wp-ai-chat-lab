@@ -1,6 +1,6 @@
 <?php
 /**
- * WordPress admin UI for AI provider tests and Knowledge Source Foundation.
+ * WordPress admin UI for AI provider tests, Knowledge Sources, and Knowledge Store diagnostics.
  *
  * @package WP_AI_Chat_Lab
  */
@@ -20,21 +20,34 @@ class WPAIC_Admin {
 	/** @var WPAIC_Generic_Extractor */
 	protected $extractor;
 
+	/** @var WPAIC_Knowledge_Store_Repository */
+	protected $store_repository;
+
+	/** @var WPAIC_Knowledge_Lifecycle_Manager */
+	protected $lifecycle;
+
 	/** @var string */
 	protected $ai_page_hook = '';
 
 	/** @var string */
 	protected $knowledge_page_hook = '';
 
+	/** @var string */
+	protected $store_page_hook = '';
+
 	/**
-	 * @param WPAIC_AI_Manager        $manager   AI manager.
-	 * @param WPAIC_Source_Discovery  $discovery Source discovery.
-	 * @param WPAIC_Generic_Extractor $extractor Generic source extractor.
+	 * @param WPAIC_AI_Manager                    $manager          AI manager.
+	 * @param WPAIC_Source_Discovery              $discovery        Source discovery.
+	 * @param WPAIC_Generic_Extractor             $extractor        Generic source extractor.
+	 * @param WPAIC_Knowledge_Store_Repository    $store_repository Knowledge Store repository.
+	 * @param WPAIC_Knowledge_Lifecycle_Manager   $lifecycle        Lifecycle orchestrator.
 	 */
-	public function __construct( WPAIC_AI_Manager $manager, WPAIC_Source_Discovery $discovery, WPAIC_Generic_Extractor $extractor ) {
-		$this->manager   = $manager;
-		$this->discovery = $discovery;
-		$this->extractor = $extractor;
+	public function __construct( WPAIC_AI_Manager $manager, WPAIC_Source_Discovery $discovery, WPAIC_Generic_Extractor $extractor, WPAIC_Knowledge_Store_Repository $store_repository, WPAIC_Knowledge_Lifecycle_Manager $lifecycle ) {
+		$this->manager          = $manager;
+		$this->discovery        = $discovery;
+		$this->extractor        = $extractor;
+		$this->store_repository = $store_repository;
+		$this->lifecycle        = $lifecycle;
 
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
@@ -42,6 +55,7 @@ class WPAIC_Admin {
 		add_action( 'wp_ajax_wpaic_test_connection', array( $this, 'ajax_test_connection' ) );
 		add_action( 'wp_ajax_wpaic_test_chat', array( $this, 'ajax_test_chat' ) );
 		add_action( 'wp_ajax_wpaic_preview_source', array( $this, 'ajax_preview_source' ) );
+		add_action( 'wp_ajax_wpaic_sync_store_source', array( $this, 'ajax_sync_store_source' ) );
 	}
 
 	/**
@@ -76,6 +90,15 @@ class WPAIC_Admin {
 			'manage_options',
 			'wp-ai-chat-lab-knowledge',
 			array( $this, 'render_knowledge_page' )
+		);
+
+		$this->store_page_hook = add_submenu_page(
+			'wp-ai-chat-lab',
+			'知识存储',
+			'知识存储',
+			'manage_options',
+			'wp-ai-chat-lab-store',
+			array( $this, 'render_store_page' )
 		);
 	}
 
@@ -179,7 +202,7 @@ class WPAIC_Admin {
 	 * @return void
 	 */
 	public function enqueue_assets( $hook ) {
-		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook ), true ) ) {
+		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook, $this->store_page_hook ), true ) ) {
 			return;
 		}
 
@@ -205,6 +228,7 @@ class WPAIC_Admin {
 				'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
 				'nonce'          => wp_create_nonce( 'wpaic_ai_test' ),
 				'knowledgeNonce' => wp_create_nonce( 'wpaic_knowledge_preview' ),
+				'storeNonce'     => wp_create_nonce( 'wpaic_store_sync' ),
 				'i18n'           => array(
 					'working' => '请求中…',
 					'error'   => '请求失败，请重试。',
@@ -306,6 +330,24 @@ class WPAIC_Admin {
 		}
 
 		include WPAIC_PLUGIN_DIR . 'admin/views/page-knowledge-sources.php';
+	}
+
+	/**
+	 * Render the Stage 1 Knowledge Store diagnostics page.
+	 *
+	 * @return void
+	 */
+	public function render_store_page() {
+		$this->guard_admin_page();
+
+		$store_summary = array(
+			'active'   => $this->store_repository->count_by_status( 'active' ),
+			'inactive' => $this->store_repository->count_by_status( 'inactive' ),
+			'total'    => $this->store_repository->count_by_status(),
+		);
+		$store_rows = $this->store_repository->list_rows( 10 );
+
+		include WPAIC_PLUGIN_DIR . 'admin/views/page-knowledge-store.php';
 	}
 
 	/**
@@ -445,6 +487,34 @@ class WPAIC_Admin {
 		}
 
 		$result['eligible'] = 'publish' === $result['status'];
+		wp_send_json_success( $result );
+	}
+
+	/**
+	 * Persist one Unified Knowledge Source into the Stage 1 Store.
+	 *
+	 * @return void
+	 */
+	public function ajax_sync_store_source() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array(
+					'code'    => 'wpaic_forbidden',
+					'message' => '你没有执行此操作的权限。',
+				),
+				403
+			);
+		}
+
+		check_ajax_referer( 'wpaic_store_sync', 'nonce' );
+
+		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+		$result  = $this->lifecycle->sync_post( $post_id );
+
+		if ( is_wp_error( $result ) ) {
+			$this->send_error( $result );
+		}
+
 		wp_send_json_success( $result );
 	}
 

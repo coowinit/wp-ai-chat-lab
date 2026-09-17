@@ -15,11 +15,27 @@
 - Initial / Full Sync 采用可见 AJAX Batch；日常维护采用 Incremental Sync，不引入 Cron / Queue。
 - v0.4.0 第一轮实现限定为 Store Foundation：DB Installer、Table、Repository、Single-source Sync、Minimal Diagnostics。
 
-#### Boundaries
+#### Stage 1 — Store Foundation (Code Implemented)
 
-- 当前仅完成设计，不修改 v0.3.1 稳定功能代码。
+- 插件版本提升到 `0.4.0`，新增 `WPAIC_DB_VERSION = 1.0` 与 `wpaic_db_version`。
+- 新增 `WPAIC_DB_Installer`，Activation 与覆盖升级共用幂等 `dbDelta()` 安装流程。
+- 新增 `{$wpdb->prefix}wpaic_knowledge_store`，仅建立 1 张 Knowledge Store 派生表。
+- 新增 `WPAIC_Knowledge_Store_Repository`，负责 Store CRUD、状态统计与诊断列表。
+- 新增 `WPAIC_Knowledge_Lifecycle_Manager` Stage 1 实现，仅处理 eligible Source 的 `created / unchanged / updated`。
+- 新增“知识存储”后台页，提供 Active / Inactive / Total Summary、Single-source Sync 与最近 Store Rows。
+- Single-source Sync 可显示 action、old/new hash、store status 以及已持久化的 Snapshot。
+- Manual Knowledge 在 publish 状态下可直接进行单条 Store Sync；普通 Post Type 必须已在“知识来源”启用。
+- `unchanged` 只更新检查时间与状态元数据，不重写 AI-visible Snapshot。
+- Source Hash 变化时更新完整 Snapshot。
+
+#### Stage 1 Boundaries
+
+- Draft / Trash / Deleted / Disabled 的 soft deactivate 与 Reactivate 留到 Stage 2。
+- Full AJAX Batch / Reconciliation 留到 Stage 3。
+- WordPress lifecycle incremental hooks 留到 Stage 4。
 - 不做 Retrieval、Fulltext Ranking、Chunk、Embedding、Vector、RAG、Grounding、AI Answer 或 Chat。
 - Knowledge Store 不提供业务内容编辑器，所有知识仍从 WordPress Source 重建。
+- Stage 1 当前状态：Code Implemented — Awaiting Real-world Validation。
 
 ---
 

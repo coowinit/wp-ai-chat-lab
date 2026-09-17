@@ -200,3 +200,70 @@
 		grid-template-columns: 1fr;
 	}
 }
+
+.wpaic-store-summary-grid {
+	grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+}
+
+.wpaic-store-stats {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 12px;
+	margin: 16px 0;
+}
+
+.wpaic-store-stats div {
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+	padding: 14px;
+}
+
+.wpaic-store-stats span {
+	color: #646970;
+	display: block;
+	font-size: 12px;
+}
+
+.wpaic-store-stats strong {
+	display: block;
+	font-size: 24px;
+	line-height: 1.2;
+	margin-top: 4px;
+}
+
+.wpaic-status.is-created {
+	background: #edfaef;
+	color: #116329;
+}
+
+.wpaic-status.is-updated {
+	background: #e7f5fe;
+	color: #135e96;
+}
+
+.wpaic-status.is-unchanged {
+	background: #f0f0f1;
+	color: #3c434a;
+}
+
+.wpaic-store-table th,
+.wpaic-store-table td {
+	vertical-align: middle;
+}
+
+.wpaic-hash-short {
+	white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+	.wpaic-store-summary-grid,
+	.wpaic-store-stats {
+		grid-template-columns: 1fr;
+	}
+
+	.wpaic-store-table {
+		display: block;
+		overflow-x: auto;
+	}
+}

@@ -3,8 +3,8 @@
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
 **当前稳定 Release：v0.3.1 · Structured Source Validation**  
-**当前开发：v0.4.0 · Knowledge Store & Lifecycle（Design Ready）**  
-**下一实现：v0.4.0 Stage 1 · Store Foundation**
+**当前开发：v0.4.0 · Knowledge Store & Lifecycle（Stage 1 Code Build）**  
+**当前验证：v0.4.0 Stage 1 · Store Foundation**
 
 ## v0.3.1 开发状态
 
@@ -71,7 +71,7 @@ docs/versions/v0.3.1.md
 
 ## v0.4.0 设计状态
 
-`v0.4.0 — Knowledge Store & Lifecycle` 已完成第一版正式设计稿，当前仍未修改插件功能代码。
+`v0.4.0 — Knowledge Store & Lifecycle` 已完成正式设计，并已进入 Stage 1 — Store Foundation 第一轮代码实现。
 
 这一阶段第一次把已经标准化的 Unified Knowledge Source 持久化为可重建的 AI Read Model：
 
@@ -95,7 +95,7 @@ Initial Sync = Batch
 Daily Maintenance = Incremental
 ```
 
-计划只引入 **1 张** Knowledge Store 自定义表，不提前创建 Chunk、Embedding、Log 或 Vector 表。第一轮实现严格限定为：
+当前只引入 **1 张** Knowledge Store 自定义表，不提前创建 Chunk、Embedding、Log 或 Vector 表。Stage 1 第一轮代码严格限定为：
 
 ```text
 DB Installer
@@ -111,7 +111,17 @@ Minimal Store Diagnostics
 docs/versions/v0.4.0.md
 ```
 
-当前状态：**Design Ready — Awaiting Implementation**。
+当前 Stage 1 已完成第一轮代码：
+
+```text
+DB Installer / DB Version
+Knowledge Store Table
+Repository
+Single-source Create / Unchanged / Update
+Minimal Store Diagnostics
+```
+
+覆盖升级不依赖重新激活：插件启动时会通过 DB Version 检查执行幂等 `dbDelta()`。当前状态：**Stage 1 Code Implemented — Awaiting Real-world Validation**。
 
 ## v0.2.0 实测状态
 
