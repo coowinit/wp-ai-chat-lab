@@ -1,6 +1,6 @@
 <?php
 /**
- * v0.7.0 Stage 1 Usage Guard Playground.
+ * v0.7.0 Stage 2 Usage Guard Playground.
  *
  * @var array<string,mixed> $usage_settings
  * @var string              $db_version
@@ -14,12 +14,12 @@ $site_limit         = isset( $usage_settings['site_daily_limit'] ) ? absint( $us
 ?>
 <div class="wrap wpaic-wrap wpaic-usage-wrap">
 	<h1>WP AI Chat Lab</h1>
-	<p class="description">v<?php echo esc_html( WPAIC_VERSION ); ?> · Stage 1 — Usage Store &amp; Policy Foundation</p>
+	<p class="description">v<?php echo esc_html( WPAIC_VERSION ); ?> · Stage 2 — Provider Boundary Integration</p>
 
 	<div class="wpaic-grid">
 		<section class="wpaic-card">
 			<h2>Usage Guard Limits</h2>
-			<p>Stage 1 只建立 Usage Store、Scope Policy 与后台诊断；<strong>尚未接入真实 Grounded Answer Provider Boundary</strong>。</p>
+			<p>Stage 1 的 Usage Store / Policy 已通过验证；Stage 2 已将同一套原子 Reservation 接入真实 Grounded Answer Provider Boundary。</p>
 			<form method="post" action="options.php">
 				<?php settings_fields( 'wpaic_usage_settings_group' ); ?>
 				<table class="form-table" role="presentation">
@@ -32,14 +32,15 @@ $site_limit         = isset( $usage_settings['site_daily_limit'] ) ? absint( $us
 		</section>
 
 		<aside class="wpaic-card">
-			<h2>Stage 1 边界</h2>
+			<h2>Stage 2 边界</h2>
 			<p>✓ DB Version 1.1</p>
 			<p>✓ Usage Counter Table</p>
 			<p>✓ Conversation / Visitor / Site Scope</p>
 			<p>✓ Hashed Scope Key</p>
 			<p>✓ Fail Closed</p>
 			<p>✓ Atomic Reservation Simulation</p>
-			<p>— Stage 2 才接真实 Provider Boundary</p>
+			<p>✓ 已接入真实 Grounded Answer Provider Boundary</p>
+			<p>— Stage 3 再做低额度综合校准与异常验证</p>
 			<hr>
 			<p><strong>DB Version:</strong> <?php echo esc_html( $db_version ); ?></p>
 			<p><strong>Table:</strong> <code><?php echo esc_html( $usage_table ); ?></code></p>
@@ -58,7 +59,7 @@ $site_limit         = isset( $usage_settings['site_daily_limit'] ) ? absint( $us
 			<button type="button" class="button button-secondary" id="wpaic-usage-check">检查 Usage Guard</button>
 			<button type="button" class="button button-primary" id="wpaic-usage-simulate">模拟 1 次 Provider Call</button>
 		</p>
-		<p class="description">“模拟 Provider Call”只做原子 Reservation +1，不调用 DeepSeek，不产生 Token。Stage 2 才把同一 Reserve 接到真实 Provider Boundary。</p>
+		<p class="description">这里的“模拟 Provider Call”仍只做原子 Reservation +1，方便独立验证 Guard；真实 Grounded AI 页面已在 Stage 2 使用同一 Reserve 进入 Provider Boundary。</p>
 		<div id="wpaic-usage-result" class="wpaic-result" aria-live="polite"></div>
 	</section>
 </div>

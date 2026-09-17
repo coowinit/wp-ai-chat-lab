@@ -4,7 +4,7 @@
 
 **当前稳定 Release：v0.6.0 · Grounded AI**  
 **当前开发方向：v0.7.0 · Usage Guard**  
-**当前状态：v0.7.0 Stage 1 Validation Passed；Ready for Stage 2 Provider Boundary Integration**
+**当前状态：v0.7.0 Stage 2 Code Implemented；Awaiting Real-world Validation**
 
 ## v0.5.0 稳定版本状态
 
@@ -205,7 +205,7 @@ docs/versions/v0.6.0.md
 
 ## v0.7.0 开发状态
 
-`v0.7.0 — Usage Guard` 已完成设计定稿，并完成 **Stage 1 — Usage Store & Policy Foundation** 的真实环境验收。当前已新增 Usage Counter Table、Usage Context、Usage Repository、Usage Guard、Limits Settings 与后台 Usage Diagnostics；真实 Grounded Answer Provider Boundary Integration 仍留给 Stage 2。
+`v0.7.0 — Usage Guard` 已完成设计与 **Stage 1 — Usage Store & Policy Foundation** 的真实环境验收，并进入 **Stage 2 — Provider Boundary Integration**。当前已把同一套原子 Usage Reservation 接入 `WPAIC_Grounded_Answer_Service`：只有 Grounding Gate 放行且 Usage Guard Reserve 成功，才允许调用 AI Provider；成功响应后再把真实 Prompt / Completion / Total Tokens 写回三个启用 Scope。
 
 这一版开始解决：
 
@@ -241,7 +241,7 @@ Visitor       20 / day
 Site         200 / day
 ```
 
-Usage Guard 控制的是 **Provider Call**，不是用户消息数；`clarify / no_answer` 不增加 Usage。Stage 1 已新增 `wpaic_usage_counter` 表，把 DB Version 从 `1.0` 提升到 `1.1`；当前先验证 Provider Call Reservation 与 Scope Policy，真实 Token Usage 会在 Stage 2 接入 Provider Boundary 后记录。
+Usage Guard 控制的是 **Provider Call**，不是用户消息数；`clarify / no_answer` 不增加 Usage。Stage 1 已新增 `wpaic_usage_counter` 表并把 DB Version 从 `1.0` 提升到 `1.1`；Stage 2 现已在真实 Provider Boundary 前执行 Reservation，并在成功 Provider Response 后记录真实 Token Usage。
 
 Stage 1 真实环境已验证：
 
@@ -258,7 +258,47 @@ Missing Context Fail Closed                ✅
 Hashed Scope Key 稳定且不同 Key 相互隔离     ✅
 ```
 
-最终 Visitor 专项测试使用 `Conversation = 10 / Visitor = 3 / Site = 20`：同一个 `visitor-limit-test` 在三个不同 Conversation 中成功 Reserve 到 `3/3`，第四个新 Conversation 正确返回 `visitor_daily_limit_reached`；被阻断时新 Conversation 与 Site 均不再增加。Stage 1 因此正式封板，下一步进入 **Stage 2 — Provider Boundary Integration**。
+最终 Visitor 专项测试使用 `Conversation = 10 / Visitor = 3 / Site = 20`：同一个 `visitor-limit-test` 在三个不同 Conversation 中成功 Reserve 到 `3/3`，第四个新 Conversation 正确返回 `visitor_daily_limit_reached`；被阻断时新 Conversation 与 Site 均不再增加。Stage 1 因此正式封板。Stage 2 第一轮代码现已实现，等待真实 Provider Boundary 验证。
+
+
+
+### v0.7.0 Stage 2 — Provider Boundary Integration
+
+当前真实链路已扩展为：
+
+```text
+Question
+→ Local Retrieval
+→ Grounding Gate
+→ Evidence Pack
+→ Prompt Builder
+→ Usage Guard Reserve
+→ WPAIC_AI_Manager
+→ AI Provider
+→ Token Accounting
+```
+
+Stage 2 关键规则：
+
+```text
+clarify / no_answer
+→ Usage Guard Skipped
+→ AI Called = No
+→ Token Usage = 0
+
+allow_answer + Usage BLOCK
+→ Evidence / Prompt 可以已构建
+→ Provider Call 不发生
+→ AI Called = No
+→ 当前请求 Token Usage = 0
+
+allow_answer + Usage ALLOW
+→ 原子 Reserve Provider Call +1
+→ 调用 AI Provider
+→ 成功响应后记录真实 Token Usage
+```
+
+Grounded AI Playground 已新增 Conversation / Visitor / Site 测试 Key，并显示 Usage Guard Decision、Reason Code、Call Counter 与累计 Token。Stage 2 当前状态：**Code Implemented / Awaiting Real-world Validation**。
 
 最重要的边界：
 
@@ -2876,10 +2916,10 @@ Lead / Support / Action
 
 ```text
 Version:
-v0.5.0 Stable / v0.6.0 Stage 3
+v0.7.0 Development / v0.6.0 Stable
 
 Stage:
-Grounded AI — Stage 3 Validation Passed
+Usage Guard — Stage 2 Code Implemented
 
 Production:
 Tidio
@@ -2915,7 +2955,7 @@ Vector:
 Not Used
 
 Custom Database Tables:
-1（Knowledge Store）
+2（Knowledge Store + Usage Counter）
 
 Current Stable Release:
 v0.6.0 Grounded AI
@@ -2924,13 +2964,13 @@ Release Status:
 Final Review Passed / Stable Release
 
 Current Development:
-v0.7.0 Usage Guard — Design Ready
+v0.7.0 Usage Guard — Stage 3 Limit Calibration & Operational Validation
 
 Plugin Code:
-v0.6.0 Stable（v0.7.0 Design Milestone 不修改功能代码）
+v0.7.0 Stage 2 Passed Build
 
 Next Direction:
-v0.7.0 Stage 1 — Usage Store & Policy Foundation
+v0.7.0 Stage 3 — Limit Calibration & Operational Validation
 ```
 
 ---
@@ -2947,16 +2987,21 @@ v0.7.0 Stage 1 — Usage Store & Policy Foundation
 
 这也是 WP AI Chat Lab 从 v0.1.0 开始最重要的设计基线。
 
-### v0.7.0 Stage 1 当前状态
+### v0.7.0 当前状态
 
 ```text
-DB Version 1.1                         Implemented
-wpaic_usage_counter                   Implemented
-Usage Context / Hashed Scope Keys     Implemented
-Conversation / Visitor / Site Limits  Implemented
-Fail Closed                           Implemented
-Atomic Reservation Simulation         Implemented
-Provider Boundary Integration         Not Yet (Stage 2)
+Stage 1 — Usage Store & Policy Foundation      Validation Passed
+Stage 2 — Provider Boundary Integration        Validation Passed
+Stage 3 — Calibration & Operational Validation Not Started
+
+DB Version 1.1                                 Implemented
+wpaic_usage_counter                            Implemented
+Usage Context / Hashed Scope Keys              Implemented
+Conversation / Visitor / Site Limits           Implemented
+Fail Closed                                    Implemented
+Atomic Reservation                             Implemented
+Real Provider Boundary Integration             Implemented
+Real Token Accounting                          Implemented
 ```
 
-当前：**Code Implemented / Awaiting Real-world Validation**。
+当前：**Stage 2 Validation Passed / Ready for Stage 3 Calibration**。

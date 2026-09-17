@@ -52,4 +52,21 @@ class WPAIC_Usage_Guard {
 		$result['decision'] = ! empty( $result['reserved'] ) ? 'allow' : 'block';
 		return $result;
 	}
+
+	/**
+	 * Record trusted Provider token usage after a successful external response.
+	 * Provider Call count has already been reserved before the request.
+	 *
+	 * @param WPAIC_Usage_Context $context Usage context.
+	 * @param array<string,mixed> $usage Provider usage payload.
+	 * @return array<string,array<string,mixed>>|WP_Error
+	 */
+	public function record_usage( WPAIC_Usage_Context $context, array $usage ) {
+		return $this->repository->add_token_usage( $context, $this->get_limits(), $usage );
+	}
+
+	/** @return array<string,array<string,mixed>> */
+	public function get_scope_states( WPAIC_Usage_Context $context ) {
+		return $this->repository->get_scope_states( $context, $this->get_limits() );
+	}
 }

@@ -510,6 +510,7 @@ class WPAIC_Admin {
 		$this->guard_admin_page();
 
 		$active_count = $this->store_repository->count_by_status( 'active' );
+		$usage_limits = $this->usage_guard->get_limits();
 		include WPAIC_PLUGIN_DIR . 'admin/views/page-grounded-ai.php';
 	}
 
@@ -806,6 +807,11 @@ class WPAIC_Admin {
 			array(
 				'candidate_limit' => isset( $_POST['candidate_limit'] ) ? absint( $_POST['candidate_limit'] ) : 100,
 				'top_k'           => isset( $_POST['top_k'] ) ? absint( $_POST['top_k'] ) : 5,
+				'usage_context'   => array(
+					'conversation_key' => isset( $_POST['conversation_key'] ) ? wp_unslash( $_POST['conversation_key'] ) : '',
+					'visitor_key'      => isset( $_POST['visitor_key'] ) ? wp_unslash( $_POST['visitor_key'] ) : '',
+					'site_key'         => isset( $_POST['site_key'] ) ? wp_unslash( $_POST['site_key'] ) : 'site',
+				),
 			)
 		);
 

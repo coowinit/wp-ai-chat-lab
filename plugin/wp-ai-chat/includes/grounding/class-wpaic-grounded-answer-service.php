@@ -2,10 +2,10 @@
 /**
  * Orchestrate one grounded, single-turn answer.
  *
- * v0.6.0 Stage 3 is the first layer that may cross the Provider boundary. The
- * service keeps that boundary explicit: Retrieval and Grounding run first;
- * Evidence and Prompt are built only for allow_answer; AI Manager is called
- * only after every application-layer guard has passed.
+ * v0.7.0 Stage 2 connects the verified Usage Guard to the real Provider
+ * boundary. Retrieval and Grounding run first; Evidence and Prompt are built
+ * only for allow_answer; Usage Guard reserves quota immediately before the
+ * AI Manager call; successful Provider usage is then added to the counters.
  *
  * @package WP_AI_Chat_Lab
  */
@@ -31,12 +31,16 @@ class WPAIC_Grounded_Answer_Service {
 	/** @var WPAIC_AI_Manager */
 	protected $ai_manager;
 
-	public function __construct( WPAIC_Local_Retriever $retriever, WPAIC_Grounding_Gate $gate, WPAIC_Evidence_Pack_Builder $evidence_builder, WPAIC_Grounded_Prompt_Builder $prompt_builder, WPAIC_AI_Manager $ai_manager ) {
+	/** @var WPAIC_Usage_Guard */
+	protected $usage_guard;
+
+	public function __construct( WPAIC_Local_Retriever $retriever, WPAIC_Grounding_Gate $gate, WPAIC_Evidence_Pack_Builder $evidence_builder, WPAIC_Grounded_Prompt_Builder $prompt_builder, WPAIC_AI_Manager $ai_manager, WPAIC_Usage_Guard $usage_guard ) {
 		$this->retriever         = $retriever;
 		$this->gate              = $gate;
 		$this->evidence_builder  = $evidence_builder;
 		$this->prompt_builder    = $prompt_builder;
 		$this->ai_manager        = $ai_manager;
+		$this->usage_guard       = $usage_guard;
 	}
 
 	/**
@@ -82,6 +86,7 @@ class WPAIC_Grounded_Answer_Service {
 			'provider'    => '',
 			'model'       => '',
 			'usage'       => $this->empty_usage(),
+			'usage_guard' => $this->skipped_usage_guard(),
 			'finish_reason' => '',
 			'ai_called'   => false,
 			'token_usage' => 0,
@@ -115,6 +120,24 @@ class WPAIC_Grounded_Answer_Service {
 		}
 		if ( ! $provider->is_configured() ) {
 			return new WP_Error( 'wpaic_grounded_ai_not_configured', 'Grounding Gate 已允许回答，但当前 AI Provider 尚未配置 API Key。请先到“AI 设置”完成配置。' );
+		}
+
+		// v0.7.0 Stage 2: Usage Guard is the final application-layer boundary
+		// immediately before the real Provider call. Missing enabled-scope
+		// context fails closed; blocked reservations consume zero Provider calls.
+		$usage_context = $this->build_usage_context( $options );
+		$reservation   = $this->usage_guard->reserve( $usage_context );
+		if ( is_wp_error( $reservation ) ) {
+			return $reservation;
+		}
+		$reservation['status'] = 'evaluated';
+		$base['usage_guard']    = $reservation;
+
+		if ( empty( $reservation['reserved'] ) || 'allow' !== ( isset( $reservation['decision'] ) ? (string) $reservation['decision'] : '' ) ) {
+			$base['answer']      = $this->usage_block_message( isset( $reservation['reason_code'] ) ? (string) $reservation['reason_code'] : 'usage_guard_unavailable' );
+			$base['answer_type'] = 'usage_block';
+			$base['elapsed_ms']  = $this->elapsed_ms( $started_at );
+			return $base;
 		}
 
 		$messages = array(
@@ -157,6 +180,16 @@ class WPAIC_Grounded_Answer_Service {
 		}
 
 		$usage = isset( $response['usage'] ) && is_array( $response['usage'] ) ? $response['usage'] : $this->empty_usage();
+
+		// Provider Call count was reserved before the request. Only trusted usage
+		// returned by a successful Provider response is added to token counters.
+		$usage_states = $this->usage_guard->record_usage( $usage_context, $usage );
+		if ( is_wp_error( $usage_states ) ) {
+			$base['usage_guard']['accounting_warning'] = $usage_states->get_error_code();
+		} else {
+			$base['usage_guard']['scopes'] = $usage_states;
+		}
+
 		$base['answer']              = isset( $response['content'] ) ? trim( (string) $response['content'] ) : '';
 		$base['answer_type']         = 'ai';
 		$base['provider']            = isset( $response['provider'] ) ? (string) $response['provider'] : '';
@@ -172,6 +205,45 @@ class WPAIC_Grounded_Answer_Service {
 		}
 
 		return $base;
+	}
+
+	/**
+	 * Build Usage Context from caller-owned stable keys.
+	 *
+	 * @param array<string,mixed> $options Request options.
+	 * @return WPAIC_Usage_Context
+	 */
+	protected function build_usage_context( array $options ) {
+		$raw = isset( $options['usage_context'] ) && is_array( $options['usage_context'] ) ? $options['usage_context'] : array();
+		return new WPAIC_Usage_Context( $raw );
+	}
+
+	/** @return array<string,mixed> */
+	protected function skipped_usage_guard() {
+		return array(
+			'status'        => 'skipped',
+			'decision'      => 'skipped',
+			'reserved'      => false,
+			'reason_code'   => 'grounding_gate_not_allowed',
+			'blocked_scope' => '',
+			'scopes'        => array(),
+		);
+	}
+
+	/** @return string */
+	protected function usage_block_message( $reason_code ) {
+		switch ( (string) $reason_code ) {
+			case 'conversation_limit_reached':
+				return '当前会话的 AI 调用额度已用完。';
+			case 'visitor_daily_limit_reached':
+				return '当前访客今日的 AI 调用额度已用完，请稍后再试。';
+			case 'site_daily_limit_reached':
+				return '本站今日的 AI 调用额度已用完，请稍后再试。';
+			case 'missing_usage_context':
+				return 'Usage Guard 缺少必要的调用上下文，已阻止 AI 调用。';
+			default:
+				return 'Usage Guard 当前无法允许 AI 调用。';
+		}
 	}
 
 	/** @return array<string,mixed> */

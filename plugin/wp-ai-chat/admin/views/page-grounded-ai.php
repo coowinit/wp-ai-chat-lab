@@ -1,6 +1,9 @@
 <?php
 /**
- * v0.6.0 Stage 3 — Grounded Answer Playground.
+ * v0.7.0 Stage 2 — Provider Boundary Integration Playground.
+ *
+ * @var int               $active_count Active Knowledge Store rows.
+ * @var array<string,int> $usage_limits Current Usage Guard limits.
  *
  * @package WP_AI_Chat_Lab
  */
@@ -16,12 +19,12 @@ $model_name          = ! is_wp_error( $provider ) && method_exists( $provider, '
 ?>
 <div class="wrap wpaic-wrap wpaic-grounded-wrap">
 	<h1>WP AI Chat Lab</h1>
-	<p class="description">v<?php echo esc_html( WPAIC_VERSION ); ?> · Stage 3 — Grounded Answer</p>
+	<p class="description">v<?php echo esc_html( WPAIC_VERSION ); ?> · Stage 2 — Provider Boundary Integration</p>
 
 	<div class="wpaic-grid wpaic-grounded-grid">
 		<div class="wpaic-card">
-			<h2>Grounded AI Playground</h2>
-			<p>执行 Local Retrieval → Grounding Gate → Evidence Pack → Prompt Builder。只有 <code>allow_answer</code> 才会真正调用 AI Provider；<code>clarify / no_answer</code> 继续保持零 Token。</p>
+			<h2>Grounded AI + Usage Guard Playground</h2>
+			<p>执行 Local Retrieval → Grounding Gate → Evidence Pack → Prompt Builder → <strong>Usage Guard Reserve</strong> → AI Provider。只有 Grounding 与 Usage 两层都允许时，才真正越过 Provider Boundary。</p>
 
 			<div class="wpaic-grounding-controls">
 				<label for="wpaic-grounding-question"><strong>Question</strong></label>
@@ -39,31 +42,39 @@ $model_name          = ! is_wp_error( $provider ) && method_exists( $provider, '
 					</select>
 				</div>
 
+				<h3>Usage Context</h3>
+				<p class="description">Stage 2 使用明确测试 Key 验证真实 Provider Boundary。原始 Key 不写入 Usage Counter Table，持久化的是 HMAC-SHA256 Hash。</p>
+				<div class="wpaic-usage-fields">
+					<label><strong>Conversation Key</strong><input type="text" id="wpaic-grounding-conversation-key" class="regular-text" value="grounded-stage2-conversation-1"></label>
+					<label><strong>Visitor Key</strong><input type="text" id="wpaic-grounding-visitor-key" class="regular-text" value="grounded-stage2-visitor-1"></label>
+					<label><strong>Site Key</strong><input type="text" id="wpaic-grounding-site-key" class="regular-text" value="grounded-stage2-site"></label>
+				</div>
+
 				<p><button type="button" id="wpaic-run-grounding-gate" class="button button-primary">生成 Grounded Answer</button></p>
-				<p class="description">只有 Gate = <code>allow_answer</code> 时按钮才可能产生真实 API 调用与 Token Usage。</p>
+				<p class="description">顺序固定：Grounding Gate 先判断知识资格；Usage Guard 再 Reserve Provider Call；只有两层都通过才产生真实 API 调用。</p>
 			</div>
 			<div id="wpaic-grounding-result" class="wpaic-result" aria-live="polite"></div>
 		</div>
 
 		<div class="wpaic-card">
-			<h2>Stage 3 边界</h2>
+			<h2>Stage 2 边界</h2>
 			<ul class="wpaic-plain-list">
-				<li>✓ Stage 1 Grounding Gate</li>
-				<li>✓ Stage 2 Evidence Pack / Prompt Builder</li>
-				<li>✓ 只有 allow_answer 才调用 Provider</li>
-				<li>✓ AI Manager 统一 Provider 入口</li>
-				<li>✓ Grounded Answer + Source Trace</li>
-				<li>✓ Provider / Model / Usage / Elapsed</li>
-				<li>✓ clarify / no_answer 保持 AI Called = No</li>
-				<li>✓ Source URL 由应用层维护</li>
-				<li>— 不做 Conversation History</li>
-				<li>— 不做前台 Chat / Human Handoff</li>
-				<li>— 不做 Chunk / Embedding / Vector / RAG</li>
+				<li>✓ Grounding Gate 仍优先</li>
+				<li>✓ Evidence Pack / Prompt Builder</li>
+				<li>✓ Usage Guard 位于 Provider Boundary 前</li>
+				<li>✓ 原子 Reserve 后才允许 AI Manager</li>
+				<li>✓ Provider Call Attempt 占用 Call Counter</li>
+				<li>✓ 成功响应后记录真实 Token Usage</li>
+				<li>✓ Usage BLOCK → AI Called = No / Token = 0</li>
+				<li>✓ clarify / no_answer 不进入 Usage Guard</li>
+				<li>— Stage 3 再做低额度综合校准与异常验证</li>
+				<li>— 不做 Conversation History / Front-end Chat</li>
+				<li>— 不做 Monthly Cost Guard</li>
 			</ul>
 			<p class="description">Provider：<strong><?php echo esc_html( $provider_name ); ?></strong></p>
 			<p class="description">Model：<code><?php echo esc_html( $model_name ? $model_name : '—' ); ?></code></p>
 			<p class="description">API Key：<?php echo $provider_configured ? '<strong>已配置</strong>' : '<strong>未配置</strong>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></p>
-			<p class="description">默认 Grounded Answer：max_tokens 640，temperature 0.1；可通过 Filter 调整。</p>
+			<p class="description">Usage Limits：Conversation <strong><?php echo esc_html( $usage_limits['conversation'] ); ?></strong> / Visitor <strong><?php echo esc_html( $usage_limits['visitor'] ); ?></strong> / Site <strong><?php echo esc_html( $usage_limits['site'] ); ?></strong></p>
 			<p class="description">当前 active Knowledge Store Rows：<?php echo esc_html( number_format_i18n( $active_count ) ); ?></p>
 		</div>
 	</div>

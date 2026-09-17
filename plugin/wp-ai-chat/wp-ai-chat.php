@@ -55,11 +55,11 @@ require_once WPAIC_PLUGIN_DIR . 'includes/retrieval/class-wpaic-local-retriever.
 require_once WPAIC_PLUGIN_DIR . 'includes/grounding/class-wpaic-grounding-gate.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/grounding/class-wpaic-evidence-pack-builder.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/grounding/class-wpaic-grounded-prompt-builder.php';
-require_once WPAIC_PLUGIN_DIR . 'includes/grounding/class-wpaic-grounded-answer-service.php';
 
 require_once WPAIC_PLUGIN_DIR . 'includes/usage/class-wpaic-usage-context.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/usage/class-wpaic-usage-counter-repository.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/usage/class-wpaic-usage-guard.php';
+require_once WPAIC_PLUGIN_DIR . 'includes/grounding/class-wpaic-grounded-answer-service.php';
 
 require_once WPAIC_PLUGIN_DIR . 'admin/class-wpaic-admin.php';
 
@@ -153,11 +153,12 @@ function wpaic_bootstrap() {
 	$grounding_gate   = new WPAIC_Grounding_Gate();
 	$evidence_builder = new WPAIC_Evidence_Pack_Builder( $store_repository );
 	$prompt_builder   = new WPAIC_Grounded_Prompt_Builder();
-	$grounded_answer  = new WPAIC_Grounded_Answer_Service( $local_retriever, $grounding_gate, $evidence_builder, $prompt_builder, $manager );
 
-	// v0.7.0 Stage 1: Usage Store & Policy Foundation. Not yet connected to the real Provider boundary.
+	// v0.7.0 Stage 2: Usage Guard is now connected to the real Provider boundary.
+	// The same Guard remains independently testable through the Usage Playground.
 	$usage_repository = new WPAIC_Usage_Counter_Repository();
 	$usage_guard      = new WPAIC_Usage_Guard( $usage_repository );
+	$grounded_answer  = new WPAIC_Grounded_Answer_Service( $local_retriever, $grounding_gate, $evidence_builder, $prompt_builder, $manager, $usage_guard );
 
 	if ( is_admin() ) {
 		new WPAIC_Admin( $manager, $discovery, $extractor, $store_repository, $lifecycle, $batch_sync, $local_retriever, $grounding_gate, $evidence_builder, $prompt_builder, $grounded_answer, $usage_repository, $usage_guard );

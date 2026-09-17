@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.7.0 — Stage 2 Provider Boundary Integration (Validation Passed)
+
+- Connected the verified Usage Guard to `WPAIC_Grounded_Answer_Service`.
+- Added Usage Context to the real Grounded AI Playground.
+- Usage Guard reservation now runs immediately before the AI Manager / Provider boundary.
+- `clarify / no_answer` paths skip Usage Guard and remain zero-token.
+- Usage-blocked `allow_answer` paths do not call the Provider and return deterministic `usage_block` output.
+- Provider configuration is checked before reservation so a missing API key does not consume quota.
+- Added real Provider token accounting after successful responses.
+- Prompt / Completion / Total Tokens are accumulated across enabled Conversation / Visitor / Site scopes.
+- Provider Call reservation remains consumed when an external Provider attempt fails; no token values are guessed on failure.
+- Added Grounded AI Usage Guard diagnostics for Decision / Reason / Calls / Remaining / Token counters.
+- Kept the standalone Usage Guard simulation playground for isolated policy testing.
+- Stage 2 completed real WordPress validation and was formally sealed.
+- Strong `CWC-610 dimension` request confirmed Usage ALLOW / reservation before Provider call, real DeepSeek answer, and real token accounting.
+- Second identical request confirmed provider-call and token counters accumulate rather than overwrite.
+- Third identical request confirmed `conversation_limit_reached`, `AI Called = No`, request Token Usage = 0, and Visitor / Site counters unchanged.
+- `dimension` (Weak), `CWC-610 warranty` (Medium / Partial Evidence), and `ZXQ-99999-NOMATCH` (None) all confirmed Grounding blocks before Usage Guard reservation, with zero Usage consumption and zero Provider calls.
+- Stage 2 status: Validation Passed; ready for Stage 3 Limit Calibration & Operational Validation.
+
 ## v0.7.0 — Stage 1 Usage Store & Policy Foundation (Validation Passed)
 
 - Plugin development version advanced to `0.7.0`.

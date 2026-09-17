@@ -271,6 +271,40 @@
 		'</div>';
 	}
 
+	function groundedUsageGuardHtml(guard) {
+		guard = guard || {};
+		if (String(guard.status || 'skipped') !== 'evaluated') {
+			return '<div class="wpaic-usage-decision is-skipped"><h3>Usage Guard</h3><p><strong>Skipped</strong> — Grounding Gate 未允许越过 Provider Boundary，因此不检查也不消耗 AI Quota。</p></div>';
+		}
+		var decision = String(guard.decision || (guard.reserved ? 'allow' : 'block')).toLowerCase();
+		var scopes = guard.scopes || {};
+		var order = ['conversation', 'visitor', 'site'];
+		var labels = { conversation: 'Conversation', visitor: 'Visitor Today', site: 'Site Today' };
+		var scopeHtml = order.map(function (scope) {
+			var item = scopes[scope] || {};
+			var remaining = item.remaining === null || item.remaining === undefined ? 'Unlimited' : item.remaining;
+			return '<div class="wpaic-usage-scope">' +
+				'<h4>' + escapeHtml(labels[scope]) + '</h4>' +
+				'<dl>' +
+					'<dt>Calls</dt><dd>' + escapeHtml(item.provider_calls !== undefined ? item.provider_calls : (item.used || 0)) + '</dd>' +
+					'<dt>Limit</dt><dd>' + escapeHtml(item.limit || 0) + '</dd>' +
+					'<dt>Remaining</dt><dd>' + escapeHtml(remaining) + '</dd>' +
+					'<dt>Prompt Tokens</dt><dd>' + escapeHtml(item.prompt_tokens || 0) + '</dd>' +
+					'<dt>Completion Tokens</dt><dd>' + escapeHtml(item.completion_tokens || 0) + '</dd>' +
+					'<dt>Total Tokens</dt><dd>' + escapeHtml(item.total_tokens || 0) + '</dd>' +
+				'</dl>' +
+			'</div>';
+		}).join('');
+		return '<div class="wpaic-usage-decision is-' + escapeHtml(decision) + '">' +
+			'<div class="wpaic-strength-head"><strong>Usage Guard</strong><span class="wpaic-answer-badge">' + escapeHtml(decision.toUpperCase()) + '</span></div>' +
+			'<p>Reason Code: <code>' + escapeHtml(guard.reason_code || '') + '</code>' +
+			(guard.blocked_scope ? ' · Blocked Scope: <strong>' + escapeHtml(guard.blocked_scope) + '</strong>' : '') +
+			(guard.reserved ? ' · Provider Call Reserved: <strong>Yes</strong>' : '') + '</p>' +
+			(guard.accounting_warning ? '<p class="description">Token Accounting Warning: <code>' + escapeHtml(guard.accounting_warning) + '</code></p>' : '') +
+			'<div class="wpaic-usage-scopes">' + scopeHtml + '</div>' +
+		'</div>';
+	}
+
 	function groundedAnswerHtml(data) {
 		data = data || {};
 		var aiCalled = !!data.ai_called;
@@ -331,10 +365,10 @@
 				'<div><dt>Score Gap</dt><dd>' + escapeHtml(gate.score_gap || 0) + '</dd></div>' +
 				'<div><dt>Top Coverage</dt><dd>' + escapeHtml(coverage) + '%</dd></div>' +
 			'</dl>' +
-			'<p class="description">Reason Code: <code>' + escapeHtml(gate.reason_code || '') + '</code> · 只有 allow_answer 才允许越过 Provider Boundary；clarify / no_answer 保持零 Token。</p>' +
+			'<p class="description">Reason Code: <code>' + escapeHtml(gate.reason_code || '') + '</code> · allow_answer 只允许进入 Usage Guard；Usage Reserve 成功后才可越过 Provider Boundary。</p>' +
 		'</div>';
 
-		return gateHtml + evidencePackHtml(data.evidence || {}) + promptPreviewHtml(data.prompt || {}) + groundedAnswerHtml(data) + '<h3>Retrieval Diagnostics</h3>' + retrievalHtml(retrieval);
+		return gateHtml + evidencePackHtml(data.evidence || {}) + promptPreviewHtml(data.prompt || {}) + groundedUsageGuardHtml(data.usage_guard || {}) + groundedAnswerHtml(data) + '<h3>Retrieval Diagnostics</h3>' + retrievalHtml(retrieval);
 	}
 
 	function ajaxJson(action, payload, nonce) {
@@ -521,6 +555,9 @@
 		var groundingQuestion = document.getElementById('wpaic-grounding-question');
 		var groundingLimit = document.getElementById('wpaic-grounding-candidate-limit');
 		var groundingTopK = document.getElementById('wpaic-grounding-top-k');
+		var groundingConversationKey = document.getElementById('wpaic-grounding-conversation-key');
+		var groundingVisitorKey = document.getElementById('wpaic-grounding-visitor-key');
+		var groundingSiteKey = document.getElementById('wpaic-grounding-site-key');
 		var usageCheckButton = document.getElementById('wpaic-usage-check');
 		var usageSimulateButton = document.getElementById('wpaic-usage-simulate');
 		var usageResult = document.getElementById('wpaic-usage-result');
@@ -631,7 +668,14 @@
 				}
 				postRequest(
 					'wpaic_grounding_gate_test',
-					{ question: value, candidate_limit: limit || 100, top_k: topK || 5 },
+					{
+						question: value,
+						candidate_limit: limit || 100,
+						top_k: topK || 5,
+						conversation_key: groundingConversationKey ? groundingConversationKey.value.trim() : '',
+						visitor_key: groundingVisitorKey ? groundingVisitorKey.value.trim() : '',
+						site_key: groundingSiteKey ? groundingSiteKey.value.trim() : 'site'
+					},
 					WPAICAdmin.groundingNonce,
 					groundingButton,
 					groundingResult,
