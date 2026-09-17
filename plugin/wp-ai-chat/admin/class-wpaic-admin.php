@@ -29,6 +29,9 @@ class WPAIC_Admin {
 	/** @var WPAIC_Knowledge_Batch_Sync */
 	protected $batch_sync;
 
+	/** @var WPAIC_Local_Retriever */
+	protected $local_retriever;
+
 	/** @var string */
 	protected $ai_page_hook = '';
 
@@ -38,6 +41,9 @@ class WPAIC_Admin {
 	/** @var string */
 	protected $store_page_hook = '';
 
+	/** @var string */
+	protected $retrieval_page_hook = '';
+
 	/**
 	 * @param WPAIC_AI_Manager                    $manager          AI manager.
 	 * @param WPAIC_Source_Discovery              $discovery        Source discovery.
@@ -45,14 +51,16 @@ class WPAIC_Admin {
 	 * @param WPAIC_Knowledge_Store_Repository    $store_repository Knowledge Store repository.
 	 * @param WPAIC_Knowledge_Lifecycle_Manager   $lifecycle        Lifecycle orchestrator.
 	 * @param WPAIC_Knowledge_Batch_Sync          $batch_sync       Batch full-sync coordinator.
+	 * @param WPAIC_Local_Retriever                $local_retriever  Local retrieval coordinator.
 	 */
-	public function __construct( WPAIC_AI_Manager $manager, WPAIC_Source_Discovery $discovery, WPAIC_Generic_Extractor $extractor, WPAIC_Knowledge_Store_Repository $store_repository, WPAIC_Knowledge_Lifecycle_Manager $lifecycle, WPAIC_Knowledge_Batch_Sync $batch_sync ) {
+	public function __construct( WPAIC_AI_Manager $manager, WPAIC_Source_Discovery $discovery, WPAIC_Generic_Extractor $extractor, WPAIC_Knowledge_Store_Repository $store_repository, WPAIC_Knowledge_Lifecycle_Manager $lifecycle, WPAIC_Knowledge_Batch_Sync $batch_sync, WPAIC_Local_Retriever $local_retriever ) {
 		$this->manager          = $manager;
 		$this->discovery        = $discovery;
 		$this->extractor        = $extractor;
 		$this->store_repository = $store_repository;
 		$this->lifecycle        = $lifecycle;
 		$this->batch_sync       = $batch_sync;
+		$this->local_retriever  = $local_retriever;
 
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
@@ -63,6 +71,7 @@ class WPAIC_Admin {
 		add_action( 'wp_ajax_wpaic_sync_store_source', array( $this, 'ajax_sync_store_source' ) );
 		add_action( 'wp_ajax_wpaic_start_full_sync', array( $this, 'ajax_start_full_sync' ) );
 		add_action( 'wp_ajax_wpaic_run_full_sync_batch', array( $this, 'ajax_run_full_sync_batch' ) );
+		add_action( 'wp_ajax_wpaic_retrieval_search', array( $this, 'ajax_retrieval_search' ) );
 	}
 
 	/**
@@ -106,6 +115,15 @@ class WPAIC_Admin {
 			'manage_options',
 			'wp-ai-chat-lab-store',
 			array( $this, 'render_store_page' )
+		);
+
+		$this->retrieval_page_hook = add_submenu_page(
+			'wp-ai-chat-lab',
+			'本地检索',
+			'本地检索',
+			'manage_options',
+			'wp-ai-chat-lab-retrieval',
+			array( $this, 'render_retrieval_page' )
 		);
 	}
 
@@ -209,7 +227,7 @@ class WPAIC_Admin {
 	 * @return void
 	 */
 	public function enqueue_assets( $hook ) {
-		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook, $this->store_page_hook ), true ) ) {
+		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook, $this->store_page_hook, $this->retrieval_page_hook ), true ) ) {
 			return;
 		}
 
@@ -247,6 +265,7 @@ class WPAIC_Admin {
 				'nonce'          => wp_create_nonce( 'wpaic_ai_test' ),
 				'knowledgeNonce' => wp_create_nonce( 'wpaic_knowledge_preview' ),
 				'storeNonce'     => wp_create_nonce( 'wpaic_store_sync' ),
+				'retrievalNonce' => wp_create_nonce( 'wpaic_retrieval_search' ),
 				'i18n'           => array(
 					'working' => '请求中…',
 					'error'   => '请求失败，请重试。',
@@ -378,6 +397,18 @@ class WPAIC_Admin {
 		$last_incremental_sync = is_array( $last_incremental_sync ) ? $last_incremental_sync : array();
 
 		include WPAIC_PLUGIN_DIR . 'admin/views/page-knowledge-store.php';
+	}
+
+	/**
+	 * Render the v0.5.0 Stage 1 Local Retrieval Playground.
+	 *
+	 * @return void
+	 */
+	public function render_retrieval_page() {
+		$this->guard_admin_page();
+
+		$active_count = $this->store_repository->count_by_status( 'active' );
+		include WPAIC_PLUGIN_DIR . 'admin/views/page-local-retrieval.php';
 	}
 
 	/**
@@ -574,6 +605,47 @@ class WPAIC_Admin {
 
 		$token  = isset( $_POST['token'] ) ? sanitize_text_field( wp_unslash( $_POST['token'] ) ) : '';
 		$result = $this->batch_sync->run_batch( $token );
+		if ( is_wp_error( $result ) ) {
+			$this->send_error( $result );
+		}
+
+		wp_send_json_success( $result );
+	}
+
+	/**
+	 * Run one read-only Stage 1 Local Retrieval request.
+	 *
+	 * @return void
+	 */
+	public function ajax_retrieval_search() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array(
+					'code'    => 'wpaic_forbidden',
+					'message' => '你没有执行此操作的权限。',
+				),
+				403
+			);
+		}
+
+		check_ajax_referer( 'wpaic_retrieval_search', 'nonce' );
+
+		$question = isset( $_POST['question'] ) ? sanitize_textarea_field( wp_unslash( $_POST['question'] ) ) : '';
+		$question = trim( $question );
+		if ( '' === $question ) {
+			wp_send_json_error( array( 'code' => 'wpaic_retrieval_empty_query', 'message' => '请输入要检索的问题。' ), 400 );
+		}
+
+		if ( $this->string_length( $question ) > 1000 ) {
+			wp_send_json_error( array( 'code' => 'wpaic_retrieval_query_too_long', 'message' => '检索问题最多 1000 个字符，请缩短后重试。' ), 400 );
+		}
+
+		$candidate_limit = isset( $_POST['candidate_limit'] ) ? absint( $_POST['candidate_limit'] ) : 100;
+		$result = $this->local_retriever->retrieve(
+			$question,
+			array( 'candidate_limit' => $candidate_limit )
+		);
+
 		if ( is_wp_error( $result ) ) {
 			$this->send_error( $result );
 		}

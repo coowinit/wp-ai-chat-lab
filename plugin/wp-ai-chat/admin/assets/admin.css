@@ -379,3 +379,58 @@
 		text-align: left;
 	}
 }
+
+/* v0.5.0 Stage 1 — Local Retrieval Playground */
+.wpaic-retrieval-controls textarea {
+	box-sizing: border-box;
+	max-width: 860px;
+	width: 100%;
+}
+
+.wpaic-retrieval-options {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 12px;
+}
+
+.wpaic-retrieval-summary {
+	margin-bottom: 14px;
+}
+
+.wpaic-retrieval-table-wrap {
+	overflow-x: auto;
+}
+
+.wpaic-retrieval-table th:first-child,
+.wpaic-retrieval-table td:first-child {
+	width: 42px;
+}
+
+.wpaic-retrieval-table td {
+	vertical-align: top;
+}
+
+.wpaic-retrieval-table td:nth-child(2) {
+	min-width: 220px;
+}
+
+.wpaic-retrieval-table td:nth-child(3),
+.wpaic-retrieval-table td:nth-child(4) {
+	min-width: 130px;
+}
+
+.wpaic-retrieval-table td:nth-child(5) {
+	min-width: 300px;
+}
+
+.wpaic-retrieval-empty {
+	background: #f6f7f7;
+	border-left: 4px solid #8c8f94;
+	padding: 12px 14px;
+}
+
+.wpaic-retrieval-empty p {
+	margin-bottom: 0;
+}

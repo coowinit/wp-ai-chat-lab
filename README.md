@@ -3,8 +3,8 @@
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
 **当前稳定 Release：v0.4.0 · Knowledge Store & Lifecycle**  
-**当前开发：v0.5.0 · Local Retrieval（Design Pending）**  
-**当前验证：v0.4.0 Stage 1~4 全部通过真实环境验证，Final Review Passed**
+**当前开发：v0.5.0 · Local Retrieval（Stage 1 Validation Passed）**  
+**当前验证：v0.5.0 Stage 1 Query & Candidate Foundation 已通过真实环境验证**
 
 ## v0.3.1 开发状态
 
@@ -2120,19 +2120,63 @@ docs/versions/v0.4.0.md
 
 ### Local Retrieval
 
-验证：
+设计已经完成，目标是在 **不调用 AI、不使用 Embedding / Vector Database** 的前提下，从 v0.4.0 Knowledge Store 中为真实问题找出最相关的 Top-K Knowledge Source：
 
 ```text
 Question
 ↓
-Local Search
+Query Normalizer
 ↓
-Relevant Sources
+Candidate Recall
+↓
+Weighted Local Scoring
+↓
+Top-K Relevant Sources
+↓
+Score Breakdown
 ```
 
-这一阶段：
+第一版继续坚持 **Local Retrieval First**：SQL 只负责 active Knowledge Candidate Recall，PHP 负责可解释的字段加权评分。初始权重方向为 Structured Data > Title > Taxonomies > Excerpt > Content，并加入 Exact Match、Phrase Match 与 Query Coverage。
 
-# 不调用 AI。
+本版本只负责 **找证据**，不负责生成答案；不加入 DeepSeek Answer、Prompt Builder、RAG、Chunk、Embedding 或 Vector。
+
+开发计划分为：
+
+```text
+Stage 1 — Query & Candidate Foundation
+Stage 2 — Weighted Scoring
+Stage 3 — Retrieval Quality Calibration
+```
+
+完整设计合同见：
+
+```text
+docs/versions/v0.5.0.md
+```
+
+Stage 1 第一轮代码已经实现：
+
+```text
+Query Normalizer
+→ Term Extraction
+→ Active-only Candidate Search
+→ Candidate Limit
+→ Local Retrieval Playground
+```
+
+当前只验证 **Question → Candidate Recall**：SQL `LIKE` 仅从 `store_status = active` 的 Knowledge Store Row 中召回候选；后台“本地检索”页面显示 Normalized Query、Terms、Candidate Count、Matched Fields / Terms 与 Snippet。当前顺序不是最终 Ranking，Weighted Scoring / Top-K 留到 Stage 2。Stage 1 不调用 DeepSeek、不修改 Knowledge Store、不新增 Retrieval 数据表。
+
+Stage 1 已在真实 WordPress 环境验证通过：
+
+```text
+CWC-610 → Candidate Count 1，正确 Product 命中 title + structured_data
+CWC-610 dimension → 正确 Product 稳定进入 Candidate Set
+minimum order quantity → 正确 Manual Knowledge 被召回
+inactive 特有词 → Candidate Count 0
+ZXQ-99999-NOMATCH → Candidate Count 0 / No Candidate Match
+```
+
+同时确认自然英文问句归一化、Stop Words、连字符型号、Active-only Search、Manual Knowledge 通用召回与 No Match 边界均符合预期。Stage 1 正式封板，下一阶段进入 **Stage 2 — Weighted Scoring**。
 
 ---
 
@@ -2555,10 +2599,10 @@ Lead / Support / Action
 
 ```text
 Version:
-v0.4.0 Stable / v0.5.0 Design Pending
+v0.4.0 Stable / v0.5.0 Stage 1
 
 Stage:
-Knowledge Store & Lifecycle — Final Review Passed
+Local Retrieval — Stage 1 Validation Passed
 
 Production:
 Tidio
@@ -2567,7 +2611,7 @@ Development:
 WP AI Chat Lab
 
 Plugin Code:
-v0.4.0 Final Release
+v0.5.0 Stage 1 Build
 
 Primary Provider:
 DeepSeek (from v0.2.0)
@@ -2588,7 +2632,7 @@ Source Preview:
 Implemented — no AI call, no persistence
 
 Retrieval:
-Local First — not implemented yet
+Local First — v0.5.0 Stage 1 implemented and validated in real WordPress environment
 
 Vector:
 Not Used
@@ -2600,10 +2644,10 @@ Current Stable Release:
 v0.4.0 Knowledge Store & Lifecycle
 
 Development Status:
-v0.4.0 Stage 1~4 Passed / Final Review Passed
+v0.5.0 Local Retrieval — Stage 1 Validation Passed
 
 Next:
-v0.5.0 — Local Retrieval Design
+v0.5.0 Stage 2 — Weighted Scoring
 ```
 
 ---

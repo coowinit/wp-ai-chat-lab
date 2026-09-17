@@ -1,3 +1,59 @@
+## v0.5.0 — Local Retrieval (Stage 1 Validation Passed)
+
+### Design
+
+- 完成 `docs/versions/v0.5.0.md` 第一版正式设计合同。
+- 明确 Retrieval 与 AI Answer 分离：v0.5.0 只负责从 Knowledge Store 找证据，不调用 DeepSeek 生成答案。
+- 继续坚持 Local Retrieval First，不提前引入 Chunk、Embedding、Vector Database 或 RAG。
+- Retrieval 数据源固定为 v0.4.0 Knowledge Store，并且只查询 `store_status = active` 的正式 Knowledge。
+- 设计 `Query Normalizer → Candidate Recall → Weighted Scoring → Top-K → Score Breakdown` 主链路。
+- Candidate Recall 第一版采用 SQL `LIKE` + Candidate Limit，不建立 FULLTEXT Index。
+- Ranking 第一版采用 PHP 可解释评分，字段权重方向为 Structured Data > Title > Taxonomies > Excerpt > Content。
+- 设计 Exact Match Boost、Phrase Match Boost 与 Query Coverage Bonus。
+- 明确不默认加入 Recency Boost，也不默认给 Product / FAQ / Manual 等 Source Type 隐藏优先级。
+- Retrieval Result 必须包含 matched terms / fields / score breakdown，保证可解释和可调试。
+- 设计后台“本地检索” Playground，只提供 Question、Top K 与 Retrieval Diagnostics，不加入 Chat UI。
+- 设计 No Match 为合法结果，为后续 v0.6.0 Grounding Gate 提供基础。
+- v0.5.0 不新增自定义数据库表，不记录 Query Log。
+- 开发分为 Stage 1 Query & Candidate Foundation、Stage 2 Weighted Scoring、Stage 3 Retrieval Quality Calibration。
+
+### Stage 1 — Query & Candidate Foundation
+
+- 插件版本提升到 `0.5.0`。
+- 新增 `WPAIC_Retrieval_Query_Normalizer`：Unicode lowercase、HTML entity decode、标点标准化、空白合并，并保留 `- / _` 等型号字符。
+- 第一版 Stop Words 仅过滤少量明显低价值英语功能词，并提供 `wpaic_retrieval_stop_words` Filter。
+- 新增 `wpaic_retrieval_query_terms` Filter，用于后续按真实业务需要显式扩展少量 Query Alias。
+- 新增 `WPAIC_Retrieval_Candidate_Searcher`：只查询 `store_status = active` 的 Knowledge Store Row。
+- Candidate Recall 第一版对 `title / excerpt / taxonomies / structured_data / content` 使用 SQL `LIKE`。
+- Candidate Limit 默认 100，并通过 `wpaic_retrieval_candidate_limit` Filter 限制在 20~200。
+- 新增 `WPAIC_Local_Retriever` Stage 1 编排层，返回 Normalized Query、Terms、Candidate Count、Elapsed 与 Candidate Diagnostics。
+- 新增后台“本地检索” Playground，支持 Question + Candidate Limit。
+- Candidate Result 显示 Source ID、Post Type、Matched Fields、Matched Terms、Snippet 与来源 URL。
+- Stage 1 明确不输出最终 Score / Ranking；当前候选顺序仅用于 Recall Diagnostics。
+- Retrieval Playground 为只读操作，不修改 Knowledge Store，不触发 Full Sync / Incremental Sync。
+- 不调用 DeepSeek，不新增 Retrieval Log / Chunk / Embedding / Vector 表。
+
+### Stage 1 Status
+
+- Code Implemented。
+- Real-world Validation Passed。
+- `CWC-610`：Candidate Count = 1，正确 Product 命中 `title / structured_data`。
+- `CWC-610 dimension`：正确 Product 稳定进入 Candidate Set；高频 `dimension` 产生较多候选符合 Stage 1 OR Recall 设计。
+- `minimum order quantity`：正确 Manual Knowledge 被召回，并同时命中 `minimum / order / quantity`。
+- inactive 特有关键词：Candidate Count = 0，验证 Active-only Search。
+- `ZXQ-99999-NOMATCH`：Candidate Count = 0，正确输出 No Candidate Match。
+- Query Normalize、Stop Words、连字符型号、Candidate Limit、Product / Manual Knowledge 通用召回均符合预期。
+- Stage 1 正式封板，下一阶段进入 Stage 2 — Weighted Scoring。
+
+### Boundaries
+
+- 当前稳定 Release 仍为 v0.4.0；v0.5.0 开发分支插件代码版本已进入 0.5.0。
+- 不做 DeepSeek Answer / Prompt Builder / Grounding Gate / RAG。
+- 不做 Chunk / Embedding / Vector / Hybrid Search。
+- 不做前台 Public Retrieval API、Conversation、Live Chat、Lead 或 Human Handoff。
+
+---
+
 ## v0.4.0 — Knowledge Store & Lifecycle (2026-09-17)
 
 ### Fixed

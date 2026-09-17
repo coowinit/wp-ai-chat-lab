@@ -114,6 +114,44 @@
 		errorHtml;
 	}
 
+	function retrievalHtml(data) {
+		var terms = Array.isArray(data.terms) ? data.terms : [];
+		var candidates = Array.isArray(data.candidates) ? data.candidates : [];
+		var rows = '';
+
+		if (!candidates.length) {
+			rows = '<div class="wpaic-retrieval-empty"><strong>No Candidate Match</strong><p>当前 active Knowledge Store 中没有召回候选。Stage 1 不会为了“必须有结果”而伪造匹配。</p></div>';
+		} else {
+			rows = '<div class="wpaic-retrieval-table-wrap"><table class="widefat striped wpaic-retrieval-table">' +
+				'<thead><tr><th>#</th><th>Title / Source</th><th>Matched Fields</th><th>Matched Terms</th><th>Snippet</th></tr></thead><tbody>' +
+				candidates.map(function (item, index) {
+					var source = '<code>' + escapeHtml(item.source_id || '') + '</code><br><span class="description">' + escapeHtml(item.post_type || '') + ' · ID ' + escapeHtml(item.object_id || 0) + '</span>';
+					var title = '<strong>' + escapeHtml(item.title || '(Untitled)') + '</strong><br>' + source;
+					if (item.url) {
+						title += '<br><a href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener noreferrer">打开来源 ↗</a>';
+					}
+					return '<tr>' +
+						'<td>' + escapeHtml(index + 1) + '</td>' +
+						'<td>' + title + '</td>' +
+						'<td>' + escapeHtml((item.matched_fields || []).join(', ') || '—') + '</td>' +
+						'<td>' + escapeHtml((item.matched_terms || []).join(', ') || '—') + '</td>' +
+						'<td>' + escapeHtml(item.snippet || '') + '</td>' +
+					'</tr>';
+				}).join('') + '</tbody></table></div>';
+		}
+
+		return '<div class="wpaic-retrieval-summary">' +
+			'<dl class="wpaic-meta wpaic-meta-source">' +
+				'<div class="wpaic-meta-wide"><dt>Normalized Query</dt><dd><code>' + escapeHtml(data.normalized_query || '') + '</code></dd></div>' +
+				'<div class="wpaic-meta-wide"><dt>Terms</dt><dd>' + escapeHtml(terms.join(', ') || '(none)') + '</dd></div>' +
+				'<div><dt>Candidate Count</dt><dd>' + escapeHtml(data.candidate_count || 0) + '</dd></div>' +
+				'<div><dt>Candidate Limit</dt><dd>' + escapeHtml(data.candidate_limit || 0) + '</dd></div>' +
+				'<div><dt>Elapsed</dt><dd>' + escapeHtml(data.elapsed_ms || 0) + ' ms</dd></div>' +
+			'</dl>' +
+			'<p class="description">Stage 1 只表示“被召回”，当前顺序不是最终 Ranking。Weighted Scoring / Top-K 将在 Stage 2 加入。</p>' +
+		'</div>' + rows;
+	}
+
 	function ajaxJson(action, payload, nonce) {
 		var body = new URLSearchParams();
 		body.append('action', action);
@@ -257,6 +295,10 @@
 		var storePostId = document.getElementById('wpaic-store-post-id');
 		var fullSyncButton = document.getElementById('wpaic-start-full-sync');
 		var fullSyncResult = document.getElementById('wpaic-full-sync-result');
+		var retrievalButton = document.getElementById('wpaic-run-retrieval');
+		var retrievalResult = document.getElementById('wpaic-retrieval-result');
+		var retrievalQuestion = document.getElementById('wpaic-retrieval-question');
+		var retrievalLimit = document.getElementById('wpaic-retrieval-candidate-limit');
 
 		if (connectionButton && connectionResult) {
 			connectionButton.addEventListener('click', function () {
@@ -323,6 +365,27 @@
 		if (fullSyncButton && fullSyncResult) {
 			fullSyncButton.addEventListener('click', function () {
 				runFullSync(fullSyncButton, fullSyncResult);
+			});
+		}
+
+
+		if (retrievalButton && retrievalResult && retrievalQuestion) {
+			retrievalButton.addEventListener('click', function () {
+				var value = retrievalQuestion.value.trim();
+				var limit = retrievalLimit ? parseInt(retrievalLimit.value, 10) : 100;
+				if (!value) {
+					retrievalResult.className = 'wpaic-result is-error';
+					retrievalResult.innerHTML = '<strong>失败</strong><p>请输入要检索的问题。</p>';
+					return;
+				}
+				postRequest(
+					'wpaic_retrieval_search',
+					{ question: value, candidate_limit: limit || 100 },
+					WPAICAdmin.retrievalNonce,
+					retrievalButton,
+					retrievalResult,
+					retrievalHtml
+				);
 			});
 		}
 
