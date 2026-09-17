@@ -333,7 +333,7 @@ class WPAIC_Admin {
 	}
 
 	/**
-	 * Render the Stage 1 Knowledge Store diagnostics page.
+	 * Render the Stage 2 Knowledge Store lifecycle diagnostics page.
 	 *
 	 * @return void
 	 */
@@ -491,7 +491,7 @@ class WPAIC_Admin {
 	}
 
 	/**
-	 * Persist one Unified Knowledge Source into the Stage 1 Store.
+	 * Run one Stage 2 Knowledge Store lifecycle sync.
 	 *
 	 * @return void
 	 */

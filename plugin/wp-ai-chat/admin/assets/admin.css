@@ -267,3 +267,9 @@
 		overflow-x: auto;
 	}
 }
+
+.wpaic-status.is-deactivated {
+	font-weight: 700;
+	text-decoration: underline;
+	text-decoration-style: dotted;
+}

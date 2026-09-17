@@ -56,12 +56,20 @@
 
 	function storeSyncHtml(data) {
 		var row = data.row || {};
-		var actionClass = data.action === 'created' ? 'is-created' : (data.action === 'updated' ? 'is-updated' : 'is-unchanged');
+		var actionClass = 'is-unchanged';
+		if (data.action === 'created' || data.action === 'reactivated') {
+			actionClass = 'is-created';
+		} else if (data.action === 'updated') {
+			actionClass = 'is-updated';
+		} else if (data.action === 'deactivated') {
+			actionClass = 'is-deactivated';
+		}
 		return '<div class="wpaic-preview-summary"><span class="wpaic-status ' + actionClass + '">Action: ' + escapeHtml(data.action || '') + '</span></div>' +
 			'<dl class="wpaic-meta wpaic-meta-source">' +
 				'<div><dt>Source ID</dt><dd>' + escapeHtml(data.source_id) + '</dd></div>' +
 				'<div><dt>Object ID</dt><dd>' + escapeHtml(data.object_id) + '</dd></div>' +
 				'<div><dt>Store Status</dt><dd>' + escapeHtml(data.store_status) + '</dd></div>' +
+				'<div><dt>Inactive Reason</dt><dd>' + escapeHtml(data.inactive_reason || '—') + '</dd></div>' +
 				'<div><dt>Elapsed</dt><dd>' + escapeHtml(data.elapsed_ms) + ' ms</dd></div>' +
 				'<div class="wpaic-meta-wide"><dt>Old Hash</dt><dd><code>' + escapeHtml(data.old_hash || '(none)') + '</code></dd></div>' +
 				'<div class="wpaic-meta-wide"><dt>New Hash</dt><dd><code>' + escapeHtml(data.new_hash || '') + '</code></dd></div>' +

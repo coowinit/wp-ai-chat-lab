@@ -35,7 +35,25 @@
 - WordPress lifecycle incremental hooks 留到 Stage 4。
 - 不做 Retrieval、Fulltext Ranking、Chunk、Embedding、Vector、RAG、Grounding、AI Answer 或 Chat。
 - Knowledge Store 不提供业务内容编辑器，所有知识仍从 WordPress Source 重建。
-- Stage 1 当前状态：Code Implemented — Awaiting Real-world Validation。
+- Stage 1 真实环境验证通过：覆盖升级建表、Product / Post / Manual Knowledge 持久化、`created / unchanged / updated`、Hash Compare / Restore、`source_id` 唯一性均符合预期。
+
+#### Stage 2 — Lifecycle (Code Implemented)
+
+- `WPAIC_Knowledge_Lifecycle_Manager` 增加 Eligibility Lifecycle：内容变化与可用状态分离判断。
+- `publish → draft / private / trash`：已有 Store Row 软停用为 `inactive`，`inactive_reason = not_published`。
+- Knowledge Source 被禁用：单条 Sync 将已有 Row 标记为 `inactive / source_disabled`。
+- Source 对应 CPT 不再可发现：已有 Row 标记为 `inactive / source_missing`。
+- Source 被永久删除：通过 `object_id` 找回历史 Store Row，并标记为 `inactive / source_deleted`。
+- Inactive Row 不删除最后有效 AI-visible Snapshot，也不因状态变化重算 Source Hash。
+- Inactive Source 再次满足 publish + enabled 条件时，重新生成当前 Source，完整更新 Snapshot / Hash，并记为 `reactivated`。
+- 新增 `find_by_object_id()`，用于已删除 Source 的历史 Store 定位。
+- Store Diagnostics 增加 Inactive Reason，并展示 Stage 2 Lifecycle 边界。
+- Stage 2 继续只使用 Single-source Sync；Batch / Reconcile 仍留到 Stage 3，自动保存 Hooks 仍留到 Stage 4。
+
+#### Stage 2 Validation Status
+
+- 当前状态：Code Implemented — Awaiting Real-world Validation。
+- 建议优先验证 `publish → draft → inactive → publish → reactivated`，再测试 trash、source disabled 与 permanent delete。
 
 ---
 

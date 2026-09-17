@@ -48,6 +48,29 @@ class WPAIC_Knowledge_Store_Repository {
 		return is_array( $row ) ? $this->hydrate_row( $row ) : null;
 	}
 
+
+	/**
+	 * Find a persisted source by its original WordPress object ID. WordPress
+	 * post IDs are globally unique within the site, so this is sufficient for
+	 * Stage 2 deleted-source diagnostics.
+	 *
+	 * @param int $object_id WordPress object ID.
+	 * @return array<string,mixed>|null
+	 */
+	public function find_by_object_id( $object_id ) {
+		$object_id = absint( $object_id );
+		if ( ! $object_id ) {
+			return null;
+		}
+
+		$row = $this->wpdb->get_row(
+			$this->wpdb->prepare( "SELECT * FROM {$this->table} WHERE object_id = %d ORDER BY id DESC LIMIT 1", $object_id ),
+			ARRAY_A
+		);
+
+		return is_array( $row ) ? $this->hydrate_row( $row ) : null;
+	}
+
 	/**
 	 * @param array<string,mixed> $data Prepared database fields.
 	 * @return int|WP_Error Inserted row ID or error.
