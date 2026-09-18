@@ -56,6 +56,9 @@ class WPAIC_Admin {
 	/** @var WPAIC_Provider_Failure_Lab */
 	protected $provider_failure_lab;
 
+	/** @var WPAIC_Lead_Trigger_Policy */
+	protected $lead_trigger_policy;
+
 	/** @var string */
 	protected $ai_page_hook = '';
 
@@ -83,6 +86,9 @@ class WPAIC_Admin {
 	/** @var string */
 	protected $public_hardening_page_hook = '';
 
+	/** @var string */
+	protected $lead_trigger_page_hook = '';
+
 	/**
 	 * @param WPAIC_AI_Manager                    $manager          AI manager.
 	 * @param WPAIC_Source_Discovery              $discovery        Source discovery.
@@ -99,8 +105,9 @@ class WPAIC_Admin {
 	 * @param WPAIC_Usage_Guard                    $usage_guard      Usage policy guard.
 	 * @param WPAIC_Public_Request_Guard            $public_request_guard Public request abuse guard.
 	 * @param WPAIC_Provider_Failure_Lab            $provider_failure_lab Permanent Lab one-shot Provider failure injector.
+	 * @param WPAIC_Lead_Trigger_Policy             $lead_trigger_policy  Deterministic Lead Trigger Policy.
 	 */
-	public function __construct( WPAIC_AI_Manager $manager, WPAIC_Source_Discovery $discovery, WPAIC_Generic_Extractor $extractor, WPAIC_Knowledge_Store_Repository $store_repository, WPAIC_Knowledge_Lifecycle_Manager $lifecycle, WPAIC_Knowledge_Batch_Sync $batch_sync, WPAIC_Local_Retriever $local_retriever, WPAIC_Grounding_Gate $grounding_gate, WPAIC_Evidence_Pack_Builder $evidence_builder, WPAIC_Grounded_Prompt_Builder $prompt_builder, WPAIC_Grounded_Answer_Service $grounded_answer, WPAIC_Usage_Counter_Repository $usage_repository, WPAIC_Usage_Guard $usage_guard, WPAIC_Public_Request_Guard $public_request_guard, WPAIC_Provider_Failure_Lab $provider_failure_lab ) {
+	public function __construct( WPAIC_AI_Manager $manager, WPAIC_Source_Discovery $discovery, WPAIC_Generic_Extractor $extractor, WPAIC_Knowledge_Store_Repository $store_repository, WPAIC_Knowledge_Lifecycle_Manager $lifecycle, WPAIC_Knowledge_Batch_Sync $batch_sync, WPAIC_Local_Retriever $local_retriever, WPAIC_Grounding_Gate $grounding_gate, WPAIC_Evidence_Pack_Builder $evidence_builder, WPAIC_Grounded_Prompt_Builder $prompt_builder, WPAIC_Grounded_Answer_Service $grounded_answer, WPAIC_Usage_Counter_Repository $usage_repository, WPAIC_Usage_Guard $usage_guard, WPAIC_Public_Request_Guard $public_request_guard, WPAIC_Provider_Failure_Lab $provider_failure_lab, WPAIC_Lead_Trigger_Policy $lead_trigger_policy ) {
 		$this->manager          = $manager;
 		$this->discovery        = $discovery;
 		$this->extractor        = $extractor;
@@ -116,6 +123,7 @@ class WPAIC_Admin {
 		$this->usage_guard          = $usage_guard;
 		$this->public_request_guard = $public_request_guard;
 		$this->provider_failure_lab = $provider_failure_lab;
+		$this->lead_trigger_policy  = $lead_trigger_policy;
 
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
@@ -133,6 +141,7 @@ class WPAIC_Admin {
 		add_action( 'wp_ajax_wpaic_usage_guard_reset', array( $this, 'ajax_usage_guard_reset' ) );
 		add_action( 'admin_post_wpaic_public_hardening_reset', array( $this, 'handle_public_hardening_reset' ) );
 		add_action( 'admin_post_wpaic_provider_failure_lab', array( $this, 'handle_provider_failure_lab' ) );
+		add_action( 'admin_post_wpaic_restore_lead_keywords', array( $this, 'handle_restore_lead_keywords' ) );
 	}
 
 	/**
@@ -232,6 +241,15 @@ class WPAIC_Admin {
 			'wp-ai-chat-lab-public-hardening',
 			array( $this, 'render_public_hardening_page' )
 		);
+
+		$this->lead_trigger_page_hook = add_submenu_page(
+			'wp-ai-chat-lab',
+			'Lead Trigger Lab',
+			'Lead Trigger Lab',
+			'manage_options',
+			'wp-ai-chat-lab-lead-trigger',
+			array( $this, 'render_lead_trigger_page' )
+		);
 	}
 
 	/**
@@ -285,6 +303,16 @@ class WPAIC_Admin {
 				'type'              => 'array',
 				'sanitize_callback' => array( $this, 'sanitize_public_guard_settings' ),
 				'default'           => array( 'enabled' => 1, 'visitor_per_minute' => 20, 'ip_per_minute' => 0 ),
+			)
+		);
+
+		register_setting(
+			'wpaic_lead_trigger_settings_group',
+			WPAIC_OPTION_LEAD_COMMERCIAL_KEYWORDS,
+			array(
+				'type'              => 'array',
+				'sanitize_callback' => array( $this, 'sanitize_lead_commercial_keywords' ),
+				'default'           => WPAIC_Lead_Trigger_Policy::get_default_keywords(),
 			)
 		);
 
@@ -372,6 +400,22 @@ class WPAIC_Admin {
 	}
 
 	/**
+	 * Sanitize administrator-controlled commercial-intent keywords.
+	 *
+	 * The Settings API posts the textarea as a string, while the stored Option
+	 * is an array. Reuse the formal Lead Trigger Policy normalizer so saving
+	 * and runtime matching share exactly the same Unicode/duplicate rules.
+	 * An empty value intentionally remains an empty array and disables
+	 * commercial_intent keyword matching.
+	 *
+	 * @param mixed $input Submitted keyword textarea / array.
+	 * @return array<int,string>
+	 */
+	public function sanitize_lead_commercial_keywords( $input ) {
+		return $this->lead_trigger_policy->normalize_keywords( $input );
+	}
+
+	/**
 	 * Only persist discoverable post types. An empty list is valid and means
 	 * the administrator has intentionally disabled every generic source.
 	 *
@@ -401,7 +445,7 @@ class WPAIC_Admin {
 	 * @return void
 	 */
 	public function enqueue_assets( $hook ) {
-		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook, $this->store_page_hook, $this->retrieval_page_hook, $this->grounded_page_hook, $this->usage_page_hook, $this->chat_boundary_page_hook, $this->chat_ui_page_hook, $this->public_hardening_page_hook ), true ) ) {
+		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook, $this->store_page_hook, $this->retrieval_page_hook, $this->grounded_page_hook, $this->usage_page_hook, $this->chat_boundary_page_hook, $this->chat_ui_page_hook, $this->public_hardening_page_hook, $this->lead_trigger_page_hook ), true ) ) {
 			return;
 		}
 
@@ -637,6 +681,89 @@ class WPAIC_Admin {
 			add_settings_error( 'wpaic_chat_ui_messages', 'wpaic_chat_ui_saved', 'Chat UI 设置已保存。', 'updated' );
 		}
 		include WPAIC_PLUGIN_DIR . 'admin/views/page-chat-ui.php';
+	}
+
+
+	/** Render the permanent v0.9.0 Lead Trigger Lab. @return void */
+	public function render_lead_trigger_page() {
+		$this->guard_admin_page();
+
+		$lead_keywords       = $this->lead_trigger_policy->get_keywords();
+		$lead_keywords_text  = implode( "\n", $lead_keywords );
+		$lead_keywords_count = count( $lead_keywords );
+		$settings_updated    = isset( $_GET['settings-updated'] ) ? sanitize_text_field( wp_unslash( $_GET['settings-updated'] ) ) : '';
+		$restore_status      = isset( $_GET['wpaic-lead-defaults'] ) ? sanitize_key( wp_unslash( $_GET['wpaic-lead-defaults'] ) ) : '';
+		$lead_test_result    = null;
+		$lead_test_input     = array(
+			'question'      => 'Can I get a quote for 500 sqm CWC-610?',
+			'response_type' => 'answer',
+			'block_reason'  => '',
+			'manual'        => false,
+		);
+
+		if ( 'true' === $settings_updated ) {
+			add_settings_error( 'wpaic_lead_trigger_messages', 'wpaic_lead_keywords_saved', '商业需求关键词已保存并立即生效。', 'updated' );
+		}
+
+		if ( 'restored' === $restore_status ) {
+			add_settings_error( 'wpaic_lead_trigger_messages', 'wpaic_lead_keywords_restored', '已恢复默认商业需求关键词。', 'updated' );
+		}
+
+		if ( isset( $_POST['wpaic_lead_trigger_test'] ) ) {
+			check_admin_referer( 'wpaic_lead_trigger_test' );
+
+			$lead_test_input['question'] = isset( $_POST['question'] )
+				? sanitize_textarea_field( wp_unslash( $_POST['question'] ) )
+				: '';
+			$lead_test_input['response_type'] = isset( $_POST['response_type'] )
+				? sanitize_key( wp_unslash( $_POST['response_type'] ) )
+				: 'answer';
+			$lead_test_input['block_reason'] = isset( $_POST['block_reason'] )
+				? sanitize_key( wp_unslash( $_POST['block_reason'] ) )
+				: '';
+			$lead_test_input['manual'] = ! empty( $_POST['manual'] );
+
+			$allowed_response_types = array( 'answer', 'clarify', 'no_answer', 'blocked', 'error' );
+			if ( ! in_array( $lead_test_input['response_type'], $allowed_response_types, true ) ) {
+				$lead_test_input['response_type'] = 'answer';
+			}
+
+			$allowed_block_reasons = array( '', 'conversation_limit_reached', 'visitor_daily_limit_reached', 'site_daily_limit_reached' );
+			if ( ! in_array( $lead_test_input['block_reason'], $allowed_block_reasons, true ) ) {
+				$lead_test_input['block_reason'] = '';
+			}
+
+			$lead_test_result = $this->lead_trigger_policy->evaluate( $lead_test_input );
+		}
+
+		include WPAIC_PLUGIN_DIR . 'admin/views/page-lead-trigger.php';
+	}
+
+	/**
+	 * Restore the default commercial-intent keyword baseline.
+	 *
+	 * @return void
+	 */
+	public function handle_restore_lead_keywords() {
+		$this->guard_admin_page();
+		check_admin_referer( 'wpaic_restore_lead_keywords' );
+
+		update_option(
+			WPAIC_OPTION_LEAD_COMMERCIAL_KEYWORDS,
+			WPAIC_Lead_Trigger_Policy::get_default_keywords(),
+			false
+		);
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'                => 'wp-ai-chat-lab-lead-trigger',
+					'wpaic-lead-defaults' => 'restored',
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
 	}
 
 

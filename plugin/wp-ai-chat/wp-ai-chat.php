@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP AI Chat Lab
  * Description: Experimental WordPress AI foundation for controlled, knowledge-grounded chat, including AI providers, WordPress knowledge sources, and a rebuildable Knowledge Store.
- * Version: 0.8.0
+ * Version: 0.9.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: coowinit
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPAIC_VERSION', '0.8.0' );
+define( 'WPAIC_VERSION', '0.9.0' );
 define( 'WPAIC_PLUGIN_FILE', __FILE__ );
 define( 'WPAIC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WPAIC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -23,6 +23,7 @@ define( 'WPAIC_DB_VERSION', '1.1' );
 define( 'WPAIC_OPTION_USAGE_SETTINGS', 'wpaic_usage_settings' );
 define( 'WPAIC_OPTION_CHAT_UI_SETTINGS', 'wpaic_chat_ui_settings' );
 define( 'WPAIC_OPTION_PUBLIC_GUARD_SETTINGS', 'wpaic_public_guard_settings' );
+define( 'WPAIC_OPTION_LEAD_COMMERCIAL_KEYWORDS', 'wpaic_lead_commercial_keywords' );
 define( 'WPAIC_OPTION_DB_VERSION', 'wpaic_db_version' );
 define( 'WPAIC_OPTION_LAST_FULL_SYNC', 'wpaic_last_full_sync' );
 define( 'WPAIC_OPTION_LAST_INCREMENTAL_SYNC', 'wpaic_last_incremental_sync' );
@@ -69,6 +70,8 @@ require_once WPAIC_PLUGIN_DIR . 'includes/chat/class-wpaic-public-request-guard.
 require_once WPAIC_PLUGIN_DIR . 'includes/chat/class-wpaic-chat-response.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/chat/class-wpaic-chat-controller.php';
 require_once WPAIC_PLUGIN_DIR . 'public/class-wpaic-chat-widget.php';
+
+require_once WPAIC_PLUGIN_DIR . 'includes/inquiry/class-wpaic-lead-trigger-policy.php';
 
 require_once WPAIC_PLUGIN_DIR . 'admin/class-wpaic-admin.php';
 
@@ -117,6 +120,17 @@ function wpaic_ensure_options() {
 		add_option(
 			WPAIC_OPTION_PUBLIC_GUARD_SETTINGS,
 			array( 'enabled' => 1, 'visitor_per_minute' => 20, 'ip_per_minute' => 0 ),
+			'',
+			false
+		);
+	}
+
+	// v0.9.0 Stage 1 Round 1: defaults are written only when the option does
+	// not yet exist. An intentionally empty saved list must remain empty.
+	if ( false === get_option( WPAIC_OPTION_LEAD_COMMERCIAL_KEYWORDS, false ) ) {
+		add_option(
+			WPAIC_OPTION_LEAD_COMMERCIAL_KEYWORDS,
+			WPAIC_Lead_Trigger_Policy::get_default_keywords(),
 			'',
 			false
 		);
@@ -196,8 +210,12 @@ function wpaic_bootstrap() {
 	// verified Public Chat Boundary. It owns no Retrieval / Grounding / AI logic.
 	new WPAIC_Chat_Widget();
 
+	// v0.9.0 Stage 1 Round 1: deterministic Lead Trigger Policy only.
+	// It does not persist inquiries or alter the verified Chat response path yet.
+	$lead_trigger_policy = new WPAIC_Lead_Trigger_Policy();
+
 	if ( is_admin() ) {
-		new WPAIC_Admin( $manager, $discovery, $extractor, $store_repository, $lifecycle, $batch_sync, $local_retriever, $grounding_gate, $evidence_builder, $prompt_builder, $grounded_answer, $usage_repository, $usage_guard, $public_request_guard, $provider_failure_lab );
+		new WPAIC_Admin( $manager, $discovery, $extractor, $store_repository, $lifecycle, $batch_sync, $local_retriever, $grounding_gate, $evidence_builder, $prompt_builder, $grounded_answer, $usage_repository, $usage_guard, $public_request_guard, $provider_failure_lab, $lead_trigger_policy );
 	}
 }
 add_action( 'plugins_loaded', 'wpaic_bootstrap' );

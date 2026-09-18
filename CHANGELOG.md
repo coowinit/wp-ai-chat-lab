@@ -1,8 +1,31 @@
 # Changelog
 
+## v0.9.0 — Stage 1 Round 1 Lead Trigger Policy / Validation Passed / Sealed
+
+> Real WordPress validation passed. Stage seal only; this is not a Release.
+
+- Plugin Version advanced to `0.9.0`; DB Version remains `1.1`.
+- Added administrator-controlled `wpaic_lead_commercial_keywords` Option.
+- Initial installation/upgrade writes the default commercial keyword baseline only when the Option does not exist.
+- An intentionally empty saved keyword list remains empty and disables `commercial_intent`; defaults are never silently restored.
+- Added explicit administrator action to restore default commercial-intent keywords.
+- Added `WPAIC_Lead_Trigger_Policy` as a deterministic, provider-independent policy boundary.
+- Added trigger outputs for `manual`, `commercial_intent`, `no_answer`, and `usage_blocked`.
+- Fixed priority contract: `manual → commercial_intent → no_answer → usage_blocked`.
+- `clarify` and `error` are automatic-lead hard-stop states; manual user action remains allowed.
+- Added Unicode keyword support and Latin case-insensitive phrase matching.
+- ASCII matching uses token boundaries so a keyword such as `order` does not match text such as `border`.
+- Added permanent `Lead Trigger Lab` with editable keywords, restore-default control, and a server-side Playground that calls the real policy class.
+- Round 1 does not create `wp_wpaic_inquiries`, Public Inquiry REST, Inquiry Repository, personal-data capture, or Chat CTA integration.
+- No AI Lead Scoring call was added.
+- Fixed the missing Settings API sanitize callback that caused a WordPress Critical Error on the first keyword save; the admin save path now reuses the same keyword normalization contract as the runtime policy.
+- Real WordPress validation passed for ordinary answer No Offer, default English commercial keyword, administrator-added Chinese keyword, deletion, empty-list disable semantics, restore defaults, `no_answer`, all three Usage Block variants, `clarify` / `error` hard stops, trigger priority, `manual` highest priority, and `order` vs `border` word-boundary protection.
+- Stage 1 Round 1 is now formally **Validation Passed / Sealed**.
+- Next: Stage 1 Round 2 — Inquiry Capture Foundation (database / repository / service / public REST / validation / honeypot / submission rate). Formal Chat inline form integration remains deferred until those boundaries pass validation.
+
 ## v0.9.0 — Lead Capture & Inquiry Management / Planning & Architecture Baseline
 
-> Planning only. No v0.9.0 runtime code has been implemented yet. Current stable release remains v0.8.0.
+> Architecture baseline retained for reference. Stage 1 Round 1 has now passed real validation and is sealed; current stable release remains v0.8.0 until v0.9.0 Final Review.
 
 - Defined v0.9.0 around two goals: natural Lead Capture from Chat and WordPress Inquiry Management.
 - Defined Lead Trigger Policy as a separate boundary between Chat Response and Inquiry Capture.

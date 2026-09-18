@@ -3,7 +3,7 @@
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
 **当前稳定 Release：v0.8.0 · Chat Integration**  
-**当前状态：v0.8.0 Final Review Passed / Stable Release · Stage 1、Stage 2、Stage 3 均已完成真实环境验收并封板**
+**当前开发：v0.9.0 Stage 1 · Round 1 Lead Trigger Policy — Validation Passed / Sealed（稳定 Release 仍为 v0.8.0）**
 
 ## v0.5.0 稳定版本状态
 
@@ -2640,7 +2640,7 @@ Token Usage Diagnostics
 
 ### Lead Capture & Inquiry Management
 
-当前状态：**Planning / Architecture Baseline，尚未开始实现。**
+当前状态：**Stage 1 · Round 1 Validation Passed / Sealed。**
 
 目标：在 v0.8.0 已稳定的 Chat Integration 之上建立自然、可解释的询盘转化路径：
 
@@ -2671,9 +2671,21 @@ usage_blocked
 
 其中 **commercial_intent 关键词必须后台完全可配置**：插件提供默认关键词，但管理员可以增删改、保存空列表以关闭关键词触发，并可主动恢复默认值。
 
-计划新增独立 `wp_wpaic_inquiries` 表；不保存完整聊天记录，不进入实时 Human Handoff / CRM。
+Stage 1 Round 1 已实现并通过真实 WordPress 验收：
 
-详细设计见：`docs/versions/v0.9.0.md`。
+```text
+Commercial Keywords Settings
+↓
+Deterministic Lead Trigger Policy
+↓
+Lead Trigger Lab
+```
+
+当前 Plugin Version 已进入 `0.9.0`，DB Version 仍为 `1.1`，本轮没有新增数据库表，也没有修改正式 Chat Widget。`wp_wpaic_inquiries`、Public Inquiry REST 与 Inline Inquiry Form 留到 Stage 1 后续小步。
+
+Round 1 已验证：普通 Answer 不触发、默认/自定义商业关键词、中文关键词增删、空列表关闭、恢复默认、`no_answer`、Visitor/Site/Conversation Usage Block、`clarify` / `error` Hard Stop、`manual` 最高优先，以及 `order` 不误命中 `border`。关键词首次保存时发现并修复了 Settings API sanitize callback 缺失导致的 Critical Error；修复后保存与运行时共用同一套标准化逻辑。
+
+详细设计与 Round 1 验收清单见：`docs/versions/v0.9.0.md`。
 
 ---
 
@@ -3245,19 +3257,23 @@ WP AI Chat Lab 中已经建立的后台实验与验收页面将长期保留，�
 
 因此后续版本的原则是：**可以整理、折叠、优化这些 Lab 页面，但不因正式功能上线而删除其核心测试能力。** 详细约定见 `docs/lab-validation-policy.md`。
 
-# v0.9.0 Planning — Lead Capture & Inquiry Management
+# v0.9.0 Stage 1 Round 1 — Lead Trigger Policy
 
-当前稳定 Release 仍为 **v0.8.0**。v0.9.0 目前只完成架构规划，尚未修改 Plugin Version、DB Version 或运行代码。
+当前稳定 Release 仍为 **v0.8.0**；当前开发版本已进入 **Plugin 0.9.0**。Stage 1 Round 1 已完成真实 WordPress 验收并封板，DB Version 仍为 `1.1`，新增数据表为 0。
 
-已确认的产品原则：
+已封板的产品原则与能力：
 
 - Chat 先解决问题，Lead CTA 只在自然业务节点出现；
 - `commercial_intent` 关键词全部由后台管理员控制，默认词只是起点；
-- 关键词支持增删改、空列表关闭触发、手动恢复默认；
-- 第一版 Trigger 只使用确定性规则，不调用 AI Lead Scoring；
-- Inquiry 使用独立 Service / Repository / 自定义表，不在 REST Controller 中直接散落数据库操作；
-- 第一版不保存完整 Conversation / Prompt / AI Answer；
-- Inquiry Lab / Playground 将继续遵循永久保留策略。
+- 关键词支持增删改、Unicode / 中文、空列表关闭触发、手动恢复默认；
+- 第一版 Trigger 使用确定性规则，不调用 AI Lead Scoring；
+- 固定优先级：`manual → commercial_intent → no_answer → usage_blocked`；
+- `clarify` / `error` 是自动 Lead Hard Stop，但用户主动 `manual` 永远允许；
+- Conversation Limit 只提供 secondary Lead CTA；Visitor / Site Daily Limit 使用 primary fallback；
+- Latin 词边界已验证：`order` 不会误命中 `border`；
+- Lead Trigger Lab 永久保留，用于教学、诊断和回归测试。
 
-完整架构：`docs/versions/v0.9.0.md`。
+Round 1 仍不创建 `wp_wpaic_inquiries`，不新增 Public Inquiry REST，不保存个人信息，也不修改正式 Chat Widget。
+
+下一步：**Stage 1 Round 2 — Inquiry Capture Foundation**。完整架构与真实验收记录见 `docs/versions/v0.9.0.md`。
 
