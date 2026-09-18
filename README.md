@@ -5,6 +5,8 @@
 **当前稳定 Release：v0.9.0 · Lead Capture & Inquiry Management**  
 **状态：Final Review Passed / Stable Release**
 
+> **测试与上线提醒**：v0.9.0 的真实开发/验收使用 COODEC 官网（https://www.coodecglobal.com/）公开内容及对应 WordPress 站点数据作为真实站点样本。README 中的型号、查询词、评分、Token、限额与计数均属于当时测试快照，不能直接当作其他站点或正式生产环境的固定值。正式上线前请务必阅读下文 **「v0.9.0 测试数据与正式上线注意事项」**。
+
 ## v0.5.0 稳定版本状态
 
 `v0.5.0 — Local Retrieval` 已完成 Stage 1 Query & Candidate Foundation、Stage 2 Weighted Scoring 与 Stage 3 Retrieval Quality Calibration 的真实环境验收。
@@ -2707,6 +2709,99 @@ Round 3 已真实验证：Manual Contact Sales、commercial_intent / no_answer /
 
 详细设计与 Round 1 / Round 2 / Round 3 验收清单见：`docs/versions/v0.9.0.md`。
 
+## v0.9.0 测试数据与正式上线注意事项
+
+### 1. 测试数据来源
+
+本项目 v0.3.0～v0.9.0 的大量真实环境测试，使用 **COODEC 官网（https://www.coodecglobal.com/）公开内容及对应 WordPress 站点数据**作为真实企业站样本，包括产品、文章、FAQ、结构化字段、Knowledge、Retrieval、Grounding、Chat 与 Inquiry 场景。
+
+因此 README / Lab 中出现的以下内容都应理解为**测试快照**，而不是插件固定业务规则：
+
+```text
+产品型号与产品名称
+测试问题（例如 dimension / warranty / quote 等）
+Retrieval Score / Coverage / Gap
+Grounding Strong / Medium / Weak / None 的具体样例
+Provider Token 数
+Usage Counter 数值
+Inquiry 测试数据
+商业需求关键词
+```
+
+后续继续测试时应注意：
+
+- COODEC 网站内容发生变化后，同一句 Query 的候选、Score、Grounding 结果与 Token 都可能变化；不要机械要求与历史截图完全一致。
+- 如果换到其他 WordPress 网站，应使用**该站自己的真实产品、FAQ、文章和业务语言**重新建立测试样例，不要继续依赖 COODEC 的产品型号。
+- 内容模型或字段结构变化后，先执行 Knowledge Preview / Sync，再重新验证 Retrieval → Grounding → Chat。
+- 建议长期保留一组稳定回归问题：**明确命中、部分证据、模糊问题、完全无匹配、商业意图**各至少 1 条。
+- 测试数据只使用公开或专门构造的数据；不要把客户真实隐私信息、API Key、内部报价或其他敏感内容写入 GitHub 仓库。
+- Lab 中产生的测试 Inquiry 应使用明显的测试姓名 / 邮箱 / Message，测试结束后清理，避免与真实客户询盘混淆。
+
+### 2. 测试设置与正式上线设置
+
+开发期间为了快速触发边界，很多 Limit 会被**临时调低**。这些测试值绝不能不检查就直接带到生产环境。
+
+| 项目 | 测试阶段常见做法 | 正式上线建议 |
+| --- | --- | --- |
+| DeepSeek API Key | 测试 Key / 后台临时配置 | 优先放在 `wp-config.php` 或安全配置中；禁止提交到仓库 |
+| Conversation AI Calls | 常临时设为 `1～2` 验证 BLOCK | 默认基线可从 `10 / conversation` 起，根据成本与业务调整 |
+| Visitor Daily AI Calls | 常临时设为 `1～3` | 默认基线可从 `20 / day` 起，根据实际访问量调整 |
+| Site Daily AI Calls | 常临时设为 `2～20` | 默认基线可从 `200 / day` 起，并结合预算观察 |
+| Public Request Guard | 测试时可降到 `3 / minute` | 建议恢复到合理值；当前默认 Visitor `20 / minute` |
+| IP Request Guard | 通常保持 `0` | 未确认真实客户端 IP 前继续保持关闭；高流量站交给 Cloudflare / WAF |
+| Inquiry Rate | 测试时频繁 Reset | 当前默认同 Visitor `5 / hour`；上线后按垃圾询盘情况调整 |
+| Commercial Keywords | 默认词 + 临时中文测试词 | 按真实产品、询盘语言、市场与销售术语重新检查；空列表代表主动关闭 |
+| Provider Failure Lab | 测试时可能 Armed | 正式上线必须保持 `Idle`，不要带着故障注入状态上线 |
+| Lab Reset | 可频繁重置测试 Counter | 正式环境只在明确知道影响范围时使用，不要把运营数据当测试数据清除 |
+| Chat Widget | 测试环境反复开关 | 上线前完成桌面端 / 手机端 / 无痕窗口端到端测试后再启用 |
+
+另外必须检查：
+
+1. **WordPress Timezone**：Visitor / Site Daily Limit 使用 WordPress Local Day。站点若仍是 `+00:00`，每天额度会按 UTC 切换。生产站应改成真实业务时区。
+2. **数据库引擎**：Usage Counter 的 Public Provider Boundary 依赖事务与行锁；生产环境必须保持支持事务的 InnoDB 等引擎。
+3. **DB Version**：v0.9.0 为 `1.3`。升级前建议备份 WordPress 数据库与插件文件。
+4. **测试 Counter**：上线前建议清理专用测试 Counter / Rate 状态，并确认 Provider Failure Lab 为 `Idle`。
+5. **测试 Inquiry**：上线前删除或清空明确的测试询盘，避免后台未读数量与真实运营数据混在一起。
+6. **商业关键词**：默认词只是通用起点。B2B 站应补充自身常用的 quote / sample / MOQ / distributor / project 等语言及对应中文或目标市场语言。
+
+### 3. 正式上线前检查清单
+
+建议每个生产站至少执行一次：
+
+```text
+[ ] 备份数据库与插件文件
+[ ] 确认 Plugin Version = 0.9.0 / DB Version = 1.3
+[ ] 确认 WordPress Timezone
+[ ] 确认 DeepSeek API Key 未写入仓库且连接测试正常
+[ ] 执行 Knowledge Preview / Full Sync，确认 Errors = 0
+[ ] 使用本站真实内容重新跑 Retrieval / Grounding 基础回归
+[ ] 恢复正式 Usage Guard / Request Guard / Inquiry Rate 设置
+[ ] 确认 Provider Failure Lab = Idle
+[ ] 确认商业需求关键词符合本站产品和目标市场语言
+[ ] 清理测试 Counter、测试 Inquiry 与临时测试数据
+[ ] 检查 Chat Widget 桌面端与手机端
+[ ] 验证 answer / clarify / no_answer / blocked / error
+[ ] 验证 Request a Quote / Leave a Message / Contact Sales
+[ ] 验证真实 Inquiry 能进入后台且显示为未读
+[ ] 验证询盘详情、搜索、筛选、回收站正常
+[ ] 检查 Privacy Policy / Cookie / 联系表单隐私说明是否覆盖询盘数据
+[ ] HTTPS 正常；如有高流量或攻击风险，在 Cloudflare / WAF 增加边缘保护
+```
+
+### 4. 其他运维注意事项
+
+- **v0.9.0 不提供邮件通知。** 新 Inquiry 会进入 WordPress 后台“询盘管理”，运营人员需要主动查看；不要误以为提交后一定会自动发邮件给销售。
+- **v0.9.0 不保存服务器端完整聊天记录。** Conversation ID / 当前标签页 Chat transcript 的连续性与 Inquiry 数据是两套概念；不要把 Inquiry 当成完整 Conversation Archive。
+- **未提交的个人信息不持久化。** Name / Email / Company / Phone / Inquiry Message 草稿不会因为刷新而保存在 `sessionStorage`。
+- **Inquiry 中包含个人信息。** 生产站应限制后台管理员权限，建立合理的数据保留 / 删除规则，并根据所在地法规完善 Privacy Policy。
+- **Public Request Guard 属于 WordPress 应用层 best-effort 保护。** 高流量、Bot 或攻击场景优先在 Cloudflare / WAF 等边缘层限流。
+- **IP Rate 默认关闭是有意设计。** 只有在确认代理链路下 `REMOTE_ADDR` 代表真实访客时才启用，避免共享代理出口误伤。
+- **Lab / Playground 是长期诊断工具。** 可以用于测试与回归，但不要把测试按钮当成日常运营操作；测试后应恢复生产设置。
+- **Source URL 只接受本站来源。** 不应把访客传入的外站 URL 当成可信来源链接。
+- **Read / Unread 只是轻量运营状态。** 当前版本没有 CRM Pipeline、Sales Owner、Lead Tag、Human Handoff 或销售跟进阶段。
+- **与现有客服系统可以并存。** v0.9.0 已能完成 AI Chat + Inquiry 闭环，但不包含实时人工客服；如果站点仍需要 Human Live Chat，可继续与 Tidio 等成熟客服系统并行。
+- **Future Hardening**：Dedicated DB `1.2 → 1.3` Migration Validation Lab 与 Inquiry Repository DB Failure Injection Lab 已明确延后，不阻塞 v0.9.0，但适合作为后续 `v0.9.1 / v1.0.0` 的回归扩展。
+
 ---
 
 ## v1.0.0
@@ -2849,47 +2944,25 @@ WP Live Chat
 
 ---
 
-# 四十九、当前网站与本项目的关系
+# 四十九、生产部署与现有客服系统的关系
 
-生产环境继续：
+项目早期以 `Tidio` 承担正式 Live Chat / Human Support，WP AI Chat Lab 主要用于 Knowledge、Retrieval、Guard、DeepSeek 与 AI Architecture 实验。
 
-```text
-Tidio
-```
-
-承担：
+v0.9.0 已经形成独立的：
 
 ```text
-Live Chat
-Human Support
-成熟客服能力
+AI Chat
+↓
+Lead Trigger
+↓
+Inquiry Form
+↓
+Inquiry Admin Management
 ```
 
-WP AI Chat Lab：
+因此它已经可以在真实 WordPress 企业站进行受控部署与持续验证。
 
-```text
-Development / Test
-```
-
-用于：
-
-```text
-Knowledge
-Retrieval
-Guard
-DeepSeek
-AI Architecture
-```
-
-至少在：
-
-```text
-v1.0.0
-```
-
-经过真实测试之前：
-
-> **不以替换 Tidio 为目标。**
+但当前版本**仍不包含实时 Human Live Chat / Human Handoff**。如果网站需要人工在线客服，可以继续与 Tidio 或其他成熟客服系统并行，不需要为了使用 WP AI Chat Lab 而强行替换现有客服能力。
 
 ---
 
@@ -3061,58 +3134,58 @@ Lead / Support / Action
 
 ```text
 Version:
-v0.8.0 Stage 1 Build
+v0.9.0
 
-Stage:
-Chat Integration — Stage 1 Public Chat Boundary Foundation
-
-Production:
-Tidio
-
-Development:
-WP AI Chat Lab
+Release:
+Lead Capture & Inquiry Management — Stable Release
 
 Plugin Code:
-v0.8.0 Stage 1 Validation Build
+v0.9.0 Final Review Passed
+
+DB Version:
+1.3
 
 Primary Provider:
-DeepSeek (from v0.2.0)
+DeepSeek
 
 Knowledge Source:
 Generic WordPress + Manual Supplement + Legacy / WEM Product structured enhancement
 
-Structured Source:
-Legacy Product Profile + WEM Field Registry Provider
-
-Resolver Rule:
-WEM non-empty value > Legacy fallback, resolved per knowledge_key
-
-Content Normalizer:
-Implemented — basic deterministic cleaning
-
-Source Preview:
-Implemented — no AI call, no persistence
-
 Retrieval:
-Local First — v0.5.0 Stage 1 / 2 / 3 implemented and validated in real WordPress environment
+Local First — validated
+
+Grounding:
+Strong / Medium / Weak / None + deterministic Gate — validated
+
+Usage Guard:
+Conversation / Visitor / Site Provider Call limits — validated
+
+Public Chat:
+REST + Simple Chat UI + Request Guard + Provider Failure Boundary — validated
+
+Lead Capture:
+manual / commercial_intent / no_answer / usage_blocked — validated
+
+Inquiry:
+Public REST + Validation + Honeypot + Rate Guard + wp_wpaic_inquiries — validated
+
+Inquiry Admin:
+Unread / Read + Search + Source Filter + Bulk Read/Unread + Trash Lifecycle — validated
+
+Custom Database Tables:
+3（Knowledge Store + Usage Counter + Inquiries）
 
 Vector:
 Not Used
 
-Custom Database Tables:
-2（Knowledge Store + Usage Counter）
+Server-side Conversation History:
+Not Used
 
-Current Stable Release:
-v0.7.0 Usage Guard
-
-Release Status:
-Final Review Passed / Stable Release
-
-Current Development:
-v0.8.0 Chat Integration — Stage 1 / Stage 2 / Stage 3 Validation Passed / Sealed
+Human Handoff / CRM:
+Not Included
 
 Next Direction:
-v0.8.0 Final Review → Stable Release
+Production observation → Future Hardening → v1.0.0
 ```
 
 ---

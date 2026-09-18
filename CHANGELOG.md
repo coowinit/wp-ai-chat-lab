@@ -105,6 +105,17 @@ Next: **Stage 2 Round 3 — Inquiry Management Efficiency**.
 
 # Changelog
 
+## v0.9.0 Final Documentation Polish
+
+- README 新增 COODEC 官网真实测试数据来源说明。
+- 明确历史 Query / Score / Token / Limit / Inquiry 均属于测试快照，不作为生产固定值。
+- 新增测试环境与正式上线设置对照表。
+- 新增生产上线前检查清单。
+- 补充 WordPress Timezone、InnoDB、Cloudflare/WAF、Inquiry Privacy、Provider Failure Lab、测试数据清理等运维注意事项。
+- 明确 v0.9.0 当前不包含邮件通知、服务器端完整聊天记录、实时 Human Handoff 或 CRM。
+- 更新 README 中早期 Tidio / Current Status 的过期说明，使其与 v0.9.0 Stable Release 一致。
+- 仅文档整理；Plugin Version 保持 0.9.0，DB Version 保持 1.3，运行代码不变。
+
 ## v0.9.0 — Stage 2 Round 1 Inquiry Admin Management / Validation Build
 
 > Current build is for real WordPress validation. Do not seal or Release until List / Detail / Status behavior is verified.
