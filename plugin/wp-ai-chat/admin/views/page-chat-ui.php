@@ -43,7 +43,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 					<li><strong>手机端：</strong>Panel 在窄屏下正常铺开，输入框、Quick Questions、关闭与新会话按钮可点击。</li>
 				</ol>
 				<div class="notice notice-success inline"><p><strong>真实前台验收已通过：</strong>answer / clarify / no_answer / blocked、新会话、刷新连续性、重复发送保护、断网恢复、慢网与手机端均已验证。该路线永久保留用于回归测试。</p></div>
-				<div class="notice notice-info inline"><p><strong>Stage 3 已进入 Public Hardening：</strong>Visitor / Site Daily Limit 与 Public Request Guard 在 <em>Public Hardening</em> Lab 中继续验证；Provider Error 留作后续独立验收。</p></div>
+				<div class="notice notice-success inline"><p><strong>v0.8.0 已完成：</strong>Stage 3 Public Hardening、Visitor / Site Daily Limit、Public Request Guard 与 Provider Failure Boundary 均已通过真实验收并封板；对应 Lab 永久保留用于回归。</p></div>
 			</div>
 		</div>
 

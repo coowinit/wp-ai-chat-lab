@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.8.0 — Chat Integration / Final Review (Passed / Stable Release)
+
+- Completed final release review after Stage 1 / Stage 2 / Stage 3 real WordPress validation.
+- Confirmed Plugin Version `0.8.0`, DB Version `1.1`, and no new database tables.
+- Confirmed Public REST input validation, server-owned Visitor / Site identity, UUID v4 Conversation validation, and stable `answer / clarify / no_answer / blocked / error` contract.
+- Confirmed Public Response does not expose Provider, Model, Token, Retrieval Score, Usage Hash, or internal Reason Code.
+- Confirmed Public Request Guard remains separate from exact Provider-call Usage Guard.
+- Confirmed Usage Counter Public preflight requires InnoDB transactional storage and database failures remain fail-closed.
+- Confirmed Provider Failure Lab controls are administrator-only and nonce-protected; no API key or Provider endpoint mutation is used for failure validation.
+- Confirmed Chat Widget defaults to disabled and remains a thin client over the verified Public Chat Boundary.
+- PHP / JavaScript syntax, package structure, secret scan, hard-coded test-domain scan, and temporary-file scan passed.
+- Updated stale Stage 2 / Stage 3 Lab status copy so all permanent Lab pages reflect the sealed v0.8.0 state.
+- All Lab / Playground / Validation pages remain permanently available for teaching, diagnostics, and regression testing.
+- Production boundary remains explicit: WordPress transient Request Guard is best-effort; Cloudflare / WAF remains recommended for high-volume edge abuse protection; IP Rate stays disabled by default until `REMOTE_ADDR` is confirmed trustworthy.
+- v0.8.0 is now formally **Final Review Passed / Stable Release**.
+
 
 ## v0.8.0 — Chat Integration / Stage 3 Public Hardening (Validation Passed / Sealed)
 

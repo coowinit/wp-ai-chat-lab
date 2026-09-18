@@ -2,9 +2,8 @@
 
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
-**当前稳定 Release：v0.7.0 · Usage Guard**  
-**当前开发版本：v0.8.0 · Chat Integration**  
-**当前状态：Stage 1、Stage 2、Stage 3 均已完成真实环境验收并封板 · 下一步进入 v0.8.0 Final Review**
+**当前稳定 Release：v0.8.0 · Chat Integration**  
+**当前状态：v0.8.0 Final Review Passed / Stable Release · Stage 1、Stage 2、Stage 3 均已完成真实环境验收并封板**
 
 ## v0.5.0 稳定版本状态
 
@@ -3202,7 +3201,23 @@ Round 2 已完成真实 WordPress + 正式 Chat Widget 验收并通过：
 
 **Stage 3 结论：Round 1 + Round 2 全部通过，Validation Passed / Sealed。** Public Hardening Lab、Request Guard 设置、安全 Reset 与 Provider Failure Lab 全部长期保留，继续用于教学、诊断和回归测试。
 
-下一步：**v0.8.0 Final Review**。
+## v0.8.0 Final Review — Passed / Stable Release
+
+v0.8.0 已完成发布前最终复核，结论为 **Passed / Stable Release**：
+
+- Stage 1 Public Chat Boundary、Stage 2 Simple Chat UI、Stage 3 Public Hardening 全部完成真实 WordPress / 正式 Widget 验收。
+- Plugin Version = `0.8.0`；DB Version = `1.1`；新增数据表 = 0。
+- Public REST 输入校验、Conversation UUID、HttpOnly Visitor Cookie、Server-only Site Context 与 Public Contract 均保持封板设计。
+- Public Response 不暴露 Provider、Model、Token、Retrieval Score、Usage Hash 或内部 Reason Code。
+- Public Request Guard 与 Provider Usage Guard 保持职责分离；Usage Counter 在 Public Provider Boundary 前强制检查 InnoDB / transaction prerequisite 并 fail closed。
+- Provider Failure Lab 的 Arm / Clear 仅管理员可操作，并由 nonce 保护；正式 Provider 配置不会被测试工具改写。
+- Chat Widget 默认关闭；启用后继续使用已经验证的 Public REST，不拥有独立 AI 逻辑。
+- PHP / JavaScript 语法、仓库包 / 插件包结构、敏感信息与临时文件扫描均通过。
+- `Chat Boundary / Chat UI / Public Hardening / Grounded AI / Usage Guard / Retrieval / Knowledge` 等 Lab 页面继续永久保留。
+
+已知边界保持明确：Public Request Guard 是 WordPress 应用层 best-effort 保护，高流量生产站仍建议使用 Cloudflare / WAF；IP Rate 默认关闭，只有确认 `REMOTE_ADDR` 代表真实访客 IP 时再启用；Visitor / Site Daily Limit 按 WordPress Local Day 计算；v0.8.0 不保存服务器端聊天历史，也不包含 Lead / Human Handoff / Agent / RAG / Vector / Cost Guard。
+
+**v0.8.0 正式封板，不再追加功能。**
 
 ## Lab / Playground 永久保留原则
 
