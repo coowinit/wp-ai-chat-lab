@@ -5,7 +5,7 @@ $transactional = ! empty( $usage_status['transactional'] );
 ?>
 <div class="wrap wpaic-wrap">
 	<h1>WP AI Chat Lab — Chat Boundary</h1>
-	<p class="description">v0.8.0 Stage 1 — Public Chat Boundary Foundation · Validation Passed / Sealed。该页面将作为永久 Lab / 回归工具保留；当前尚未接入正式聊天 UI，也没有新增聊天记录数据表。</p>
+	<p class="description">v0.8.0 Stage 1 — Public Chat Boundary Foundation · Validation Passed / Sealed。该页面将作为永久 Lab / 回归工具保留；Stage 1 已封板并永久保留；Stage 2 正在把 simple-live-chat UI 接到同一个 Public REST，仍没有新增聊天记录数据表。</p>
 
 	<div class="wpaic-card">
 		<h2>Stage 1 架构边界</h2>
@@ -70,7 +70,7 @@ $transactional = ! empty( $usage_status['transactional'] );
 			<div class="wpaic-card">
 				<h2>Stage 1 明确不做</h2>
 				<ul class="wpaic-plain-list">
-					<li>正式 Chat Widget / simple-live-chat UI</li>
+					<li>Stage 1 本身不拥有正式 Chat Widget；Stage 2 已独立接入 simple-live-chat UI</li>
 					<li>Conversation / Message 数据表</li>
 					<li>聊天历史、后台会话列表</li>
 					<li>Lead / Human Handoff / Agent</li>

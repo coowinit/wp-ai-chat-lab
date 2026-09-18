@@ -21,6 +21,7 @@ WP AI Chat Lab 的后台测试页面不是一次性开发工具，而是项目�
 - Grounded AI Playground / Final Validation
 - Usage Guard Playground / Historical Validation
 - Chat Boundary Playground
+- Chat UI Lab（前台 Widget 开关、状态映射与回归路线）
 - 后续确有必要建立的独立诊断页面
 
 ## 3. 后续版本允许怎么改

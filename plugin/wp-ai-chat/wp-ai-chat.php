@@ -21,6 +21,7 @@ define( 'WPAIC_OPTION_SETTINGS', 'wpaic_settings' );
 define( 'WPAIC_OPTION_KNOWLEDGE_SOURCES', 'wpaic_enabled_sources' );
 define( 'WPAIC_DB_VERSION', '1.1' );
 define( 'WPAIC_OPTION_USAGE_SETTINGS', 'wpaic_usage_settings' );
+define( 'WPAIC_OPTION_CHAT_UI_SETTINGS', 'wpaic_chat_ui_settings' );
 define( 'WPAIC_OPTION_DB_VERSION', 'wpaic_db_version' );
 define( 'WPAIC_OPTION_LAST_FULL_SYNC', 'wpaic_last_full_sync' );
 define( 'WPAIC_OPTION_LAST_INCREMENTAL_SYNC', 'wpaic_last_incremental_sync' );
@@ -64,6 +65,7 @@ require_once WPAIC_PLUGIN_DIR . 'includes/grounding/class-wpaic-grounded-answer-
 require_once WPAIC_PLUGIN_DIR . 'includes/chat/class-wpaic-chat-context.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/chat/class-wpaic-chat-response.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/chat/class-wpaic-chat-controller.php';
+require_once WPAIC_PLUGIN_DIR . 'public/class-wpaic-chat-widget.php';
 
 require_once WPAIC_PLUGIN_DIR . 'admin/class-wpaic-admin.php';
 
@@ -102,6 +104,10 @@ function wpaic_ensure_options() {
 
 	if ( false === get_option( WPAIC_OPTION_USAGE_SETTINGS, false ) ) {
 		add_option( WPAIC_OPTION_USAGE_SETTINGS, array( 'conversation_limit' => 10, 'visitor_daily_limit' => 20, 'site_daily_limit' => 200 ), '', false );
+	}
+
+	if ( false === get_option( WPAIC_OPTION_CHAT_UI_SETTINGS, false ) ) {
+		add_option( WPAIC_OPTION_CHAT_UI_SETTINGS, array( 'enabled' => 0 ), '', false );
 	}
 }
 
@@ -166,6 +172,10 @@ function wpaic_bootstrap() {
 
 	// v0.8.0 Stage 1: public Chat is only a boundary over the verified pipeline.
 	new WPAIC_Chat_Controller( $grounded_answer );
+
+	// v0.8.0 Stage 2: the front-end widget is a thin client over the same
+	// verified Public Chat Boundary. It owns no Retrieval / Grounding / AI logic.
+	new WPAIC_Chat_Widget();
 
 	if ( is_admin() ) {
 		new WPAIC_Admin( $manager, $discovery, $extractor, $store_repository, $lifecycle, $batch_sync, $local_retriever, $grounding_gate, $evidence_builder, $prompt_builder, $grounded_answer, $usage_repository, $usage_guard );

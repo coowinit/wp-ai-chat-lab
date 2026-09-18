@@ -1095,3 +1095,5 @@
 .wpaic-chat-scene-guide { background:#f6f7f7; margin:14px 0; padding:14px 16px; }
 .wpaic-chat-scene-guide h3 { margin-top:0; }
 .wpaic-chat-scene-guide p:last-child { margin-bottom:0; }
+
+.wpaic-toggle-row{display:flex;align-items:center;gap:10px;margin:18px 0 8px}.wpaic-toggle-row input{margin:0}.wpaic-validation-list{margin:12px 0 0 22px}.wpaic-validation-list li{margin:0 0 10px;line-height:1.65}

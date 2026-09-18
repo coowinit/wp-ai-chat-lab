@@ -71,6 +71,9 @@ class WPAIC_Admin {
 	/** @var string */
 	protected $chat_boundary_page_hook = '';
 
+	/** @var string */
+	protected $chat_ui_page_hook = '';
+
 	/**
 	 * @param WPAIC_AI_Manager                    $manager          AI manager.
 	 * @param WPAIC_Source_Discovery              $discovery        Source discovery.
@@ -196,6 +199,15 @@ class WPAIC_Admin {
 			'wp-ai-chat-lab-chat-boundary',
 			array( $this, 'render_chat_boundary_page' )
 		);
+
+		$this->chat_ui_page_hook = add_submenu_page(
+			'wp-ai-chat-lab',
+			'Chat UI Lab',
+			'Chat UI Lab',
+			'manage_options',
+			'wp-ai-chat-lab-chat-ui',
+			array( $this, 'render_chat_ui_page' )
+		);
 	}
 
 	/**
@@ -229,6 +241,16 @@ class WPAIC_Admin {
 					'visitor_daily_limit'  => 20,
 					'site_daily_limit'     => 200,
 				),
+			)
+		);
+
+		register_setting(
+			'wpaic_chat_ui_settings_group',
+			WPAIC_OPTION_CHAT_UI_SETTINGS,
+			array(
+				'type'              => 'array',
+				'sanitize_callback' => array( $this, 'sanitize_chat_ui_settings' ),
+				'default'           => array( 'enabled' => 0 ),
 			)
 		);
 
@@ -299,6 +321,12 @@ class WPAIC_Admin {
 		);
 	}
 
+	/** Sanitize the minimal Stage 2 front-end widget setting. @param mixed $input @return array<string,int> */
+	public function sanitize_chat_ui_settings( $input ) {
+		$input = is_array( $input ) ? $input : array();
+		return array( 'enabled' => ! empty( $input['enabled'] ) ? 1 : 0 );
+	}
+
 	/**
 	 * Only persist discoverable post types. An empty list is valid and means
 	 * the administrator has intentionally disabled every generic source.
@@ -329,7 +357,7 @@ class WPAIC_Admin {
 	 * @return void
 	 */
 	public function enqueue_assets( $hook ) {
-		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook, $this->store_page_hook, $this->retrieval_page_hook, $this->grounded_page_hook, $this->usage_page_hook, $this->chat_boundary_page_hook ), true ) ) {
+		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook, $this->store_page_hook, $this->retrieval_page_hook, $this->grounded_page_hook, $this->usage_page_hook, $this->chat_boundary_page_hook, $this->chat_ui_page_hook ), true ) ) {
 			return;
 		}
 
@@ -551,6 +579,20 @@ class WPAIC_Admin {
 		$usage_status  = $this->usage_repository->get_operational_status();
 		$wp_timezone   = wp_timezone_string();
 		include WPAIC_PLUGIN_DIR . 'admin/views/page-chat-boundary.php';
+	}
+
+	/** Render the permanent v0.8.0 Stage 2 Chat UI Lab. @return void */
+	public function render_chat_ui_page() {
+		$this->guard_admin_page();
+		$chat_ui_settings = get_option( WPAIC_OPTION_CHAT_UI_SETTINGS, array() );
+		$chat_ui_settings = is_array( $chat_ui_settings ) ? $chat_ui_settings : array();
+		$chat_ui_enabled  = ! empty( $chat_ui_settings['enabled'] );
+		$chat_endpoint    = WPAIC_Chat_Controller::get_endpoint_url();
+		$settings_updated = isset( $_GET['settings-updated'] ) ? sanitize_text_field( wp_unslash( $_GET['settings-updated'] ) ) : '';
+		if ( 'true' === $settings_updated ) {
+			add_settings_error( 'wpaic_chat_ui_messages', 'wpaic_chat_ui_saved', 'Chat UI 设置已保存。', 'updated' );
+		}
+		include WPAIC_PLUGIN_DIR . 'admin/views/page-chat-ui.php';
 	}
 
 	/**

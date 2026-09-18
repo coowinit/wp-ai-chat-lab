@@ -1,6 +1,33 @@
 # Changelog
 
 
+## v0.8.0 — Chat Integration / Stage 2 Simple Chat UI Integration
+
+- Integrated the `simple-live-chat` visual baseline as the front-end Chat Widget.
+- Removed the demo local `replies{}` engine; every real message now uses the verified Public Chat REST boundary.
+- Added `public/` Widget renderer, isolated `cw-` CSS, Vanilla JS client, and front-end view.
+- Added administrator `Chat UI Lab` as a permanent learning / diagnostics / regression page.
+- Front-end Widget defaults to disabled and must be explicitly enabled from Chat UI Lab.
+- Added `sessionStorage` Conversation continuity and local transcript restoration for the current browser tab.
+- Visitor identity remains server-owned through the Stage 1 HttpOnly Cookie; Site identity remains server-only.
+- Added Typing state and client-side duplicate-submit prevention while a request is in flight.
+- Added user-facing rendering for `answer / clarify / no_answer / blocked / error`.
+- Added a minimal New Conversation control that clears only Conversation/session UI state, not Visitor identity.
+- Fixed Stage 2 front-end initialization timing: the Widget now binds after DOM readiness, so `wp_footer` output order cannot leave the visible launcher without click handlers.
+- Preserved all existing Lab / Playground / Validation pages.
+- No Conversation / Message table was added; DB Version remains `1.1`.
+- Real front-end WordPress validation completed successfully.
+- Verified Widget launcher / panel open-close behavior.
+- Verified real `answer`, `clarify`, `no_answer`, and `blocked` rendering through the Stage 1 Public REST boundary.
+- Verified New Conversation clears Conversation/session UI state while retaining Visitor identity.
+- Verified same-tab refresh restores Conversation/session transcript and preserves Usage continuity.
+- Verified duplicate-submit protection: rapid clicks / Enter presses produce only one active request and one Usage reservation.
+- Verified offline failure displays a friendly error, exits the busy state, and allows a successful retry after network recovery.
+- Verified slow-network pending behavior, duplicate-submit guard while pending, and successful completion.
+- Verified mobile layout and core interactions without overflow or unusable controls.
+- Stage 2 status: **Validation Passed / Sealed**.
+
+
 ## v0.8.0 — Chat Integration / Stage 1 Public Chat Boundary Foundation
 
 - Plugin Version advanced to `0.8.0`; DB Version remains `1.1` with no new tables.

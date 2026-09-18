@@ -4,8 +4,7 @@
 
 **当前稳定 Release：v0.7.0 · Usage Guard**  
 **当前开发版本：v0.8.0 · Chat Integration**  
-**当前状态：Stage 1 — Public Chat Boundary Foundation / Validation Passed / Sealed**  
-**当前稳定 Release：v0.7.0 · Usage Guard**
+**当前状态：Stage 1、Stage 2 均已封板 · Stage 2 — Simple Chat UI Integration / Validation Passed / Sealed**
 
 ## v0.5.0 稳定版本状态
 
@@ -3133,6 +3132,34 @@ Public REST → Chat Context → WPAIC_Grounded_Answer_Service
 Stage 1 已加入：公开 `/wp-json/wpaic/v1/chat`、服务器 Conversation UUID、HttpOnly Visitor Cookie、Server-only Site Context、统一 Public Contract 与 Chat Boundary Playground；同时完成 Public Provider 前的 InnoDB / transaction / row-lock fail-closed 硬化。真实 WordPress 环境 7 个 Public Boundary 场景均已验证通过，Stage 1 正式封板。
 
 Stage 1 没有新增数据库表，DB Version 仍为 `1.1`；也没有加入正式 Chat UI、聊天记录、Lead、Human Handoff、Agent、Streaming、Cost Guard、Embedding、Vector 或 RAG。详见 `docs/versions/v0.8.0.md`。
+
+## v0.8.0 Stage 2 — Simple Chat UI Integration
+
+Stage 2 已把 `simple-live-chat` 的视觉外壳迁入插件，但保持 **Chat UI 只是薄客户端**：
+
+```text
+simple-live-chat UI
+        ↓
+Public REST /wpaic/v1/chat
+        ↓
+Chat Context
+        ↓
+Grounded Answer Service
+        ↓
+Grounding → Usage Guard → Provider
+```
+
+原 Demo `replies{}` 已删除；Quick Questions 与输入框全部走真实 Public REST。Conversation 使用 `sessionStorage` 保持同一标签页连续性；Visitor 继续由服务器 HttpOnly Cookie 管理。请求中显示 Typing 并禁用重复发送；`answer / clarify / no_answer / blocked / error` 映射成前台消息气泡。
+
+Stage 2 首轮前台预览发现并修复了一个初始化时序问题：WordPress 页脚脚本可能先于 Widget HTML 执行，导致 Launcher 可见但没有绑定点击事件。现在 `chat.js` 会等待 DOM Ready 后再查找并初始化 Widget，同时使用一次性初始化标记避免重复绑定。
+
+正式 Widget 默认关闭，需要在永久保留的 **Chat UI Lab** 中显式启用。Stage 2 不新增 Conversation / Message 表，DB Version 仍为 `1.1`。
+
+Stage 2 已完成真实前台验收并正式封板：Widget 打开/关闭、真实 `answer`、`clarify`、`no_answer`、`blocked`、新 Conversation、Visitor 跨会话保持、刷新后的 Conversation / Usage 连续性、重复发送保护、断网错误恢复、恢复网络后重试、慢网 Pending 状态以及手机端布局均符合预期。Stage 2 状态：**Validation Passed / Sealed**。
+
+### 下一步：Stage 3 — Public Hardening & Remaining Operational Boundaries
+
+由于 Stage 2 已经在真实前台覆盖了原计划的一部分 Session / Resilience 场景，Stage 3 不再重复慢网、断网、重复发送和手机端验收，而只聚焦尚未完成的生产边界：Provider Error、Visitor / Site Daily Limit 在正式 Widget 中的表现，以及 Public Endpoint Request Rate Limit / Abuse Boundary 等必要的 Public Hardening。
 
 ## Lab / Playground 永久保留原则
 
