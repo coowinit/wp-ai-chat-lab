@@ -3,7 +3,7 @@
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
 **当前稳定 Release：v0.8.0 · Chat Integration**  
-**当前开发：v0.9.0 — Stage 1 / Stage 2 已封板；Stage 3 Round 1 已封板，下一步进入 Round 2 Security & Data Boundary Validation（稳定 Release 仍为 v0.8.0）**
+**当前开发：v0.9.0 — Stage 1 / Stage 2 / Stage 3 全部 Validation Passed / Sealed；下一步进入 Final Review（稳定 Release 仍为 v0.8.0）**
 
 ## v0.5.0 稳定版本状态
 
@@ -2640,7 +2640,7 @@ Token Usage Diagnostics
 
 ### Lead Capture & Inquiry Management
 
-当前状态：**Stage 1 / Stage 2 已封板；Stage 3 Round 1 Operational Preflight & Admin UX Consistency 已通过并封板，下一步进入 Round 2 Security & Data Boundary Validation。**
+当前状态：**Stage 1 / Stage 2 / Stage 3 已全部 Validation Passed / Sealed；下一步进入 v0.9.0 Final Review。**
 
 Stage 2 后台管理采用更简单的运营模型：
 
@@ -3295,7 +3295,7 @@ WP AI Chat Lab 中已经建立的后台实验与验收页面将长期保留，�
 
 Round 1 仍不创建 `wp_wpaic_inquiries`，不新增 Public Inquiry REST，不保存个人信息，也不修改正式 Chat Widget。
 
-当前状态：**Stage 1 / Stage 2 已全部 Validation Passed / Sealed；下一步进入 Stage 3 — Operational Validation。** Stage 2 始终直接读取 `wp_wpaic_inquiries`，不复制为 CPT，也不扩展成 CRM。完整架构与验收记录见 `docs/versions/v0.9.0.md`。
+当前状态：**Stage 1 / Stage 2 / Stage 3 已全部 Validation Passed / Sealed；下一步进入 v0.9.0 Final Review。** Stage 2 始终直接读取 `wp_wpaic_inquiries`，不复制为 CPT，也不扩展成 CRM。完整架构与验收记录见 `docs/versions/v0.9.0.md`。
 
 
 - Stage 2 Round 1 UX2：询盘管理页取消 1180px 最大宽度，使用后台可用宽度；列表切换为 WordPress 原生 `wp-list-table / widefat / striped / table-view-list` 样式与原生 `tablenav` 分页外观；默认每页 10 条，保留详情页 20px 卡片间距。

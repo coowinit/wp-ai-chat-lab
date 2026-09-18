@@ -101,6 +101,9 @@ class WPAIC_Admin {
 	/** @var string */
 	protected $inquiries_page_hook = '';
 
+	/** @var string */
+	protected $operational_validation_page_hook = '';
+
 	/**
 	 * @param WPAIC_AI_Manager                    $manager          AI manager.
 	 * @param WPAIC_Source_Discovery              $discovery        Source discovery.
@@ -289,6 +292,15 @@ class WPAIC_Admin {
 			'manage_options',
 			'wp-ai-chat-lab-inquiry-capture',
 			array( $this, 'render_inquiry_capture_page' )
+		);
+
+		$this->operational_validation_page_hook = add_submenu_page(
+			'wp-ai-chat-lab',
+			'运营验收',
+			'运营验收',
+			'manage_options',
+			'wp-ai-chat-lab-operational-validation',
+			array( $this, 'render_operational_validation_page' )
 		);
 	}
 
@@ -485,7 +497,7 @@ class WPAIC_Admin {
 	 * @return void
 	 */
 	public function enqueue_assets( $hook ) {
-		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook, $this->store_page_hook, $this->retrieval_page_hook, $this->grounded_page_hook, $this->usage_page_hook, $this->chat_boundary_page_hook, $this->chat_ui_page_hook, $this->public_hardening_page_hook, $this->lead_trigger_page_hook, $this->inquiries_page_hook, $this->inquiry_capture_page_hook ), true ) ) {
+		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook, $this->store_page_hook, $this->retrieval_page_hook, $this->grounded_page_hook, $this->usage_page_hook, $this->chat_boundary_page_hook, $this->chat_ui_page_hook, $this->public_hardening_page_hook, $this->lead_trigger_page_hook, $this->inquiries_page_hook, $this->inquiry_capture_page_hook, $this->operational_validation_page_hook ), true ) ) {
 			return;
 		}
 
@@ -856,11 +868,14 @@ class WPAIC_Admin {
 		$per_page     = 10;
 		$current_page = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
 
-		// Opening an active detail is the read action. Trash keeps its existing
-		// read/unread state so restore remains semantically predictable.
+		// Opening an active detail is the read action, but the state transition
+		// requires a per-Inquiry nonce. This preserves the convenient auto-read
+		// behavior while preventing a cross-site GET from silently marking an
+		// administrator's unread Inquiry as read. Trash keeps its existing state.
 		if ( $inquiry_id ) {
-			$preview = $this->inquiry_repository->get_by_id( $inquiry_id );
-			if ( is_array( $preview ) && empty( $preview['trashed_at'] ) ) {
+			$preview    = $this->inquiry_repository->get_by_id( $inquiry_id );
+			$read_nonce = isset( $_GET['wpaic_read_nonce'] ) ? sanitize_text_field( wp_unslash( $_GET['wpaic_read_nonce'] ) ) : '';
+			if ( is_array( $preview ) && empty( $preview['trashed_at'] ) && wp_verify_nonce( $read_nonce, 'wpaic_inquiry_read_' . $inquiry_id ) ) {
 				$this->inquiry_repository->mark_read( $inquiry_id );
 			}
 		}
@@ -1015,6 +1030,42 @@ class WPAIC_Admin {
 		}
 		wp_safe_redirect( add_query_arg( array( 'page' => 'wp-ai-chat-lab-inquiry-capture', 'wpaic-inquiry-rate-reset' => 'done' ), admin_url( 'admin.php' ) ) );
 		exit;
+	}
+
+	/** Render permanent v0.9.0 Stage 3 Operational Validation Lab. @return void */
+	public function render_operational_validation_page() {
+		$this->guard_admin_page();
+
+		$inquiry_status = $this->inquiry_repository->get_operational_status();
+		$view_counts    = $this->inquiry_repository->count_by_view();
+		$unread_rows    = $this->inquiry_repository->list_paged( 1, 1, WPAIC_Inquiry_Repository::VIEW_UNREAD, '', '' );
+		$unread_sample  = ! empty( $unread_rows ) && is_array( $unread_rows[0] ) ? $unread_rows[0] : null;
+
+		$invalid_id_url = add_query_arg(
+			array( 'page' => 'wp-ai-chat-lab-inquiries', 'inquiry_id' => 999999999 ),
+			admin_url( 'admin.php' )
+		);
+
+		$unprotected_read_url = '';
+		$protected_read_url   = '';
+		if ( is_array( $unread_sample ) && ! empty( $unread_sample['id'] ) ) {
+			$sample_id = (int) $unread_sample['id'];
+			$base_args = array(
+				'page'       => 'wp-ai-chat-lab-inquiries',
+				'inquiry_id' => $sample_id,
+				'view'       => WPAIC_Inquiry_Repository::VIEW_UNREAD,
+			);
+			$unprotected_read_url = add_query_arg( $base_args, admin_url( 'admin.php' ) );
+			$base_args['wpaic_read_nonce'] = wp_create_nonce( 'wpaic_inquiry_read_' . $sample_id );
+			$protected_read_url = add_query_arg( $base_args, admin_url( 'admin.php' ) );
+		}
+
+		$chat_endpoint    = WPAIC_Chat_Controller::get_endpoint_url();
+		$inquiry_endpoint = WPAIC_Inquiry_Controller::get_endpoint_url();
+		$timezone_string  = wp_timezone_string();
+		if ( '' === $timezone_string ) { $timezone_string = 'UTC'; }
+
+		include WPAIC_PLUGIN_DIR . 'admin/views/page-operational-validation.php';
 	}
 
 	/** Render the permanent v0.8.0 Stage 3 Public Hardening Lab. @return void */

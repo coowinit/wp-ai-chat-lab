@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<div class="wpaic-card">
 		<h2>Round 1 Validation Passed / Sealed ✅</h2>
 		<div class="wpaic-flow-line"><code>Chat Result</code><span>→</span><code>Lead Trigger Policy</code><span>→</span><code>Offer / No Offer</code></div>
-		<p><strong>Round 1 已完成真实 WordPress 验收并封板。</strong>Round 1 已封板；Stage 1 Round 2 / Round 3 也已完成 Inquiry Capture 与正式 Chat Inline Form 集成。当前进入 Stage 2 Inquiry Admin Management，本页继续作为 Trigger Policy 永久回归工具。</p>
+		<p><strong>Round 1 已完成真实 WordPress 验收并封板。</strong>Round 1 已封板；Stage 1 Round 2 / Round 3 也已完成 Inquiry Capture 与正式 Chat Inline Form 集成。Stage 2 Inquiry Admin Management 与 Stage 3 Operational Validation 也已完成；本页继续作为 Trigger Policy 永久回归工具。</p>
 	</div>
 
 	<div class="wpaic-grid">

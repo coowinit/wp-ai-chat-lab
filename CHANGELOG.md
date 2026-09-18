@@ -1,3 +1,25 @@
+## v0.9.0 — Stage 3 Round 2 Security & Data Boundary / Validation Passed / Sealed
+
+> Round 1 已封板。本轮不新增业务能力，专项验证管理员状态变更、防 XSS / HTML、Source URL、特殊字符搜索与非法 ID 等边界。
+
+- 新增永久 `运营验收` 页面，用于 Stage 3 安全与数据边界回归。
+- Inquiry 详情自动已读新增每条记录独立 nonce：无 nonce / 非法 nonce 只允许查看，不改变 unread/read 状态。
+- 正常列表详情链接自动携带 read nonce，继续保持“点击详情自动已读”的日常体验。
+- 保持 Inquiry 生命周期 admin-post 操作的 `manage_options + nonce` 边界。
+- 明确 XSS / HTML、外部 Source URL、中文与特殊字符搜索、非法 ID、组合筛选的真实验收顺序。
+- Plugin Version 保持 `0.9.0`；DB Version 保持 `1.3`；无 Schema 变化。
+- Dedicated DB 1.2 → 1.3 Migration Validation Lab 与 Inquiry Repository DB Failure Injection Lab 延后到后续 Hardening / Regression 版本，不阻塞 v0.9.0 Final Review。
+
+Validation passed:
+- Auto-read nonce / CSRF 边界。
+- Invalid Inquiry ID。
+- XSS / HTML sanitation + escaped admin output。
+- Same-site Source URL。
+- Chinese / `%` / `_` / quote search safety。
+- Filter + Search + Pagination regression。
+
+---
+
 ## v0.9.0 — Stage 3 Round 1 Operational Preflight & Admin UX Consistency / Validation Passed / Sealed
 
 > Stage 1 / Stage 2 已封板。Round 1 已完成真实后台复核并正式封板：永久 Lab 间距与中文导航均符合预期，未改动核心业务逻辑。

@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 	<div class="wpaic-card">
 		<h2>Round 2 — Validation Passed / Sealed ✅</h2>
 		<div class="wpaic-flow-line"><code>POST /inquiry</code><span>→</span><code>Validation</code><span>→</span><code>Honeypot / Rate</code><span>→</span><code>Service</code><span>→</span><code>Repository</code><span>→</span><code>wp_wpaic_inquiries</code></div>
-		<p>Round 2 已通过真实 WordPress 验收并永久保留。本页继续直接调用公开 REST Endpoint；Stage 1 Round 3 的正式 Chat Inline Form 也已封板。当前进入 Stage 2 Inquiry Admin Management，本 Lab 不替代正式后台管理。</p>
+		<p>Round 2 已通过真实 WordPress 验收并永久保留。本页继续直接调用公开 REST Endpoint；Stage 1 Round 3 的正式 Chat Inline Form 也已封板。Stage 2 Inquiry Admin Management 与 Stage 3 Operational Validation 也已完成；本 Lab 不替代正式后台管理。</p>
 	</div>
 
 	<div class="wpaic-grid">

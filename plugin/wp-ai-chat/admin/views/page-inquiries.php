@@ -31,10 +31,11 @@ $list_url = function( $view = 'all', $paged = 1, $trigger = null, $search = null
 };
 $detail_url = function( $id ) use ( $current_view, $current_page, $trigger_filter, $search_query ) {
 	$args = array(
-		'page'       => 'wp-ai-chat-lab-inquiries',
-		'inquiry_id' => (int) $id,
-		'view'       => $current_view,
-		'paged'      => $current_page,
+		'page'             => 'wp-ai-chat-lab-inquiries',
+		'inquiry_id'       => (int) $id,
+		'view'             => $current_view,
+		'paged'            => $current_page,
+		'wpaic_read_nonce' => wp_create_nonce( 'wpaic_inquiry_read_' . (int) $id ),
 	);
 	if ( '' !== $trigger_filter ) { $args['trigger'] = $trigger_filter; }
 	if ( '' !== $search_query ) { $args['s'] = $search_query; }
