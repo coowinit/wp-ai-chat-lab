@@ -70,6 +70,14 @@ class WPAIC_AI_Manager {
 	 * @return array<string,mixed>|WP_Error
 	 */
 	public function chat( array $messages, array $options = array() ) {
+		// Extensibility point used by permanent Lab diagnostics to simulate a
+		// Provider-bound failure without changing credentials or transport code.
+		// Normal requests receive null and continue to the real provider.
+		$pre_chat = apply_filters( 'wpaic_ai_manager_pre_chat_result', null, $messages, $options );
+		if ( is_wp_error( $pre_chat ) ) {
+			return $pre_chat;
+		}
+
 		$provider = $this->get_current_provider();
 		if ( is_wp_error( $provider ) ) {
 			return $provider;

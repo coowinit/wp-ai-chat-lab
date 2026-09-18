@@ -43,7 +43,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 					<li><strong>手机端：</strong>Panel 在窄屏下正常铺开，输入框、Quick Questions、关闭与新会话按钮可点击。</li>
 				</ol>
 				<div class="notice notice-success inline"><p><strong>真实前台验收已通过：</strong>answer / clarify / no_answer / blocked、新会话、刷新连续性、重复发送保护、断网恢复、慢网与手机端均已验证。该路线永久保留用于回归测试。</p></div>
-				<div class="notice notice-info inline"><p><strong>Stage 3 只验证剩余边界：</strong>Provider Error、Visitor / Site Daily Limit 在正式 Widget 中的行为，以及 Public Endpoint Request Rate Limit / Abuse Boundary 等 Public Hardening。</p></div>
+				<div class="notice notice-info inline"><p><strong>Stage 3 已进入 Public Hardening：</strong>Visitor / Site Daily Limit 与 Public Request Guard 在 <em>Public Hardening</em> Lab 中继续验证；Provider Error 留作后续独立验收。</p></div>
 			</div>
 		</div>
 
@@ -77,7 +77,6 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 					<li>后台聊天历史 / Inbox</li>
 					<li>Lead / Human Handoff / Agent</li>
 					<li>Streaming / RAG / Vector / Cost Guard</li>
-					<li>Public Endpoint Request Rate Limit（Stage 3 Public Hardening）</li>
 				</ul>
 			</div>
 		</div>

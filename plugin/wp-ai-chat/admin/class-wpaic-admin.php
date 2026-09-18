@@ -50,6 +50,12 @@ class WPAIC_Admin {
 	/** @var WPAIC_Usage_Guard */
 	protected $usage_guard;
 
+	/** @var WPAIC_Public_Request_Guard */
+	protected $public_request_guard;
+
+	/** @var WPAIC_Provider_Failure_Lab */
+	protected $provider_failure_lab;
+
 	/** @var string */
 	protected $ai_page_hook = '';
 
@@ -74,6 +80,9 @@ class WPAIC_Admin {
 	/** @var string */
 	protected $chat_ui_page_hook = '';
 
+	/** @var string */
+	protected $public_hardening_page_hook = '';
+
 	/**
 	 * @param WPAIC_AI_Manager                    $manager          AI manager.
 	 * @param WPAIC_Source_Discovery              $discovery        Source discovery.
@@ -88,8 +97,10 @@ class WPAIC_Admin {
 	 * @param WPAIC_Grounded_Answer_Service        $grounded_answer  Grounded Answer orchestrator.
 	 * @param WPAIC_Usage_Counter_Repository       $usage_repository Usage counter repository.
 	 * @param WPAIC_Usage_Guard                    $usage_guard      Usage policy guard.
+	 * @param WPAIC_Public_Request_Guard            $public_request_guard Public request abuse guard.
+	 * @param WPAIC_Provider_Failure_Lab            $provider_failure_lab Permanent Lab one-shot Provider failure injector.
 	 */
-	public function __construct( WPAIC_AI_Manager $manager, WPAIC_Source_Discovery $discovery, WPAIC_Generic_Extractor $extractor, WPAIC_Knowledge_Store_Repository $store_repository, WPAIC_Knowledge_Lifecycle_Manager $lifecycle, WPAIC_Knowledge_Batch_Sync $batch_sync, WPAIC_Local_Retriever $local_retriever, WPAIC_Grounding_Gate $grounding_gate, WPAIC_Evidence_Pack_Builder $evidence_builder, WPAIC_Grounded_Prompt_Builder $prompt_builder, WPAIC_Grounded_Answer_Service $grounded_answer, WPAIC_Usage_Counter_Repository $usage_repository, WPAIC_Usage_Guard $usage_guard ) {
+	public function __construct( WPAIC_AI_Manager $manager, WPAIC_Source_Discovery $discovery, WPAIC_Generic_Extractor $extractor, WPAIC_Knowledge_Store_Repository $store_repository, WPAIC_Knowledge_Lifecycle_Manager $lifecycle, WPAIC_Knowledge_Batch_Sync $batch_sync, WPAIC_Local_Retriever $local_retriever, WPAIC_Grounding_Gate $grounding_gate, WPAIC_Evidence_Pack_Builder $evidence_builder, WPAIC_Grounded_Prompt_Builder $prompt_builder, WPAIC_Grounded_Answer_Service $grounded_answer, WPAIC_Usage_Counter_Repository $usage_repository, WPAIC_Usage_Guard $usage_guard, WPAIC_Public_Request_Guard $public_request_guard, WPAIC_Provider_Failure_Lab $provider_failure_lab ) {
 		$this->manager          = $manager;
 		$this->discovery        = $discovery;
 		$this->extractor        = $extractor;
@@ -102,7 +113,9 @@ class WPAIC_Admin {
 		$this->prompt_builder   = $prompt_builder;
 		$this->grounded_answer  = $grounded_answer;
 		$this->usage_repository = $usage_repository;
-		$this->usage_guard      = $usage_guard;
+		$this->usage_guard          = $usage_guard;
+		$this->public_request_guard = $public_request_guard;
+		$this->provider_failure_lab = $provider_failure_lab;
 
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
@@ -118,6 +131,8 @@ class WPAIC_Admin {
 		add_action( 'wp_ajax_wpaic_usage_guard_check', array( $this, 'ajax_usage_guard_check' ) );
 		add_action( 'wp_ajax_wpaic_usage_guard_simulate', array( $this, 'ajax_usage_guard_simulate' ) );
 		add_action( 'wp_ajax_wpaic_usage_guard_reset', array( $this, 'ajax_usage_guard_reset' ) );
+		add_action( 'admin_post_wpaic_public_hardening_reset', array( $this, 'handle_public_hardening_reset' ) );
+		add_action( 'admin_post_wpaic_provider_failure_lab', array( $this, 'handle_provider_failure_lab' ) );
 	}
 
 	/**
@@ -208,6 +223,15 @@ class WPAIC_Admin {
 			'wp-ai-chat-lab-chat-ui',
 			array( $this, 'render_chat_ui_page' )
 		);
+
+		$this->public_hardening_page_hook = add_submenu_page(
+			'wp-ai-chat-lab',
+			'Public Hardening',
+			'Public Hardening',
+			'manage_options',
+			'wp-ai-chat-lab-public-hardening',
+			array( $this, 'render_public_hardening_page' )
+		);
 	}
 
 	/**
@@ -251,6 +275,16 @@ class WPAIC_Admin {
 				'type'              => 'array',
 				'sanitize_callback' => array( $this, 'sanitize_chat_ui_settings' ),
 				'default'           => array( 'enabled' => 0 ),
+			)
+		);
+
+		register_setting(
+			'wpaic_public_guard_settings_group',
+			WPAIC_OPTION_PUBLIC_GUARD_SETTINGS,
+			array(
+				'type'              => 'array',
+				'sanitize_callback' => array( $this, 'sanitize_public_guard_settings' ),
+				'default'           => array( 'enabled' => 1, 'visitor_per_minute' => 20, 'ip_per_minute' => 0 ),
 			)
 		);
 
@@ -327,6 +361,16 @@ class WPAIC_Admin {
 		return array( 'enabled' => ! empty( $input['enabled'] ) ? 1 : 0 );
 	}
 
+	/** Sanitize best-effort Public Request Guard settings. @param mixed $input @return array<string,int> */
+	public function sanitize_public_guard_settings( $input ) {
+		$input = is_array( $input ) ? $input : array();
+		return array(
+			'enabled'            => ! empty( $input['enabled'] ) ? 1 : 0,
+			'visitor_per_minute' => isset( $input['visitor_per_minute'] ) ? min( 1000, absint( $input['visitor_per_minute'] ) ) : 20,
+			'ip_per_minute'      => isset( $input['ip_per_minute'] ) ? min( 5000, absint( $input['ip_per_minute'] ) ) : 0,
+		);
+	}
+
 	/**
 	 * Only persist discoverable post types. An empty list is valid and means
 	 * the administrator has intentionally disabled every generic source.
@@ -357,7 +401,7 @@ class WPAIC_Admin {
 	 * @return void
 	 */
 	public function enqueue_assets( $hook ) {
-		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook, $this->store_page_hook, $this->retrieval_page_hook, $this->grounded_page_hook, $this->usage_page_hook, $this->chat_boundary_page_hook, $this->chat_ui_page_hook ), true ) ) {
+		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook, $this->store_page_hook, $this->retrieval_page_hook, $this->grounded_page_hook, $this->usage_page_hook, $this->chat_boundary_page_hook, $this->chat_ui_page_hook, $this->public_hardening_page_hook ), true ) ) {
 			return;
 		}
 
@@ -593,6 +637,92 @@ class WPAIC_Admin {
 			add_settings_error( 'wpaic_chat_ui_messages', 'wpaic_chat_ui_saved', 'Chat UI 设置已保存。', 'updated' );
 		}
 		include WPAIC_PLUGIN_DIR . 'admin/views/page-chat-ui.php';
+	}
+
+
+	/** Render the permanent v0.8.0 Stage 3 Public Hardening Lab. @return void */
+	public function render_public_hardening_page() {
+		$this->guard_admin_page();
+		$public_guard_settings = $this->public_request_guard->get_settings();
+		$usage_limits          = $this->usage_guard->get_limits();
+		$chat_endpoint         = WPAIC_Chat_Controller::get_endpoint_url();
+		$lab_context           = $this->build_current_public_lab_context();
+		$rate_snapshot         = $this->public_request_guard->get_current_snapshot( $lab_context );
+		$usage_context         = new WPAIC_Usage_Context( $lab_context->to_usage_context() );
+		$usage_states          = $this->usage_guard->get_scope_states( $usage_context );
+		$provider_failure_status = $this->provider_failure_lab->get_status( $lab_context );
+		$settings_updated      = isset( $_GET['settings-updated'] ) ? sanitize_text_field( wp_unslash( $_GET['settings-updated'] ) ) : '';
+		$reset_status          = isset( $_GET['wpaic-reset'] ) ? sanitize_key( wp_unslash( $_GET['wpaic-reset'] ) ) : '';
+		$provider_lab_status   = isset( $_GET['wpaic-provider-lab'] ) ? sanitize_key( wp_unslash( $_GET['wpaic-provider-lab'] ) ) : '';
+		if ( 'true' === $settings_updated ) {
+			add_settings_error( 'wpaic_public_guard_messages', 'wpaic_public_guard_saved', 'Public Request Guard 设置已保存。', 'updated' );
+		}
+		if ( 'ok' === $reset_status ) {
+			add_settings_error( 'wpaic_public_guard_messages', 'wpaic_public_guard_reset', '所选 Public Hardening 测试状态已重置。', 'updated' );
+		} elseif ( 'error' === $reset_status ) {
+			add_settings_error( 'wpaic_public_guard_messages', 'wpaic_public_guard_reset_error', '重置失败，请检查 Usage Counter 状态。', 'error' );
+		}
+		if ( 'armed' === $provider_lab_status ) {
+			add_settings_error( 'wpaic_public_guard_messages', 'wpaic_provider_lab_armed', 'Provider Failure Lab 已武装：当前 Visitor 的下一次真实 Provider-bound 请求将模拟 Transport Timeout。', 'updated' );
+		} elseif ( 'cleared' === $provider_lab_status ) {
+			add_settings_error( 'wpaic_public_guard_messages', 'wpaic_provider_lab_cleared', 'Provider Failure Lab 已清除。', 'updated' );
+		} elseif ( 'error' === $provider_lab_status ) {
+			add_settings_error( 'wpaic_public_guard_messages', 'wpaic_provider_lab_error', 'Provider Failure Lab 操作失败。', 'error' );
+		}
+		include WPAIC_PLUGIN_DIR . 'admin/views/page-public-hardening.php';
+	}
+
+	/** Admin-only reset helper for permanent Public Hardening Lab. */
+	public function handle_public_hardening_reset() {
+		$this->guard_admin_page();
+		check_admin_referer( 'wpaic_public_hardening_reset' );
+		$target  = isset( $_POST['target'] ) ? sanitize_key( wp_unslash( $_POST['target'] ) ) : '';
+		$context = $this->build_current_public_lab_context();
+		$result = true;
+		if ( 'visitor_usage' === $target ) {
+			$result = $this->usage_repository->reset_context_counters( new WPAIC_Usage_Context( $context->to_usage_context() ), array( 'visitor' ) );
+		} elseif ( 'site_usage' === $target ) {
+			$result = $this->usage_repository->reset_context_counters( new WPAIC_Usage_Context( $context->to_usage_context() ), array( 'site' ) );
+		} elseif ( 'request_rate' === $target ) {
+			$result = $this->public_request_guard->reset_current_buckets( $context );
+		} else {
+			$result = new WP_Error( 'wpaic_public_hardening_invalid_reset', 'Unknown reset target.' );
+		}
+		$status = is_wp_error( $result ) ? 'error' : 'ok';
+		wp_safe_redirect( add_query_arg( array( 'page' => 'wp-ai-chat-lab-public-hardening', 'wpaic-reset' => $status ), admin_url( 'admin.php' ) ) );
+		exit;
+	}
+
+	/** Admin-only controls for the one-shot Provider Failure Lab. */
+	public function handle_provider_failure_lab() {
+		$this->guard_admin_page();
+		check_admin_referer( 'wpaic_provider_failure_lab' );
+		$operation = isset( $_POST['operation'] ) ? sanitize_key( wp_unslash( $_POST['operation'] ) ) : '';
+		$context   = $this->build_current_public_lab_context();
+		if ( 'arm_timeout' === $operation ) {
+			$result = $this->provider_failure_lab->arm( $context, WPAIC_Provider_Failure_Lab::MODE_TIMEOUT );
+			$status = is_wp_error( $result ) ? 'error' : 'armed';
+		} elseif ( 'clear' === $operation ) {
+			$this->provider_failure_lab->clear( $context );
+			$status = 'cleared';
+		} else {
+			$status = 'error';
+		}
+		wp_safe_redirect( add_query_arg( array( 'page' => 'wp-ai-chat-lab-public-hardening', 'wpaic-provider-lab' => $status ), admin_url( 'admin.php' ) ) );
+		exit;
+	}
+
+	/** Build the current browser/site public identity without exposing raw IDs in the Lab UI. */
+	protected function build_current_public_lab_context() {
+		$request = new WP_REST_Request( 'POST', '/wpaic/v1/chat' );
+		$request->set_param( 'conversation_id', wp_generate_uuid4() );
+		$context = WPAIC_Chat_Context::from_request( $request );
+		if ( is_wp_error( $context ) ) {
+			// Generated UUID cannot fail validation; keep a deterministic fallback.
+			$request->set_param( 'conversation_id', wp_generate_uuid4() );
+			$context = WPAIC_Chat_Context::from_request( $request );
+		}
+		return $context;
 	}
 
 	/**

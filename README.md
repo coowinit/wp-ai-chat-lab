@@ -4,7 +4,7 @@
 
 **当前稳定 Release：v0.7.0 · Usage Guard**  
 **当前开发版本：v0.8.0 · Chat Integration**  
-**当前状态：Stage 1、Stage 2 均已封板 · Stage 2 — Simple Chat UI Integration / Validation Passed / Sealed**
+**当前状态：Stage 1、Stage 2、Stage 3 均已完成真实环境验收并封板 · 下一步进入 v0.8.0 Final Review**
 
 ## v0.5.0 稳定版本状态
 
@@ -3064,10 +3064,10 @@ Release Status:
 Final Review Passed / Stable Release
 
 Current Development:
-v0.8.0 Chat Integration — Stage 1 Validation Passed / Sealed
+v0.8.0 Chat Integration — Stage 1 / Stage 2 / Stage 3 Validation Passed / Sealed
 
 Next Direction:
-v0.8.0 Stage 2 — Simple Chat UI Integration
+v0.8.0 Final Review → Stable Release
 ```
 
 ---
@@ -3157,9 +3157,52 @@ Stage 2 首轮前台预览发现并修复了一个初始化时序问题：WordPr
 
 Stage 2 已完成真实前台验收并正式封板：Widget 打开/关闭、真实 `answer`、`clarify`、`no_answer`、`blocked`、新 Conversation、Visitor 跨会话保持、刷新后的 Conversation / Usage 连续性、重复发送保护、断网错误恢复、恢复网络后重试、慢网 Pending 状态以及手机端布局均符合预期。Stage 2 状态：**Validation Passed / Sealed**。
 
-### 下一步：Stage 3 — Public Hardening & Remaining Operational Boundaries
+### Stage 3 — Public Hardening & Remaining Operational Boundaries
 
-由于 Stage 2 已经在真实前台覆盖了原计划的一部分 Session / Resilience 场景，Stage 3 不再重复慢网、断网、重复发送和手机端验收，而只聚焦尚未完成的生产边界：Provider Error、Visitor / Site Daily Limit 在正式 Widget 中的表现，以及 Public Endpoint Request Rate Limit / Abuse Boundary 等必要的 Public Hardening。
+由于 Stage 2 已经在真实前台覆盖了原计划的一部分 Session / Resilience 场景，Stage 3 不再重复慢网、断网、重复发送和手机端验收，而只聚焦尚未完成的生产边界。
+
+Stage 3 Round 1 已实现：
+
+- 新增独立 `WPAIC_Public_Request_Guard`，位于 Public REST 与 Grounded Answer 之间。
+- Request Guard 只限制公开请求频率，不改变 Usage Guard 的 Provider Call 语义。
+- 固定 60 秒窗口，使用短期 Transient；只保存 Visitor / IP 哈希。
+- 默认 Visitor = 20 请求/分钟；IP 默认关闭，避免反向代理 / Cloudflare 环境共享出口误伤。
+- Rate Limit 返回 HTTP 429 + Public `error`，并带 `Retry-After`；前端不会永久锁死当前 Conversation。
+- 新增永久 **Public Hardening Lab**，用于配置、观察和重置 Visitor / Site / Request Rate 测试状态。
+- DB Version 仍为 `1.1`，新增数据表 = 0。
+
+Round 1 已完成真实 Chat Widget 验收并通过：
+
+- `Conversation=10 / Visitor=2 / Site=20` 时，前两次 Strong 正常 answer，第 3 次准确触发 Visitor Daily Limit；BLOCK 后 Visitor / Site 保持 `2 / 2` 与 `2 / 20`。
+- `Conversation=10 / Visitor=10 / Site=2` 时，前两次 Strong 正常 answer，第 3 次准确触发 Site Daily Limit；BLOCK 后保持 Visitor `2 / 10`、Site `2 / 2`。
+- Visitor Rate 临时设为 `3 / minute` 后，前三次 `dimension` 正常 `clarify`，第 4 次返回 HTTP 429 / `error`；约 60 秒后自动恢复。
+- Rate Limit 测试中的 Weak 请求只增加 Public Request Rate，不增加 Provider Usage，证明 Request Guard 与 Usage Guard 相互隔离。
+
+**Round 1 结论：Validation Passed。**
+
+Round 2 已新增永久 **Provider Failure Lab**，不修改真实 API Key 或 DeepSeek Endpoint，而是为当前 Visitor 武装一个 180 秒、一次性的模拟 Transport Timeout。失败注入只在请求真正通过 Grounding 与 Usage Reservation、进入 AI Manager 时消费；Weak / Medium / None / Usage BLOCK 不会消费该测试状态。
+
+Round 2 将验证：
+
+1. 武装 Failure 后先发 `dimension`，仍正常 `clarify`，Failure 保持 Armed。
+2. 再发 `CWC-610 dimension`，Usage Reservation 成功后在 Provider Boundary 模拟 timeout，Public Chat 返回 HTTP 503 / `error`，Widget 可恢复。
+3. 失败尝试计入 Provider Call，但 Token 不增加；这是对真实 timeout 不确定性的保守计数语义。
+4. Failure 为 one-shot，下一次 Strong 在不重新武装时应恢复真实 Provider `answer`，并只在成功响应后累计 Token。
+
+Round 2 已完成真实 WordPress + 正式 Chat Widget 验收并通过：
+
+- 武装 Provider Timeout 后先发送 `dimension`，正常返回 `clarify`；Failure 仍保持 `Armed`，Visitor / Site Usage 与 Token 均不增加。✅
+- 在 Failure 仍处于有效期内立即发送 `CWC-610 dimension`，Strong 请求通过 Grounding 与 Usage Reservation 后命中模拟 Transport Timeout；Widget 正确显示临时不可用。✅
+- Provider-bound 失败保守计入 1 次 Provider Call，但 Visitor / Site Token 均保持 `0`。✅
+- Failure 为 one-shot，命中后自动回到 `Idle`；不重新武装再次发送同一 Strong，真实 Provider 恢复正常 `answer`。✅
+- 恢复后的成功请求使 Visitor / Site Calls 继续累计到 2，Token 只在成功响应后增加（本次真实验证为 580）。✅
+- Failure Arm 的 180 秒 TTL 行为也得到确认：若人工测试超过有效期，状态自动过期，后续请求走正常 Provider，不污染正式配置。✅
+
+**Round 2 结论：Validation Passed。**
+
+**Stage 3 结论：Round 1 + Round 2 全部通过，Validation Passed / Sealed。** Public Hardening Lab、Request Guard 设置、安全 Reset 与 Provider Failure Lab 全部长期保留，继续用于教学、诊断和回归测试。
+
+下一步：**v0.8.0 Final Review**。
 
 ## Lab / Playground 永久保留原则
 

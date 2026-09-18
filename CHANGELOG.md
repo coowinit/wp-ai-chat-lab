@@ -1,6 +1,39 @@
 # Changelog
 
 
+## v0.8.0 — Chat Integration / Stage 3 Public Hardening (Validation Passed / Sealed)
+
+### Round 1 — Validation Passed
+
+- Added `WPAIC_Public_Request_Guard` before the Grounded Answer pipeline and kept it separate from Provider-call Usage Guard.
+- Real Widget validation passed for Visitor Daily Limit, Site Daily Limit, HTTP 429 Request Rate Limit, 60-second automatic recovery, and Request Rate / AI Usage isolation.
+- Visitor Limit test: `Conversation=10 / Visitor=2 / Site=20`; first two Strong requests answered, third was blocked by Visitor Daily, with counters remaining `Visitor 2/2` and `Site 2/20`.
+- Site Limit test: `Conversation=10 / Visitor=10 / Site=2`; first two Strong requests answered, third was blocked by Site Daily, with counters remaining `Visitor 2/10` and `Site 2/2`.
+- Request Rate test: Visitor rate temporarily set to 3/minute; first three `dimension` requests returned `clarify`, fourth returned HTTP 429 / public `error`, and requests recovered automatically after the fixed window.
+- Weak rate-limit test requests did not increase Provider Usage, confirming Request Guard / Usage Guard isolation.
+
+### Round 2 — Provider Failure Boundary (Validation Passed)
+
+- Added permanent `WPAIC_Provider_Failure_Lab` for admin-controlled, one-shot Provider Failure Boundary validation.
+- Failure arm is scoped to the current hashed Visitor identity, expires after 180 seconds, and is never exposed as a public toggle.
+- Added neutral `wpaic_ai_manager_pre_chat_result` short-circuit point in AI Manager; normal requests receive `null` and continue unchanged to the real provider.
+- Provider Failure injection is attached only around a Public Chat request and is consumed only if Grounding + Usage Guard actually reach AI Manager. Weak / Medium / None / Usage BLOCK paths leave it armed.
+- Simulated Transport Timeout does not modify the DeepSeek API key, endpoint, model, or provider transport implementation.
+- Provider errors continue through the existing public fail-safe contract as HTTP 503 / `error`; the front-end Chat JS is unchanged.
+- Public Hardening Lab now shows one-shot Failure status plus Visitor/Site Token counters, and includes arm / clear controls protected by `manage_options` + nonce.
+- Documented conservative accounting semantics: a Provider-bound failure keeps the already-reserved Provider Call, while token counters increase only after a trusted successful Provider response.
+- Added no new database tables; DB Version remains `1.1`.
+- Real WordPress + formal Chat Widget validation passed for the complete Provider Failure Boundary.
+- Armed Failure survived a Weak `dimension` request: public `clarify`, Failure remained Armed, and Provider Usage / Tokens stayed unchanged.
+- Immediate Strong `CWC-610 dimension` consumed the one-shot Failure after Grounding + Usage Reservation and returned the existing public HTTP 503 / `error` path.
+- Provider-bound failure incremented Visitor / Site Provider Call counters by 1 while both token counters remained 0.
+- Failure automatically returned to Idle after one-shot consumption.
+- A subsequent Strong request without re-arming recovered to the real Provider `answer`; Calls advanced again and tokens increased only on that successful response (580 tokens in the validation run).
+- The 180-second TTL was also confirmed: an expired arm falls away safely and leaves the normal Provider path unchanged.
+- Stage 3 Round 1 + Round 2 are now Validation Passed / Sealed. All Public Hardening Lab controls remain permanently available for diagnostics and regression testing.
+- Next: v0.8.0 Final Review.
+
+
 ## v0.8.0 — Chat Integration / Stage 2 Simple Chat UI Integration
 
 - Integrated the `simple-live-chat` visual baseline as the front-end Chat Widget.

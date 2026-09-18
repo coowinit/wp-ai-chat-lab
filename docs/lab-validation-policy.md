@@ -22,6 +22,7 @@ WP AI Chat Lab 的后台测试页面不是一次性开发工具，而是项目�
 - Usage Guard Playground / Historical Validation
 - Chat Boundary Playground
 - Chat UI Lab（前台 Widget 开关、状态映射与回归路线）
+- Public Hardening Lab（Visitor / Site / Request Rate 公共边界与回归验证）
 - 后续确有必要建立的独立诊断页面
 
 ## 3. 后续版本允许怎么改
@@ -55,3 +56,8 @@ Lab 页面 = 架构观察与回归入口
 > **Lab 可以退居后台，但不会退出项目。**
 
 它们应始终尽量调用真实 Repository / Service / Boundary，而不是复制一套只用于演示的逻辑。
+
+
+## Provider Failure Lab
+
+`Public Hardening` 中的 Provider Failure Lab 也是永久回归工具。它只允许管理员为当前 Visitor 武装短期、一次性的模拟失败，不修改正式 API Key、Provider Endpoint 或用户可见配置。其用途是验证 `Grounding → Usage Reserve → Provider Failure → Public 503/error → Widget Recovery` 这一故障边界。

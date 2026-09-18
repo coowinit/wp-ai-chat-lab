@@ -52,6 +52,13 @@ class WPAIC_Chat_Context {
 
 	public function get_conversation_id() { return $this->conversation_id; }
 	public function is_visitor_created() { return $this->visitor_created; }
+	public function has_existing_visitor() { return ! $this->visitor_created; }
+
+	/** Hash-only identity for short-lived public request limiting. Raw Visitor UUID is never persisted by the rate guard. */
+	public function get_visitor_identity_hash() {
+		if ( '' === $this->visitor_token ) { return ''; }
+		return hash_hmac( 'sha256', $this->visitor_token, wp_salt( 'auth' ) );
+	}
 
 	/** @return array<string,string> */
 	public function to_usage_context() {

@@ -1097,3 +1097,6 @@
 .wpaic-chat-scene-guide p:last-child { margin-bottom:0; }
 
 .wpaic-toggle-row{display:flex;align-items:center;gap:10px;margin:18px 0 8px}.wpaic-toggle-row input{margin:0}.wpaic-validation-list{margin:12px 0 0 22px}.wpaic-validation-list li{margin:0 0 10px;line-height:1.65}
+
+/* v0.8.0 Stage 3 — Public Hardening Lab */
+.wpaic-inline-form{display:inline-block;margin:0 8px 8px 0}.wpaic-inline-form .button{margin:0}

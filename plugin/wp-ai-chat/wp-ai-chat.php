@@ -22,6 +22,7 @@ define( 'WPAIC_OPTION_KNOWLEDGE_SOURCES', 'wpaic_enabled_sources' );
 define( 'WPAIC_DB_VERSION', '1.1' );
 define( 'WPAIC_OPTION_USAGE_SETTINGS', 'wpaic_usage_settings' );
 define( 'WPAIC_OPTION_CHAT_UI_SETTINGS', 'wpaic_chat_ui_settings' );
+define( 'WPAIC_OPTION_PUBLIC_GUARD_SETTINGS', 'wpaic_public_guard_settings' );
 define( 'WPAIC_OPTION_DB_VERSION', 'wpaic_db_version' );
 define( 'WPAIC_OPTION_LAST_FULL_SYNC', 'wpaic_last_full_sync' );
 define( 'WPAIC_OPTION_LAST_INCREMENTAL_SYNC', 'wpaic_last_incremental_sync' );
@@ -29,6 +30,7 @@ define( 'WPAIC_OPTION_LAST_INCREMENTAL_SYNC', 'wpaic_last_incremental_sync' );
 require_once WPAIC_PLUGIN_DIR . 'includes/ai/interface-wpaic-ai-provider.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/ai/class-wpaic-deepseek-provider.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/ai/class-wpaic-ai-manager.php';
+require_once WPAIC_PLUGIN_DIR . 'includes/ai/class-wpaic-provider-failure-lab.php';
 
 require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-source-discovery.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/knowledge/class-wpaic-content-normalizer.php';
@@ -63,6 +65,7 @@ require_once WPAIC_PLUGIN_DIR . 'includes/usage/class-wpaic-usage-guard.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/grounding/class-wpaic-grounded-answer-service.php';
 
 require_once WPAIC_PLUGIN_DIR . 'includes/chat/class-wpaic-chat-context.php';
+require_once WPAIC_PLUGIN_DIR . 'includes/chat/class-wpaic-public-request-guard.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/chat/class-wpaic-chat-response.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/chat/class-wpaic-chat-controller.php';
 require_once WPAIC_PLUGIN_DIR . 'public/class-wpaic-chat-widget.php';
@@ -108,6 +111,15 @@ function wpaic_ensure_options() {
 
 	if ( false === get_option( WPAIC_OPTION_CHAT_UI_SETTINGS, false ) ) {
 		add_option( WPAIC_OPTION_CHAT_UI_SETTINGS, array( 'enabled' => 0 ), '', false );
+	}
+
+	if ( false === get_option( WPAIC_OPTION_PUBLIC_GUARD_SETTINGS, false ) ) {
+		add_option(
+			WPAIC_OPTION_PUBLIC_GUARD_SETTINGS,
+			array( 'enabled' => 1, 'visitor_per_minute' => 20, 'ip_per_minute' => 0 ),
+			'',
+			false
+		);
 	}
 }
 
@@ -170,15 +182,22 @@ function wpaic_bootstrap() {
 	$usage_guard      = new WPAIC_Usage_Guard( $usage_repository );
 	$grounded_answer  = new WPAIC_Grounded_Answer_Service( $local_retriever, $grounding_gate, $evidence_builder, $prompt_builder, $manager, $usage_guard );
 
+	// v0.8.0 Stage 3: public request guard protects the REST boundary itself.
+	// It is deliberately separate from the exact Provider-call Usage Guard.
+	$public_request_guard = new WPAIC_Public_Request_Guard();
+	$provider_failure_lab = new WPAIC_Provider_Failure_Lab();
+
 	// v0.8.0 Stage 1: public Chat is only a boundary over the verified pipeline.
-	new WPAIC_Chat_Controller( $grounded_answer );
+	// Stage 3 passes a permanent Lab-only one-shot Provider failure injector;
+	// normal requests remain unchanged when no failure is armed.
+	new WPAIC_Chat_Controller( $grounded_answer, $public_request_guard, $provider_failure_lab );
 
 	// v0.8.0 Stage 2: the front-end widget is a thin client over the same
 	// verified Public Chat Boundary. It owns no Retrieval / Grounding / AI logic.
 	new WPAIC_Chat_Widget();
 
 	if ( is_admin() ) {
-		new WPAIC_Admin( $manager, $discovery, $extractor, $store_repository, $lifecycle, $batch_sync, $local_retriever, $grounding_gate, $evidence_builder, $prompt_builder, $grounded_answer, $usage_repository, $usage_guard );
+		new WPAIC_Admin( $manager, $discovery, $extractor, $store_repository, $lifecycle, $batch_sync, $local_retriever, $grounding_gate, $evidence_builder, $prompt_builder, $grounded_answer, $usage_repository, $usage_guard, $public_request_guard, $provider_failure_lab );
 	}
 }
 add_action( 'plugins_loaded', 'wpaic_bootstrap' );

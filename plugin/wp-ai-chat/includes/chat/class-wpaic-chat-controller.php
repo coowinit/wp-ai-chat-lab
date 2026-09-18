@@ -10,8 +10,16 @@ class WPAIC_Chat_Controller {
 	/** @var WPAIC_Grounded_Answer_Service */
 	protected $grounded_answer;
 
-	public function __construct( WPAIC_Grounded_Answer_Service $grounded_answer ) {
-		$this->grounded_answer = $grounded_answer;
+	/** @var WPAIC_Public_Request_Guard */
+	protected $request_guard;
+
+	/** @var WPAIC_Provider_Failure_Lab */
+	protected $provider_failure_lab;
+
+	public function __construct( WPAIC_Grounded_Answer_Service $grounded_answer, WPAIC_Public_Request_Guard $request_guard, WPAIC_Provider_Failure_Lab $provider_failure_lab ) {
+		$this->grounded_answer     = $grounded_answer;
+		$this->request_guard       = $request_guard;
+		$this->provider_failure_lab = $provider_failure_lab;
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 	}
 
@@ -42,14 +50,30 @@ class WPAIC_Chat_Controller {
 			return $this->error_response( __( 'The conversation context is invalid. Please start a new conversation.', 'wp-ai-chat-lab' ), 400 );
 		}
 
-		$result = $this->grounded_answer->answer(
-			$question,
-			array(
-				'candidate_limit' => 100,
-				'top_k'           => 5,
-				'usage_context'   => $context->to_usage_context(),
-			)
-		);
+		$rate = $this->request_guard->consume( $context );
+		if ( empty( $rate['allowed'] ) ) {
+			$response = $this->error_response( __( 'Too many chat requests. Please wait a moment and try again.', 'wp-ai-chat-lab' ), 429, $context->get_conversation_id() );
+			$response->header( 'Retry-After', (string) max( 1, isset( $rate['retry_after'] ) ? (int) $rate['retry_after'] : 60 ) );
+			$this->attach_visitor_cookie( $response, $context );
+			return $response;
+		}
+
+		// Permanent Lab-only failure injection is scoped to the current Visitor
+		// and attaches only for this request. It is consumed only if Grounding
+		// and Usage Guard actually reach AI Manager.
+		$this->provider_failure_lab->attach_for_request( $context );
+		try {
+			$result = $this->grounded_answer->answer(
+				$question,
+				array(
+					'candidate_limit' => 100,
+					'top_k'           => 5,
+					'usage_context'   => $context->to_usage_context(),
+				)
+			);
+		} finally {
+			$this->provider_failure_lab->detach();
+		}
 		if ( is_wp_error( $result ) ) {
 			do_action( 'wpaic_public_chat_error', $result );
 			$response = $this->error_response(
