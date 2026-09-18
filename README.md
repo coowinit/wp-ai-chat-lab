@@ -3,7 +3,7 @@
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
 **当前稳定 Release：v0.8.0 · Chat Integration**  
-**当前开发：v0.9.0 Stage 1 · Round 2 Inquiry Capture Foundation — Validation Passed / Sealed（下一步：Round 3 Chat Inline Inquiry Form Integration；稳定 Release 仍为 v0.8.0）**
+**当前开发：v0.9.0 — Stage 1 已完成（Round 1 / Round 2 / Round 3 均 Validation Passed / Sealed；稳定 Release 仍为 v0.8.0）**
 
 ## v0.5.0 稳定版本状态
 
@@ -2640,7 +2640,7 @@ Token Usage Diagnostics
 
 ### Lead Capture & Inquiry Management
 
-当前状态：**Stage 1 · Round 2 Inquiry Capture Foundation Validation Passed / Sealed；Round 1 与 Round 2 均已封板。**
+当前状态：**Stage 1 已完成；Round 1 / Round 2 / Round 3 均已通过真实 WordPress 验收并封板。下一步进入 Stage 2 — Inquiry Admin Management。**
 
 目标：在 v0.8.0 已稳定的 Chat Integration 之上建立自然、可解释的询盘转化路径：
 
@@ -2681,13 +2681,15 @@ Deterministic Lead Trigger Policy
 Lead Trigger Lab
 ```
 
-当前 Plugin Version 为 `0.9.0`。Stage 1 Round 2 已将 DB Version 升至 `1.2`，新增独立 `wp_wpaic_inquiries`，并建立 `POST /wp-json/wpaic/v1/inquiry`、Inquiry Service / Repository、服务器校验、Honeypot 与独立 Visitor Submission Rate。Round 2 已完成真实 WordPress 验收并正式封板；正式 Chat Widget 与 Inline Inquiry Form 仍未接入。
+当前 Plugin Version 为 `0.9.0`。Stage 1 Round 2 已将 DB Version 升至 `1.2`，新增独立 `wp_wpaic_inquiries`，并建立 `POST /wp-json/wpaic/v1/inquiry`、Inquiry Service / Repository、服务器校验、Honeypot 与独立 Visitor Submission Rate。Round 3 已把同一个 Lead Trigger Policy 与同一个 Public Inquiry REST 接入正式 Chat Widget，并通过真实前台验收。DB Version 保持 `1.2`，不新增表。
 
 Round 1 已验证：普通 Answer 不触发、默认/自定义商业关键词、中文关键词增删、空列表关闭、恢复默认、`no_answer`、Visitor/Site/Conversation Usage Block、`clarify` / `error` Hard Stop、`manual` 最高优先，以及 `order` 不误命中 `border`。关键词首次保存时发现并修复了 Settings API sanitize callback 缺失导致的 Critical Error；修复后保存与运行时共用同一套标准化逻辑。
 
 Round 2 已真实验证：正常 HTTP 201 写入、必填字段、非法 Email、非法 Conversation UUID、Trigger allowlist、Honeypot 不写库且不消耗 Rate、同 Visitor 前 5 次成功 / 第 6 次 HTTP 429 + Retry-After，以及失败请求 Rows 不增加。数据库仅保存 Visitor Hash，不保存原始 Visitor UUID / IP / 完整 Conversation。
 
-详细设计与 Round 1 / Round 2 验收清单见：`docs/versions/v0.9.0.md`。
+Round 3 已真实验证：Manual Contact Sales、commercial_intent / no_answer / usage_blocked CTA、clarify 后商业意图连续性、Inline Form 真提交、失败保留与重试、Inquiry Rate 429、Cancel / × 草稿丢弃、刷新隐私边界、Form 打开时 Chat Composer 禁用与手机端布局。
+
+详细设计与 Round 1 / Round 2 / Round 3 验收清单见：`docs/versions/v0.9.0.md`。
 
 ---
 
@@ -3277,5 +3279,5 @@ WP AI Chat Lab 中已经建立的后台实验与验收页面将长期保留，�
 
 Round 1 仍不创建 `wp_wpaic_inquiries`，不新增 Public Inquiry REST，不保存个人信息，也不修改正式 Chat Widget。
 
-当前进行：**Stage 1 Round 2 已 Validation Passed / Sealed**。下一步进入 **Stage 1 Round 3 — Chat Inline Inquiry Form Integration**，把已验证的 Lead Trigger Policy 与同一 Public Inquiry REST 接入正式 Chat Widget。完整架构与验收记录见 `docs/versions/v0.9.0.md`。
+当前状态：**Stage 1 已完成；Round 1 / Round 2 / Round 3 均 Validation Passed / Sealed。** Round 3 已完成正式 Chat CTA、Inline Form 与已验证 `/inquiry` Endpoint 的汇合。下一步进入 **Stage 2 — Inquiry Admin Management**。完整架构与验收记录见 `docs/versions/v0.9.0.md`。
 

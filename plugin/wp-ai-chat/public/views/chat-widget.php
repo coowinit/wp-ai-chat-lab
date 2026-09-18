@@ -25,9 +25,13 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 				<button type="button">Decking</button>
 				<button type="button">Wall Cladding</button>
 				<button type="button">Fence</button>
-				<button type="button">Get a Quote</button>
+				<button type="button" data-cw-inquiry-manual>Get a Quote</button>
 				<button type="button">Sample Request</button>
 			</div>
+		</div>
+
+		<div class="cw-contact-row">
+			<button type="button" data-cw-contact><?php esc_html_e( 'Contact Sales', 'wp-ai-chat-lab' ); ?></button>
 		</div>
 
 		<form class="cw-form" data-cw-form>

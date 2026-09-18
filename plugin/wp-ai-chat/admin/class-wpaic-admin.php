@@ -698,9 +698,13 @@ class WPAIC_Admin {
 		$this->guard_admin_page();
 		$chat_ui_settings = get_option( WPAIC_OPTION_CHAT_UI_SETTINGS, array() );
 		$chat_ui_settings = is_array( $chat_ui_settings ) ? $chat_ui_settings : array();
-		$chat_ui_enabled  = ! empty( $chat_ui_settings['enabled'] );
-		$chat_endpoint    = WPAIC_Chat_Controller::get_endpoint_url();
-		$settings_updated = isset( $_GET['settings-updated'] ) ? sanitize_text_field( wp_unslash( $_GET['settings-updated'] ) ) : '';
+		$chat_ui_enabled   = ! empty( $chat_ui_settings['enabled'] );
+		$chat_endpoint     = WPAIC_Chat_Controller::get_endpoint_url();
+		$inquiry_endpoint  = WPAIC_Inquiry_Controller::get_endpoint_url();
+		$inquiry_table     = WPAIC_DB_Installer::get_inquiry_table_name();
+		global $wpdb;
+		$inquiry_table_ready = $inquiry_table === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $inquiry_table ) );
+		$settings_updated  = isset( $_GET['settings-updated'] ) ? sanitize_text_field( wp_unslash( $_GET['settings-updated'] ) ) : '';
 		if ( 'true' === $settings_updated ) {
 			add_settings_error( 'wpaic_chat_ui_messages', 'wpaic_chat_ui_saved', 'Chat UI 设置已保存。', 'updated' );
 		}

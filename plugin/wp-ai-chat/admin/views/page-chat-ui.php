@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 ?>
 <div class="wrap wpaic-wrap">
 	<h1>WP AI Chat Lab — Chat UI Lab</h1>
-	<p class="description">v0.8.0 Stage 2 — Simple Chat UI Integration · Validation Passed / Sealed ✅。该页面与 Chat Boundary 一样长期保留，用来控制、理解和回归测试正式前台 Widget。</p>
+	<p class="description">永久 Chat UI Lab：v0.8.0 Stage 2 与 v0.9.0 Stage 1 Round 3 均已通过真实前台验收并封板。页面长期保留，用来控制、理解和回归测试正式前台 Widget。</p>
 	<?php settings_errors( 'wpaic_chat_ui_messages' ); ?>
 
 	<div class="wpaic-card">
@@ -45,6 +45,26 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 				<div class="notice notice-success inline"><p><strong>真实前台验收已通过：</strong>answer / clarify / no_answer / blocked、新会话、刷新连续性、重复发送保护、断网恢复、慢网与手机端均已验证。该路线永久保留用于回归测试。</p></div>
 				<div class="notice notice-success inline"><p><strong>v0.8.0 已完成：</strong>Stage 3 Public Hardening、Visitor / Site Daily Limit、Public Request Guard 与 Provider Failure Boundary 均已通过真实验收并封板；对应 Lab 永久保留用于回归。</p></div>
 			</div>
+
+			<div class="wpaic-card">
+				<h2>v0.9.0 Stage 1 Round 3 · Passed / Sealed ✅</h2>
+				<p><strong>Fix 1 · Clarify Intent Continuity：</strong>商业询价若首轮进入 <code>clarify</code>，下一轮补充型号并得到 answer 后，原始商业意图仍应恢复为 <code>Request a Quote</code> CTA；pending intent 只存 session，不进入 AI Prompt。</p>
+				<p><strong>Fix 2 · Explicit Draft Discard：</strong>Cancel / × 后必须丢弃未提交的 Name / Email / Company / Phone / Message 草稿；重新打开时个人字段保持干净，Message 只从当前 Lead 上下文重新生成。Form 打开期间暂停 Chat Composer 并隐藏重复 Contact Sales。</p>
+				<p><strong>本轮只做前后端汇合：</strong><code>Lead Trigger Policy → Chat CTA → Inline Inquiry Form → /inquiry → Repository</code>。不复制 Inquiry 保存逻辑，也不新增数据表。</p>
+				<ol class="wpaic-validation-list">
+					<li><strong>Manual：</strong>点击常驻 <code>Contact Sales</code> 或初始 <code>Get a Quote</code>，直接展开表单，不产生 Chat / AI 请求。</li>
+					<li><strong>Commercial Intent：</strong>Strong 问题包含已配置商业关键词时，正常 Answer 后显示 primary CTA。</li>
+					<li><strong>no_answer：</strong>显示 <code>Leave a Message</code> CTA；<code>clarify / error</code> 不自动显示 CTA。</li>
+					<li><strong>Usage Block：</strong>Visitor / Site Daily 使用 primary；Conversation Limit 使用 secondary；即使 Chat 输入被 blocked，Inquiry CTA 仍可使用。</li>
+					<li><strong>Inline Form：</strong>Name / Email / Message 必填；Company / Phone 选填；Message 默认带入当前问题且允许修改。</li>
+					<li><strong>真实提交：</strong>表单只调用已封板的 <code>/wpaic/v1/inquiry</code>；HTTP 201 后在 Chat 内显示成功消息并真实新增 Inquiry Row。</li>
+					<li><strong>失败恢复：</strong>Inquiry 400 / 429 / 网络失败保留表单并显示友好错误，不制造“假成功”。</li>
+					<li><strong>取消 / 重开：</strong>Cancel / × 后重新打开表单，不恢复上一份未提交个人信息草稿。</li>
+					<li><strong>刷新隐私：</strong>安全 Lead CTA 可随 transcript 恢复；Name / Email / Phone / Message 不写入 sessionStorage，未提交表单刷新后不恢复个人信息。</li>
+					<li><strong>手机端：</strong>CTA、表单、键盘输入、关闭与提交均可正常操作。</li>
+				</ol>
+				<div class="notice notice-success inline"><p><strong>真实前台验收已通过：</strong>Manual、commercial_intent、no_answer、usage_blocked、clarify 意图连续性、真实 Inquiry 写入、400 / 429 错误恢复、Cancel / × 草稿丢弃、刷新隐私边界、Inquiry-open UI 状态与手机端均符合预期。Round 3 已正式封板。</p></div>
+			</div>
 		</div>
 
 		<div>
@@ -54,8 +74,9 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 					<div><dt>Plugin</dt><dd><?php echo esc_html( WPAIC_VERSION ); ?></dd></div>
 					<div><dt>DB Version</dt><dd><?php echo esc_html( WPAIC_DB_VERSION ); ?></dd></div>
 					<div><dt>Widget</dt><dd><?php echo $chat_ui_enabled ? 'Enabled' : 'Disabled'; ?></dd></div>
-					<div><dt>New Tables</dt><dd>0</dd></div>
-					<div class="wpaic-meta-wide"><dt>REST Endpoint</dt><dd><code><?php echo esc_html( $chat_endpoint ); ?></code></dd></div>
+					<div><dt>Inquiry Table</dt><dd><?php echo $inquiry_table_ready ? 'Ready' : 'Missing'; ?></dd></div>
+					<div class="wpaic-meta-wide"><dt>Chat REST</dt><dd><code><?php echo esc_html( $chat_endpoint ); ?></code></dd></div>
+					<div class="wpaic-meta-wide"><dt>Inquiry REST</dt><dd><code><?php echo esc_html( $inquiry_endpoint ); ?></code></dd></div>
 					<div class="wpaic-meta-wide"><dt>Front Page</dt><dd><a href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank" rel="noopener noreferrer">打开网站前台 ↗</a></dd></div>
 				</dl>
 			</div>
@@ -67,16 +88,17 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 					<li><code>no_answer</code> → 当前知识不足</li>
 					<li><code>blocked</code> → 额度提示；当前 Conversation 停止继续发送</li>
 					<li><code>error</code> → 临时错误提示</li>
+					<li><code>lead</code>（可选）→ 仅包含安全的 Trigger / CTA / Placement，用于渲染询盘入口</li>
 				</ul>
-				<p class="description">前台不会显示 Provider / Model / Token / Retrieval Score / Reason Code；这些诊断继续留在后台 Lab。</p>
+				<p class="description">前台不会显示 Provider / Model / Token / Retrieval Score / 内部 Reason Code / Matched Keyword；Lead Policy 的诊断细节继续留在后台 Lab。</p>
 			</div>
 			<div class="wpaic-card">
-				<h2>Stage 2 明确不做</h2>
+				<h2>Round 3 数据边界</h2>
 				<ul class="wpaic-plain-list">
-					<li>Conversation / Message 数据表</li>
-					<li>后台聊天历史 / Inbox</li>
-					<li>Lead / Human Handoff / Agent</li>
-					<li>Streaming / RAG / Vector / Cost Guard</li>
+					<li>表单个人信息只在用户提交时发送到 <code>/inquiry</code></li>
+					<li>Name / Email / Company / Phone / Message 不写入 Chat sessionStorage</li>
+					<li>仍不保存完整 Conversation / Prompt / AI Answer / 原始 IP</li>
+					<li>不新增 Human Handoff / CRM / Agent / Streaming / RAG / Vector / Cost Guard</li>
 				</ul>
 			</div>
 		</div>

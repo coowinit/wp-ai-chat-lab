@@ -1,5 +1,50 @@
 # Changelog
 
+## v0.9.0 — Stage 1 Round 3 Chat Inline Inquiry Form Integration / Validation Passed / Sealed
+
+- Fix 2 — Explicit form discard: Cancel / × now clears the live form before removal, uses non-persistent per-open field names, and disables browser form autocomplete so reopening does not restore an unsubmitted personal-data draft.
+- While the Inline Inquiry Form is open, the normal Chat composer is disabled and the duplicate persistent Contact Sales entry is hidden; both are restored when the form closes.
+- Client-side validation now distinguishes missing Name, missing Email, invalid Email, and missing Message instead of showing one generic required-fields message.
+- Fix 1 — Clarify intent continuity: a commercial question that first receives `clarify` now keeps a session-only pending intent so the next clarified answer can still show `Request a Quote`.
+- The pending question is re-validated by the server-owned deterministic Lead Trigger Policy and is never sent into Retrieval, Grounding, Usage Guard, or Provider prompts.
+
+> Real WordPress validation passed. Stage seal only; this is not a Release.
+
+- Connected the verified deterministic Lead Trigger Policy to the real Public Chat Boundary.
+- Public Chat responses now include an optional minimal `lead` object only when a Lead offer is allowed.
+- Public Lead metadata is limited to trigger type, CTA label, and placement; matched keyword, internal policy reason, Usage reason codes, Provider / Model / Token / Score remain private.
+- Added primary / secondary Lead CTA rendering to the production Chat Widget.
+- Added a persistent lightweight `Contact Sales` manual entry and converted initial `Get a Quote` into a direct manual Inquiry action that does not require an AI call.
+- Added an Inline Inquiry Form inside the Chat message area with Name / Email / Message required and Company / Phone optional.
+- Message is prefilled from the current / most recent user question and remains editable.
+- Inline Form submits only to the existing sealed `POST /wp-json/wpaic/v1/inquiry` boundary; no duplicate persistence logic was added to JavaScript.
+- Successful HTTP 201 submission renders the server success message inside Chat.
+- Inquiry 400 / 429 / network failures remain inside the form and never show false success.
+- Chat sessionStorage may persist safe Lead CTA metadata, but does not persist Name / Email / Company / Phone / Inquiry Message.
+- Lead CTA remains usable on Usage-blocked Chat paths even when the normal chat input is disabled.
+- DB Version remains `1.2`; no new tables or schema changes.
+- Updated the permanent Chat UI Lab with the Round 3 architecture, privacy boundary, and real validation checklist.
+
+Real WordPress front-end validation passed for:
+- Manual `Contact Sales` → Inline Inquiry Form without Chat / Provider call.
+- Public Inquiry submit → success message only after real HTTP 201 and database Rows +1.
+- `commercial_intent` → `Request a Quote` CTA.
+- Clarify continuity Fix 1 → commercial intent survives `clarify → follow-up answer`, while the clarify turn itself remains a hard stop.
+- `no_answer` → `Leave a Message` → saved Inquiry preserves `trigger_type = no_answer`.
+- Visitor Daily Limit → primary `Leave Your Requirement` → saved Inquiry preserves `trigger_type = usage_blocked`.
+- Conversation Limit → secondary `Contact Us`, preserving new Conversation as the primary recovery path.
+- Invalid Email → form remains open, values remain editable, corrected resubmit succeeds.
+- Inquiry Rate → first 5 submissions succeed; 6th returns HTTP 429, form and values remain, and database Rows do not increase.
+- Cancel / × → unsubmitted personal-data draft is discarded; reopening starts clean.
+- Refresh privacy → Chat transcript / Conversation continuity can recover, but unsubmitted Name / Email / Company / Phone / Message do not persist.
+- Fix 3 UI state → duplicate Contact Sales is hidden while the form is open; Chat composer / Send are visibly disabled and recover after close.
+- Mobile layout / CTA / form / submit / close behavior validated successfully.
+- Repository ZIP packaging rechecked: one `wp-ai-chat-lab/` root only; no temporary work-tree duplicate.
+
+Stage 1 Round 3 is now formally **Validation Passed / Sealed**. Stage 1 is complete. Next: **Stage 2 — Inquiry Admin Management**.
+
+---
+
 ## v0.9.0 — Stage 1 Round 2 Inquiry Capture Foundation / Validation Passed / Sealed
 
 > Real WordPress validation passed. Stage seal only; this is not a Release.
@@ -869,3 +914,9 @@ v0.2.0 不包含：
 - 确立 WordPress Native Knowledge、Local Retrieval、Grounding、Usage Guard、Human Handoff 等核心原则。
 - 明确短期不以替代 Tidio 为目标。
 - 规划 v0.1.0 → v1.0.0 的阶段路线。
+
+### v0.9.0 Stage 1 Round 3 Fix 3 — Validation
+- 强化 Inline Inquiry Form 打开状态：隐藏底部重复的 Contact Sales 行。
+- Inquiry Form 打开期间明确禁用 Chat Composer 与发送按钮，并显示 `Inquiry form is open` 占位提示。
+- 使用 root state class + hidden row + CSS `!important` 三层保护，避免主题样式覆盖导致 UI 状态失效。
+- 修正 Round 3 Fix 2 完整仓库打包误带临时工作目录的问题；正式验证包只保留单一 `wp-ai-chat-lab/` 仓库目录。

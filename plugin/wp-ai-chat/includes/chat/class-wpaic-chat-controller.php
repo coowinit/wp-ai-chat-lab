@@ -16,10 +16,14 @@ class WPAIC_Chat_Controller {
 	/** @var WPAIC_Provider_Failure_Lab */
 	protected $provider_failure_lab;
 
-	public function __construct( WPAIC_Grounded_Answer_Service $grounded_answer, WPAIC_Public_Request_Guard $request_guard, WPAIC_Provider_Failure_Lab $provider_failure_lab ) {
-		$this->grounded_answer     = $grounded_answer;
-		$this->request_guard       = $request_guard;
+	/** @var WPAIC_Lead_Trigger_Policy */
+	protected $lead_trigger_policy;
+
+	public function __construct( WPAIC_Grounded_Answer_Service $grounded_answer, WPAIC_Public_Request_Guard $request_guard, WPAIC_Provider_Failure_Lab $provider_failure_lab, WPAIC_Lead_Trigger_Policy $lead_trigger_policy ) {
+		$this->grounded_answer      = $grounded_answer;
+		$this->request_guard        = $request_guard;
 		$this->provider_failure_lab = $provider_failure_lab;
+		$this->lead_trigger_policy  = $lead_trigger_policy;
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 	}
 
@@ -43,6 +47,14 @@ class WPAIC_Chat_Controller {
 		}
 		if ( $this->string_length( $question ) > self::MAX_QUESTION ) {
 			return $this->error_response( __( 'The question is too long. Please keep it within 1000 characters.', 'wp-ai-chat-lab' ), 400 );
+		}
+
+		// Optional session-only Lead continuity context. This value is never sent to
+		// Retrieval / Grounding / Usage Guard / Provider. The server re-evaluates
+		// the deterministic Lead Trigger Policy instead of trusting a client flag.
+		$lead_context_question = trim( sanitize_textarea_field( (string) $request->get_param( 'lead_context_question' ) ) );
+		if ( $this->string_length( $lead_context_question ) > self::MAX_QUESTION ) {
+			$lead_context_question = '';
 		}
 
 		$context = WPAIC_Chat_Context::from_request( $request );
@@ -85,9 +97,66 @@ class WPAIC_Chat_Controller {
 			return $response;
 		}
 
-		$response = new WP_REST_Response( WPAIC_Chat_Response::from_grounded_result( $result, $context ), 200 );
+		$public        = WPAIC_Chat_Response::from_grounded_result( $result, $context );
+		$response_type = isset( $public['type'] ) ? sanitize_key( (string) $public['type'] ) : 'error';
+		$block_reason  = $this->extract_block_reason( $result );
+
+		// Commercial intent may legitimately receive `clarify` first. Round 1
+		// correctly prevents an automatic CTA on clarify, but we preserve a safe
+		// pending marker so the next clarified turn can recover the original intent.
+		if ( 'clarify' === $response_type ) {
+			$pending_question = '' !== $lead_context_question ? $lead_context_question : $question;
+			if ( '' !== $this->lead_trigger_policy->match_commercial_keyword( $pending_question ) ) {
+				$public['lead_pending'] = array( 'trigger_type' => 'commercial_intent' );
+			}
+		} else {
+			$lead = $this->lead_trigger_policy->evaluate(
+				array(
+					'manual'        => false,
+					'question'      => $question,
+					'response_type' => $response_type,
+					'block_reason'  => $block_reason,
+				)
+			);
+
+			// If this follow-up does not itself contain the commercial keyword, run the
+			// same server-owned Policy against the pending commercial question. This
+			// affects only Lead CTA selection and never the AI answer path.
+			if ( empty( $lead['offer'] ) && '' !== $lead_context_question ) {
+				$lead = $this->lead_trigger_policy->evaluate(
+					array(
+						'manual'        => false,
+						'question'      => $lead_context_question,
+						'response_type' => $response_type,
+						'block_reason'  => $block_reason,
+					)
+				);
+			}
+
+			if ( ! empty( $lead['offer'] ) ) {
+				$public['lead'] = array(
+					'trigger_type' => isset( $lead['trigger_type'] ) ? (string) $lead['trigger_type'] : '',
+					'cta_label'    => isset( $lead['cta_label'] ) ? (string) $lead['cta_label'] : '',
+					'placement'    => isset( $lead['placement'] ) ? (string) $lead['placement'] : 'primary',
+				);
+			}
+		}
+
+		$response = new WP_REST_Response( $public, 200 );
 		$this->attach_visitor_cookie( $response, $context );
 		return $response;
+	}
+
+
+	/** Internal Usage reason is used only to choose the safe public Lead CTA. */
+	protected function extract_block_reason( array $result ) {
+		if ( 'usage_block' !== ( isset( $result['answer_type'] ) ? (string) $result['answer_type'] : '' ) ) {
+			return '';
+		}
+		$guard  = isset( $result['usage_guard'] ) && is_array( $result['usage_guard'] ) ? $result['usage_guard'] : array();
+		$reason = isset( $guard['reason_code'] ) ? sanitize_key( (string) $guard['reason_code'] ) : '';
+		$allowed = array( 'conversation_limit_reached', 'visitor_daily_limit_reached', 'site_daily_limit_reached' );
+		return in_array( $reason, $allowed, true ) ? $reason : '';
 	}
 
 	public static function get_endpoint_url() { return rest_url( self::REST_NAMESPACE . self::REST_ROUTE ); }

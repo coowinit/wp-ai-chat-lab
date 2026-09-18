@@ -206,19 +206,21 @@ function wpaic_bootstrap() {
 	$public_request_guard = new WPAIC_Public_Request_Guard();
 	$provider_failure_lab = new WPAIC_Provider_Failure_Lab();
 
-	// v0.8.0 Stage 1: public Chat is only a boundary over the verified pipeline.
-	// Stage 3 passes a permanent Lab-only one-shot Provider failure injector;
-	// normal requests remain unchanged when no failure is armed.
-	new WPAIC_Chat_Controller( $grounded_answer, $public_request_guard, $provider_failure_lab );
+	// v0.9.0 Stage 1: the deterministic Lead Trigger Policy stays independent
+	// from persistence. Round 3 lets the verified Public Chat Boundary ask this
+	// same Policy whether a safe, minimal Inquiry CTA should be offered.
+	$lead_trigger_policy = new WPAIC_Lead_Trigger_Policy();
 
-	// v0.8.0 Stage 2: the front-end widget is a thin client over the same
-	// verified Public Chat Boundary. It owns no Retrieval / Grounding / AI logic.
+	// v0.8.0 Stage 1: public Chat remains only a boundary over the verified
+	// pipeline. v0.9.0 Round 3 adds only the optional safe Lead offer metadata.
+	new WPAIC_Chat_Controller( $grounded_answer, $public_request_guard, $provider_failure_lab, $lead_trigger_policy );
+
+	// v0.9.0 Stage 1 Round 3: the front-end widget remains a thin client.
+	// It renders Lead CTA / Inline Inquiry Form but reuses the same Public Chat
+	// and Public Inquiry endpoints; it owns no Retrieval / Grounding / AI logic.
 	new WPAIC_Chat_Widget();
 
-	// v0.9.0 Stage 1: deterministic Lead Trigger Policy remains independent
-	// from Inquiry persistence. Round 2 adds the Public Inquiry boundary without
-	// modifying the verified Chat Widget yet.
-	$lead_trigger_policy = new WPAIC_Lead_Trigger_Policy();
+	// Round 2 Public Inquiry persistence remains the single save boundary.
 	$inquiry_repository  = new WPAIC_Inquiry_Repository();
 	$inquiry_service     = new WPAIC_Inquiry_Service( $inquiry_repository );
 	$inquiry_rate_guard  = new WPAIC_Inquiry_Rate_Guard();
