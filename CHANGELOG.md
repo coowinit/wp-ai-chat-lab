@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.9.0 — Lead Capture & Inquiry Management / Planning & Architecture Baseline
+
+> Planning only. No v0.9.0 runtime code has been implemented yet. Current stable release remains v0.8.0.
+
+- Defined v0.9.0 around two goals: natural Lead Capture from Chat and WordPress Inquiry Management.
+- Defined Lead Trigger Policy as a separate boundary between Chat Response and Inquiry Capture.
+- First trigger types: `manual`, `commercial_intent`, `no_answer`, `usage_blocked`.
+- Confirmed deterministic trigger rules for the first version; no additional AI Lead Scoring call.
+- Commercial Intent keywords are **administrator-configurable**, not hard-coded.
+- Planned default keyword set is only an initial baseline; administrators can add, remove, edit, save an empty list to disable keyword triggering, or explicitly restore defaults.
+- Planned keyword storage uses WordPress Options rather than a dedicated keyword table.
+- Planned minimal Inline Inquiry Form: Name / Email / Message required; Company / Phone optional.
+- Planned independent `POST /wp-json/wpaic/v1/inquiry` Public Boundary.
+- Planned dedicated `wp_wpaic_inquiries` operational table with Service / Repository separation; exact DB Version change is deferred until Stage 1 implementation.
+- Planned four Inquiry statuses: `new`, `contacted`, `closed`, `spam`.
+- Planned minimal anti-abuse foundation: honeypot + Visitor submission rate + server-side validation; Turnstile deferred until real spam requires it.
+- Explicitly excluded real-time Human Handoff, Agent Inbox, CRM Pipeline, AI Lead Scoring, full Conversation persistence, RAG, Vector Database, and Agent features from v0.9.0.
+- Confirmed all future Lead / Inquiry Lab and Playground pages will remain permanently available for teaching, diagnostics, and regression testing.
+- Added `docs/versions/v0.9.0.md` as the implementation contract before Stage 1 coding begins.
+
 ## v0.8.0 — Chat Integration / Final Review (Passed / Stable Release)
 
 - Completed final release review after Stage 1 / Stage 2 / Stage 3 real WordPress validation.

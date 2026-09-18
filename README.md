@@ -2638,28 +2638,42 @@ Token Usage Diagnostics
 
 ## v0.9.0
 
-### Human & Knowledge Loop
+### Lead Capture & Inquiry Management
 
-实现：
+当前状态：**Planning / Architecture Baseline，尚未开始实现。**
 
-```text
-AI
-↓
-Pending
-↓
-Human
-↓
-AI
-```
-
-以及：
+目标：在 v0.8.0 已稳定的 Chat Integration 之上建立自然、可解释的询盘转化路径：
 
 ```text
-Unanswered Questions
-Knowledge Suggestions
-Lead Flow
-Playground
+Chat Response
+↓
+Lead Trigger Policy
+↓
+CTA
+↓
+Inquiry Form
+↓
+Inquiry Database
+↓
+后台 Inquiry Management
 ```
+
+第一版 Lead Trigger 采用确定性规则，不额外调用 AI 做 Lead Scoring。
+
+重点 Trigger：
+
+```text
+manual
+commercial_intent
+no_answer
+usage_blocked
+```
+
+其中 **commercial_intent 关键词必须后台完全可配置**：插件提供默认关键词，但管理员可以增删改、保存空列表以关闭关键词触发，并可主动恢复默认值。
+
+计划新增独立 `wp_wpaic_inquiries` 表；不保存完整聊天记录，不进入实时 Human Handoff / CRM。
+
+详细设计见：`docs/versions/v0.9.0.md`。
 
 ---
 
@@ -3230,3 +3244,20 @@ WP AI Chat Lab 中已经建立的后台实验与验收页面将长期保留，�
 3. **版本回归**：后续 v0.8.x / v0.9.x / v1.x 升级后可直接重跑关键场景，确认旧能力没有回归。
 
 因此后续版本的原则是：**可以整理、折叠、优化这些 Lab 页面，但不因正式功能上线而删除其核心测试能力。** 详细约定见 `docs/lab-validation-policy.md`。
+
+# v0.9.0 Planning — Lead Capture & Inquiry Management
+
+当前稳定 Release 仍为 **v0.8.0**。v0.9.0 目前只完成架构规划，尚未修改 Plugin Version、DB Version 或运行代码。
+
+已确认的产品原则：
+
+- Chat 先解决问题，Lead CTA 只在自然业务节点出现；
+- `commercial_intent` 关键词全部由后台管理员控制，默认词只是起点；
+- 关键词支持增删改、空列表关闭触发、手动恢复默认；
+- 第一版 Trigger 只使用确定性规则，不调用 AI Lead Scoring；
+- Inquiry 使用独立 Service / Repository / 自定义表，不在 REST Controller 中直接散落数据库操作；
+- 第一版不保存完整 Conversation / Prompt / AI Answer；
+- Inquiry Lab / Playground 将继续遵循永久保留策略。
+
+完整架构：`docs/versions/v0.9.0.md`。
+
