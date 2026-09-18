@@ -31,7 +31,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 	</div>
 
 	<div class="wpaic-grid">
-		<div>
+		<div class="wpaic-card-stack">
 			<div class="wpaic-card">
 				<h2>Public Request Guard</h2>
 				<p>使用 60 秒固定窗口的短期 WordPress Transient。只保存 Visitor / IP 的哈希桶，不保存原始 IP；它是应用层第一道软保护，不替代 Cloudflare / WAF 的边缘限流。</p>
@@ -69,7 +69,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 			</div>
 		</div>
 
-		<div>
+		<div class="wpaic-card-stack">
 			<div class="wpaic-card">
 				<h2>当前 Public 状态</h2>
 				<dl class="wpaic-meta wpaic-meta-source">

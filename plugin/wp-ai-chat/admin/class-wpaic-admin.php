@@ -220,8 +220,8 @@ class WPAIC_Admin {
 
 		$this->grounded_page_hook = add_submenu_page(
 			'wp-ai-chat-lab',
-			'Grounded AI',
-			'Grounded AI',
+			'可信回答实验',
+			'可信回答实验',
 			'manage_options',
 			'wp-ai-chat-lab-grounded',
 			array( $this, 'render_grounded_page' )
@@ -229,8 +229,8 @@ class WPAIC_Admin {
 
 		$this->usage_page_hook = add_submenu_page(
 			'wp-ai-chat-lab',
-			'Usage Guard',
-			'Usage Guard',
+			'用量保护',
+			'用量保护',
 			'manage_options',
 			'wp-ai-chat-lab-usage',
 			array( $this, 'render_usage_page' )
@@ -239,8 +239,8 @@ class WPAIC_Admin {
 
 		$this->chat_boundary_page_hook = add_submenu_page(
 			'wp-ai-chat-lab',
-			'Chat Boundary',
-			'Chat Boundary',
+			'聊天边界实验',
+			'聊天边界实验',
 			'manage_options',
 			'wp-ai-chat-lab-chat-boundary',
 			array( $this, 'render_chat_boundary_page' )
@@ -248,8 +248,8 @@ class WPAIC_Admin {
 
 		$this->chat_ui_page_hook = add_submenu_page(
 			'wp-ai-chat-lab',
-			'Chat UI Lab',
-			'Chat UI Lab',
+			'聊天界面实验',
+			'聊天界面实验',
 			'manage_options',
 			'wp-ai-chat-lab-chat-ui',
 			array( $this, 'render_chat_ui_page' )
@@ -257,8 +257,8 @@ class WPAIC_Admin {
 
 		$this->public_hardening_page_hook = add_submenu_page(
 			'wp-ai-chat-lab',
-			'Public Hardening',
-			'Public Hardening',
+			'公开接口防护',
+			'公开接口防护',
 			'manage_options',
 			'wp-ai-chat-lab-public-hardening',
 			array( $this, 'render_public_hardening_page' )
@@ -266,8 +266,8 @@ class WPAIC_Admin {
 
 		$this->lead_trigger_page_hook = add_submenu_page(
 			'wp-ai-chat-lab',
-			'Lead Trigger Lab',
-			'Lead Trigger Lab',
+			'询盘触发实验',
+			'询盘触发实验',
 			'manage_options',
 			'wp-ai-chat-lab-lead-trigger',
 			array( $this, 'render_lead_trigger_page' )
@@ -284,8 +284,8 @@ class WPAIC_Admin {
 
 		$this->inquiry_capture_page_hook = add_submenu_page(
 			'wp-ai-chat-lab',
-			'Inquiry Capture Lab',
-			'Inquiry Capture Lab',
+			'询盘采集实验',
+			'询盘采集实验',
 			'manage_options',
 			'wp-ai-chat-lab-inquiry-capture',
 			array( $this, 'render_inquiry_capture_page' )

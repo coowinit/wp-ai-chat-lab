@@ -1,3 +1,28 @@
+## v0.9.0 — Stage 3 Round 1 Operational Preflight & Admin UX Consistency / Validation Passed / Sealed
+
+> Stage 1 / Stage 2 已封板。Round 1 已完成真实后台复核并正式封板：永久 Lab 间距与中文导航均符合预期，未改动核心业务逻辑。
+
+- Public Hardening 左右列嵌套卡片统一使用 20px 垂直间距。
+- Chat Boundary 右侧 Operational Preflight / Stage 1 边界卡片统一使用 20px 垂直间距。
+- Chat UI Lab 左右两列改用统一 20px Card Stack，修复 Stage 2 验收区、Round 3 区、当前状态 / 前端状态映射 / 数据边界之间贴合的问题。
+- Lead Trigger Lab 左右两列改用统一 20px Card Stack，修复商业关键词 / Playground 与当前状态 / Trigger 顺序 / 验收清单之间贴合的问题。
+- Inquiry Capture Lab 左右两列改用统一 20px Card Stack，修复 Public Inquiry Test / 最近 Inquiry 与状态 / Rate Reset / 验收清单之间贴合的问题。
+- 复用统一 `.wpaic-card-stack` 布局工具，不为每个箭头位置单独增加 page-specific margin。
+- WordPress 左侧 WP AI Chat Lab 子菜单统一中文化；页面内部技术术语仍保留既有英文名称，方便与文档、Reason Code 和代码对照。
+- 菜单映射：Grounded AI → 可信回答实验；Usage Guard → 用量保护；Chat Boundary → 聊天边界实验；Chat UI Lab → 聊天界面实验；Public Hardening → 公开接口防护；Lead Trigger Lab → 询盘触发实验；Inquiry Capture Lab → 询盘采集实验。
+- 不修改 Chat / Lead Trigger / Inquiry REST / Repository / Usage / Provider 运行逻辑。
+- Plugin Version 保持 `0.9.0`；DB Version 保持 `1.3`。
+
+Real validation:
+- 永久 Lab 卡片之间 20px 纵向节奏一致。 ✅
+- 左侧主要用户入口中文化，页面内部技术术语保留。 ✅
+- 原有 URL / page slug / AJAX / REST / admin-post 行为保持不变。 ✅
+
+Status: **Validation Passed / Sealed**.  
+Next: **Stage 3 Round 2 — Security & Data Boundary Validation**.
+
+---
+
 ## v0.9.0 — Stage 2 Round 3 Inquiry Management Efficiency / Validation Passed / Sealed
 
 - Added bulk `mark read / mark unread` for selected active inquiries only.

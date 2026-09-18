@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 	</div>
 
 	<div class="wpaic-grid">
-		<div>
+		<div class="wpaic-card-stack">
 			<div class="wpaic-card">
 				<h2>前台 Chat Widget</h2>
 				<p>验证版本默认关闭，避免插件升级后立即影响正式访客。启用后，Widget 通过 <code>wp_footer</code> 注入前台，并只在启用时加载自己的 CSS / Vanilla JS。</p>
@@ -67,7 +67,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 			</div>
 		</div>
 
-		<div>
+		<div class="wpaic-card-stack">
 			<div class="wpaic-card">
 				<h2>当前状态</h2>
 				<dl class="wpaic-meta wpaic-meta-source">

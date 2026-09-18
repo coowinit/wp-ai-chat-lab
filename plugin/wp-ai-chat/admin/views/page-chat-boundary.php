@@ -47,7 +47,7 @@ $transactional = ! empty( $usage_status['transactional'] );
 			<div id="wpaic-chat-boundary-result" class="wpaic-result" aria-live="polite"></div>
 		</div>
 
-		<div>
+		<div class="wpaic-card-stack">
 			<div class="wpaic-card">
 				<h2>Operational Preflight</h2>
 				<dl class="wpaic-meta wpaic-meta-source">

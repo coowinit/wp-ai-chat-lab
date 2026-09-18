@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 	</div>
 
 	<div class="wpaic-grid">
-		<div>
+		<div class="wpaic-card-stack">
 			<div class="wpaic-card">
 				<h2>Public Inquiry Test</h2>
 				<p>填写一条真实测试询盘。成功响应只有 <code>type + message</code>，不会向公开前端暴露数据库 ID、Visitor Hash 或其它内部字段。</p>
@@ -70,7 +70,7 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
 			</div>
 		</div>
 
-		<div>
+		<div class="wpaic-card-stack">
 			<div class="wpaic-card">
 				<h2>当前状态</h2>
 				<dl class="wpaic-meta wpaic-meta-source">

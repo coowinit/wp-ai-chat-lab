@@ -1086,6 +1086,17 @@
 }
 
 
+/* v0.9.0 Stage 3 preflight — consistent vertical card spacing in permanent Labs */
+.wpaic-card-stack {
+	display: grid;
+	gap: 20px;
+}
+
+.wpaic-card-stack > .wpaic-card {
+	margin-top: 0;
+}
+
+
 /* v0.8.0 Stage 1 — Public Chat Boundary Playground */
 .wpaic-flow-line { align-items:center; display:flex; flex-wrap:wrap; gap:8px; margin:14px 0; }
 .wpaic-chat-scenarios { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0; }

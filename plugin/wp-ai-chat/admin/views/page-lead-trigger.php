@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	</div>
 
 	<div class="wpaic-grid">
-		<div>
+		<div class="wpaic-card-stack">
 			<div class="wpaic-card">
 				<h2>商业需求关键词</h2>
 				<p>插件只提供初始默认值，真正运行规则由管理员控制。支持一行一个，也支持逗号、中文逗号、分号分隔；保存后立即生效。</p>
@@ -93,7 +93,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</div>
 		</div>
 
-		<div>
+		<div class="wpaic-card-stack">
 			<div class="wpaic-card">
 				<h2>当前状态</h2>
 				<dl class="wpaic-meta wpaic-meta-source">

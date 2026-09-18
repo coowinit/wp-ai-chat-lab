@@ -3,7 +3,7 @@
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
 **当前稳定 Release：v0.8.0 · Chat Integration**  
-**当前开发：v0.9.0 — Stage 1 / Stage 2 已完成真实验收并封板；下一步进入 Stage 3 — Operational Validation（稳定 Release 仍为 v0.8.0）**
+**当前开发：v0.9.0 — Stage 1 / Stage 2 已封板；Stage 3 Round 1 已封板，下一步进入 Round 2 Security & Data Boundary Validation（稳定 Release 仍为 v0.8.0）**
 
 ## v0.5.0 稳定版本状态
 
@@ -2640,7 +2640,7 @@ Token Usage Diagnostics
 
 ### Lead Capture & Inquiry Management
 
-当前状态：**Stage 1 / Stage 2 已完成真实 WordPress 验收并封板；下一步进入 Stage 3 — Operational Validation。**
+当前状态：**Stage 1 / Stage 2 已封板；Stage 3 Round 1 Operational Preflight & Admin UX Consistency 已通过并封板，下一步进入 Round 2 Security & Data Boundary Validation。**
 
 Stage 2 后台管理采用更简单的运营模型：
 
