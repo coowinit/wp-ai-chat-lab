@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP AI Chat Lab
  * Description: Experimental WordPress AI foundation for controlled, knowledge-grounded chat, including AI providers, WordPress knowledge sources, and a rebuildable Knowledge Store.
- * Version: 0.7.0
+ * Version: 0.8.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: coowinit
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPAIC_VERSION', '0.7.0' );
+define( 'WPAIC_VERSION', '0.8.0' );
 define( 'WPAIC_PLUGIN_FILE', __FILE__ );
 define( 'WPAIC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WPAIC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -60,6 +60,10 @@ require_once WPAIC_PLUGIN_DIR . 'includes/usage/class-wpaic-usage-context.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/usage/class-wpaic-usage-counter-repository.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/usage/class-wpaic-usage-guard.php';
 require_once WPAIC_PLUGIN_DIR . 'includes/grounding/class-wpaic-grounded-answer-service.php';
+
+require_once WPAIC_PLUGIN_DIR . 'includes/chat/class-wpaic-chat-context.php';
+require_once WPAIC_PLUGIN_DIR . 'includes/chat/class-wpaic-chat-response.php';
+require_once WPAIC_PLUGIN_DIR . 'includes/chat/class-wpaic-chat-controller.php';
 
 require_once WPAIC_PLUGIN_DIR . 'admin/class-wpaic-admin.php';
 
@@ -159,6 +163,9 @@ function wpaic_bootstrap() {
 	$usage_repository = new WPAIC_Usage_Counter_Repository();
 	$usage_guard      = new WPAIC_Usage_Guard( $usage_repository );
 	$grounded_answer  = new WPAIC_Grounded_Answer_Service( $local_retriever, $grounding_gate, $evidence_builder, $prompt_builder, $manager, $usage_guard );
+
+	// v0.8.0 Stage 1: public Chat is only a boundary over the verified pipeline.
+	new WPAIC_Chat_Controller( $grounded_answer );
 
 	if ( is_admin() ) {
 		new WPAIC_Admin( $manager, $discovery, $extractor, $store_repository, $lifecycle, $batch_sync, $local_retriever, $grounding_gate, $evidence_builder, $prompt_builder, $grounded_answer, $usage_repository, $usage_guard );

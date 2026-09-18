@@ -1084,3 +1084,14 @@
 	.wpaic-pass-grid { grid-template-columns:1fr; }
 	.wpaic-history-details > summary { align-items:flex-start; flex-direction:column; }
 }
+
+
+/* v0.8.0 Stage 1 — Public Chat Boundary Playground */
+.wpaic-flow-line { align-items:center; display:flex; flex-wrap:wrap; gap:8px; margin:14px 0; }
+.wpaic-chat-scenarios { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0; }
+.wpaic-chat-preset.is-active { border-color:#2271b1; box-shadow:0 0 0 1px #2271b1; color:#135e96; }
+#wpaic-chat-boundary-conversation { box-sizing:border-box; max-width:760px; width:100%; }
+
+.wpaic-chat-scene-guide { background:#f6f7f7; margin:14px 0; padding:14px 16px; }
+.wpaic-chat-scene-guide h3 { margin-top:0; }
+.wpaic-chat-scene-guide p:last-child { margin-bottom:0; }

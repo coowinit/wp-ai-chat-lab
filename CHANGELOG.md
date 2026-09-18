@@ -1,6 +1,25 @@
 # Changelog
 
 
+## v0.8.0 — Chat Integration / Stage 1 Public Chat Boundary Foundation
+
+- Plugin Version advanced to `0.8.0`; DB Version remains `1.1` with no new tables.
+- Added public `POST /wp-json/wpaic/v1/chat` boundary.
+- Added server-owned Conversation UUID, HttpOnly Visitor Cookie, and server-derived Site context.
+- Added public contract: `answer / clarify / no_answer / blocked / error`.
+- Public output hides retrieval/provider/model/token/hash/internal diagnostics.
+- Added administrator `Chat Boundary` Playground calling the real public REST endpoint.
+- Added InnoDB transaction/row-lock preflight and fail-closed handling before Public Provider calls.
+- Tightened transaction-critical wpdb failures to rollback + `usage_guard_unavailable`.
+- Reused `WPAIC_Grounded_Answer_Service`; no parallel Chat AI pipeline was added.
+- `simple-live-chat` remains Stage 2 UI source; `wp-live-chat-inquiry` remains architecture reference only.
+- No Chat history, Message table, Lead, Human Handoff, Agent, Streaming, Cost Guard, Embedding, Vector, or RAG.
+- Real WordPress validation completed: all 7 Public Chat Boundary scenarios passed.
+- Verified first anonymous context creation, conversation continuity, `clarify`, `no_answer`, Usage `blocked`, invalid Conversation HTTP 400, and public diagnostic hiding.
+- Stage 1 status: **Validation Passed / Sealed**.
+- Added a permanent Lab policy: existing Playground / Validation pages remain part of the project for learning, diagnostics, and regression testing even after production features are completed.
+
+
 ## v0.7.0 — Usage Guard (2026-09-17)
 
 ### Final Review — Passed / Stable Release

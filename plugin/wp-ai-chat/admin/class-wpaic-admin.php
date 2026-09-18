@@ -68,6 +68,9 @@ class WPAIC_Admin {
 	/** @var string */
 	protected $usage_page_hook = '';
 
+	/** @var string */
+	protected $chat_boundary_page_hook = '';
+
 	/**
 	 * @param WPAIC_AI_Manager                    $manager          AI manager.
 	 * @param WPAIC_Source_Discovery              $discovery        Source discovery.
@@ -182,6 +185,16 @@ class WPAIC_Admin {
 			'manage_options',
 			'wp-ai-chat-lab-usage',
 			array( $this, 'render_usage_page' )
+		);
+
+
+		$this->chat_boundary_page_hook = add_submenu_page(
+			'wp-ai-chat-lab',
+			'Chat Boundary',
+			'Chat Boundary',
+			'manage_options',
+			'wp-ai-chat-lab-chat-boundary',
+			array( $this, 'render_chat_boundary_page' )
 		);
 	}
 
@@ -316,7 +329,7 @@ class WPAIC_Admin {
 	 * @return void
 	 */
 	public function enqueue_assets( $hook ) {
-		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook, $this->store_page_hook, $this->retrieval_page_hook, $this->grounded_page_hook, $this->usage_page_hook ), true ) ) {
+		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook, $this->store_page_hook, $this->retrieval_page_hook, $this->grounded_page_hook, $this->usage_page_hook, $this->chat_boundary_page_hook ), true ) ) {
 			return;
 		}
 
@@ -351,6 +364,7 @@ class WPAIC_Admin {
 			'WPAICAdmin',
 			array(
 				'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
+				'chatEndpoint'   => WPAIC_Chat_Controller::get_endpoint_url(),
 				'nonce'          => wp_create_nonce( 'wpaic_ai_test' ),
 				'knowledgeNonce' => wp_create_nonce( 'wpaic_knowledge_preview' ),
 				'storeNonce'     => wp_create_nonce( 'wpaic_store_sync' ),
@@ -526,6 +540,17 @@ class WPAIC_Admin {
 		$wp_local_day = current_time( 'Y-m-d' );
 		$wp_local_time = current_time( 'mysql' );
 		include WPAIC_PLUGIN_DIR . 'admin/views/page-usage-guard.php';
+	}
+
+
+	/** Render v0.8.0 Stage 1 Public Chat Boundary Playground. @return void */
+	public function render_chat_boundary_page() {
+		$this->guard_admin_page();
+		$chat_endpoint = WPAIC_Chat_Controller::get_endpoint_url();
+		$usage_limits  = $this->usage_guard->get_limits();
+		$usage_status  = $this->usage_repository->get_operational_status();
+		$wp_timezone   = wp_timezone_string();
+		include WPAIC_PLUGIN_DIR . 'admin/views/page-chat-boundary.php';
 	}
 
 	/**

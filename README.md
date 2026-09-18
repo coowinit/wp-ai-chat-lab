@@ -3,8 +3,9 @@
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
 **当前稳定 Release：v0.7.0 · Usage Guard**  
-**下一开发方向：v0.8.0 · Chat Integration（Planned，尚未开始）**  
-**当前状态：v0.7.0 Final Review Passed / Stable Release**
+**当前开发版本：v0.8.0 · Chat Integration**  
+**当前状态：Stage 1 — Public Chat Boundary Foundation / Validation Passed / Sealed**  
+**当前稳定 Release：v0.7.0 · Usage Guard**
 
 ## v0.5.0 稳定版本状态
 
@@ -3016,10 +3017,10 @@ Lead / Support / Action
 
 ```text
 Version:
-v0.7.0 Stable
+v0.8.0 Stage 1 Build
 
 Stage:
-Usage Guard — Final Review Passed
+Chat Integration — Stage 1 Public Chat Boundary Foundation
 
 Production:
 Tidio
@@ -3028,7 +3029,7 @@ Development:
 WP AI Chat Lab
 
 Plugin Code:
-v0.7.0 Final Release Build
+v0.8.0 Stage 1 Validation Build
 
 Primary Provider:
 DeepSeek (from v0.2.0)
@@ -3064,10 +3065,10 @@ Release Status:
 Final Review Passed / Stable Release
 
 Current Development:
-v0.8.0 Chat Integration — Planned / Not Started
+v0.8.0 Chat Integration — Stage 1 Validation Passed / Sealed
 
 Next Direction:
-v0.8.0 Design Review + Public Chat Integration Prerequisites
+v0.8.0 Stage 2 — Simple Chat UI Integration
 ```
 
 ---
@@ -3116,3 +3117,31 @@ Stage 3 Round 1 已验证低额度边界、Local Day、Atomic BLOCK 与精确 La
 1. **Daily Limit 以 WordPress Timezone 为准。** Visitor / Site 的 `period_key` 使用 WordPress 本地日期。如果站点时区配置为 `+00:00`，每日额度就会按 UTC 日期切换；正式接入前应确认站点时区是否符合业务预期。
 2. **v0.8.0 前台 Chat Integration 前需要做一次数据库并发硬化。** 当前真实环境已经验证 Atomic Reservation 的正常路径，但公共流量接入前应明确确认 Usage Counter 表使用支持事务 / 行锁的存储引擎，并进一步把底层数据库写入失败收紧为显式 fail-closed。这属于 v0.8.0 的前置硬化，不回改已封板的 v0.7.0 Stage 3。
 
+
+
+---
+
+# v0.8.0 Stage 1 — Public Chat Boundary Foundation
+
+v0.8.0 开始把稳定的 AI Pipeline 接到匿名访客入口，但仍坚持：**Chat 只是入口，不重新实现 AI 逻辑。**
+
+```text
+Public REST → Chat Context → WPAIC_Grounded_Answer_Service
+            → Retrieval → Grounding → Usage Guard → Provider
+```
+
+Stage 1 已加入：公开 `/wp-json/wpaic/v1/chat`、服务器 Conversation UUID、HttpOnly Visitor Cookie、Server-only Site Context、统一 Public Contract 与 Chat Boundary Playground；同时完成 Public Provider 前的 InnoDB / transaction / row-lock fail-closed 硬化。真实 WordPress 环境 7 个 Public Boundary 场景均已验证通过，Stage 1 正式封板。
+
+Stage 1 没有新增数据库表，DB Version 仍为 `1.1`；也没有加入正式 Chat UI、聊天记录、Lead、Human Handoff、Agent、Streaming、Cost Guard、Embedding、Vector 或 RAG。详见 `docs/versions/v0.8.0.md`。
+
+## Lab / Playground 永久保留原则
+
+WP AI Chat Lab 中已经建立的后台实验与验收页面将长期保留，包括 Knowledge、Retrieval、Grounded AI、Usage Guard、Chat Boundary 等 Playground / Validation 工具。
+
+它们不是开发完成后删除的临时页面，而是项目的一部分，长期承担：
+
+1. **教学与理解**：可以直接观察每一层输入、决策和边界。
+2. **诊断与排错**：正式 Chat 出现异常时，可逐层定位 Retrieval、Grounding、Usage、Provider 或 Public Boundary。
+3. **版本回归**：后续 v0.8.x / v0.9.x / v1.x 升级后可直接重跑关键场景，确认旧能力没有回归。
+
+因此后续版本的原则是：**可以整理、折叠、优化这些 Lab 页面，但不因正式功能上线而删除其核心测试能力。** 详细约定见 `docs/lab-validation-policy.md`。

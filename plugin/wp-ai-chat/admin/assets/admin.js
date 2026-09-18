@@ -537,7 +537,58 @@
 		});
 	}
 
+
+	function chatBoundaryHtml(data, httpStatus) {
+		data = data || {};
+		var session = data.session || {};
+		return '<dl class="wpaic-meta wpaic-meta-source">' +
+			'<div><dt>HTTP</dt><dd>' + escapeHtml(httpStatus) + '</dd></div>' +
+			'<div><dt>Success</dt><dd>' + escapeHtml(data.success === true ? 'Yes' : 'No') + '</dd></div>' +
+			'<div><dt>Public Type</dt><dd><code>' + escapeHtml(data.type || '—') + '</code></dd></div>' +
+			'<div><dt>Conversation</dt><dd>' + escapeHtml(session.conversation || '—') + '</dd></div>' +
+			'<div><dt>Visitor</dt><dd>' + escapeHtml(session.visitor || '—') + '</dd></div>' +
+			'<div class="wpaic-meta-wide"><dt>Conversation ID</dt><dd><code>' + escapeHtml(data.conversation_id || '—') + '</code></dd></div>' +
+		'</dl>' +
+		'<div class="wpaic-preview-section"><h3>Public Message</h3><div class="wpaic-response-text">' + escapeHtml(data.message || '') + '</div></div>';
+	}
+
+	function publicChatRequest(question, conversationId, button, resultEl, conversationEl) {
+		button.disabled = true;
+		resultEl.className = 'wpaic-result is-loading';
+		resultEl.innerHTML = '<strong>请求中…</strong><p>正在通过公开 REST 边界调用现有 Grounded Answer pipeline。</p>';
+		var payload = { question: question };
+		if (conversationId) payload.conversation_id = conversationId;
+		fetch(WPAICAdmin.chatEndpoint, {
+			method: 'POST',
+			credentials: 'same-origin',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(payload)
+		}).then(function (response) {
+			return response.json().catch(function () { return {}; }).then(function (data) {
+				return { status: response.status, ok: response.ok, data: data };
+			});
+		}).then(function (packet) {
+			var data = packet.data || {};
+			if (data.conversation_id && conversationEl) conversationEl.value = data.conversation_id;
+			resultEl.className = 'wpaic-result ' + (packet.ok && data.type !== 'error' ? 'is-success' : 'is-error');
+			resultEl.innerHTML = chatBoundaryHtml(data, packet.status);
+		}).catch(function () {
+			resultEl.className = 'wpaic-result is-error';
+			resultEl.innerHTML = '<strong>网络错误</strong><p>无法访问 Public Chat Endpoint。</p>';
+		}).finally(function () { button.disabled = false; });
+	}
+
 	document.addEventListener('DOMContentLoaded', function () {
+		var chatBoundarySend = document.getElementById('wpaic-chat-boundary-send');
+		var chatBoundaryNew = document.getElementById('wpaic-chat-boundary-new');
+		var chatBoundaryQuestion = document.getElementById('wpaic-chat-boundary-question');
+		var chatBoundaryConversation = document.getElementById('wpaic-chat-boundary-conversation');
+		var chatBoundaryResult = document.getElementById('wpaic-chat-boundary-result');
+		var chatBoundaryPresets = document.querySelectorAll('.wpaic-chat-preset');
+		var chatSceneTitle = document.getElementById('wpaic-chat-scene-title');
+		var chatSceneChange = document.getElementById('wpaic-chat-scene-change');
+		var chatSceneAction = document.getElementById('wpaic-chat-scene-action');
+		var chatSceneExpect = document.getElementById('wpaic-chat-scene-expect');
 		var connectionButton = document.getElementById('wpaic-test-connection');
 		var connectionResult = document.getElementById('wpaic-connection-result');
 		var chatButton = document.getElementById('wpaic-test-chat');
@@ -588,6 +639,41 @@
 		var usageSceneAction = document.getElementById('wpaic-usage-scene-action');
 		var usageSceneExpect = document.getElementById('wpaic-usage-scene-expect');
 		var usagePresetButtons = document.querySelectorAll('.wpaic-usage-preset');
+
+
+		if (chatBoundaryPresets.length && chatBoundaryQuestion && chatBoundaryConversation) {
+			chatBoundaryPresets.forEach(function (button) {
+				button.addEventListener('click', function () {
+					chatBoundaryQuestion.value = button.getAttribute('data-question') || '';
+					if (button.getAttribute('data-new-conversation') === '1') chatBoundaryConversation.value = '';
+					if (button.getAttribute('data-invalid-conversation') === '1') chatBoundaryConversation.value = 'invalid-conversation-id';
+					chatBoundaryPresets.forEach(function (item) { item.classList.remove('is-active'); });
+					button.classList.add('is-active');
+					if (chatSceneTitle) chatSceneTitle.textContent = button.getAttribute('data-title') || '';
+					if (chatSceneChange) chatSceneChange.textContent = button.getAttribute('data-change') || '';
+					if (chatSceneAction) chatSceneAction.textContent = button.getAttribute('data-action') || '';
+					if (chatSceneExpect) chatSceneExpect.textContent = button.getAttribute('data-expect') || '';
+				});
+			});
+		}
+		if (chatBoundaryNew && chatBoundaryConversation && chatBoundaryResult) {
+			chatBoundaryNew.addEventListener('click', function () {
+				chatBoundaryConversation.value = '';
+				chatBoundaryResult.className = 'wpaic-result';
+				chatBoundaryResult.innerHTML = '<strong>新会话已准备</strong><p>Conversation ID 已清空；下一次有效请求将由服务器创建新的 UUID。Visitor Cookie 不会因此改变。</p>';
+			});
+		}
+		if (chatBoundarySend && chatBoundaryQuestion && chatBoundaryConversation && chatBoundaryResult) {
+			chatBoundarySend.addEventListener('click', function () {
+				var question = chatBoundaryQuestion.value.trim();
+				if (!question) {
+					chatBoundaryResult.className = 'wpaic-result is-error';
+					chatBoundaryResult.innerHTML = '<strong>失败</strong><p>请输入问题。</p>';
+					return;
+				}
+				publicChatRequest(question, chatBoundaryConversation.value.trim(), chatBoundarySend, chatBoundaryResult, chatBoundaryConversation);
+			});
+		}
 
 		if (connectionButton && connectionResult) {
 			connectionButton.addEventListener('click', function () {
