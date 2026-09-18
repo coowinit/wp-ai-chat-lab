@@ -60,7 +60,7 @@ class WPAIC_Inquiry_Service {
 			array(
 				'created_at'      => $now,
 				'updated_at'      => $now,
-				'status'          => 'new',
+				'status'          => WPAIC_Inquiry_Repository::STATUS_UNREAD,
 				'name'            => $name,
 				'email'           => $email,
 				'phone'           => $phone,

@@ -19,7 +19,7 @@ define( 'WPAIC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WPAIC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'WPAIC_OPTION_SETTINGS', 'wpaic_settings' );
 define( 'WPAIC_OPTION_KNOWLEDGE_SOURCES', 'wpaic_enabled_sources' );
-define( 'WPAIC_DB_VERSION', '1.2' );
+define( 'WPAIC_DB_VERSION', '1.3' );
 define( 'WPAIC_OPTION_USAGE_SETTINGS', 'wpaic_usage_settings' );
 define( 'WPAIC_OPTION_CHAT_UI_SETTINGS', 'wpaic_chat_ui_settings' );
 define( 'WPAIC_OPTION_PUBLIC_GUARD_SETTINGS', 'wpaic_public_guard_settings' );

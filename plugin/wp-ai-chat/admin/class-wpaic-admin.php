@@ -98,6 +98,9 @@ class WPAIC_Admin {
 	/** @var string */
 	protected $inquiry_capture_page_hook = '';
 
+	/** @var string */
+	protected $inquiries_page_hook = '';
+
 	/**
 	 * @param WPAIC_AI_Manager                    $manager          AI manager.
 	 * @param WPAIC_Source_Discovery              $discovery        Source discovery.
@@ -156,6 +159,9 @@ class WPAIC_Admin {
 		add_action( 'admin_post_wpaic_provider_failure_lab', array( $this, 'handle_provider_failure_lab' ) );
 		add_action( 'admin_post_wpaic_restore_lead_keywords', array( $this, 'handle_restore_lead_keywords' ) );
 		add_action( 'admin_post_wpaic_inquiry_rate_reset', array( $this, 'handle_inquiry_rate_reset' ) );
+		add_action( 'admin_post_wpaic_inquiry_trash', array( $this, 'handle_inquiry_trash' ) );
+		add_action( 'admin_post_wpaic_inquiry_restore', array( $this, 'handle_inquiry_restore' ) );
+		add_action( 'admin_post_wpaic_inquiry_delete_permanently', array( $this, 'handle_inquiry_delete_permanently' ) );
 	}
 
 	/**
@@ -263,6 +269,15 @@ class WPAIC_Admin {
 			'manage_options',
 			'wp-ai-chat-lab-lead-trigger',
 			array( $this, 'render_lead_trigger_page' )
+		);
+
+		$this->inquiries_page_hook = add_submenu_page(
+			'wp-ai-chat-lab',
+			'询盘管理',
+			'询盘管理',
+			'manage_options',
+			'wp-ai-chat-lab-inquiries',
+			array( $this, 'render_inquiries_page' )
 		);
 
 		$this->inquiry_capture_page_hook = add_submenu_page(
@@ -468,7 +483,7 @@ class WPAIC_Admin {
 	 * @return void
 	 */
 	public function enqueue_assets( $hook ) {
-		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook, $this->store_page_hook, $this->retrieval_page_hook, $this->grounded_page_hook, $this->usage_page_hook, $this->chat_boundary_page_hook, $this->chat_ui_page_hook, $this->public_hardening_page_hook, $this->lead_trigger_page_hook, $this->inquiry_capture_page_hook ), true ) ) {
+		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook, $this->store_page_hook, $this->retrieval_page_hook, $this->grounded_page_hook, $this->usage_page_hook, $this->chat_boundary_page_hook, $this->chat_ui_page_hook, $this->public_hardening_page_hook, $this->lead_trigger_page_hook, $this->inquiries_page_hook, $this->inquiry_capture_page_hook ), true ) ) {
 			return;
 		}
 
@@ -817,6 +832,108 @@ class WPAIC_Admin {
 		}
 
 		include WPAIC_PLUGIN_DIR . 'admin/views/page-inquiry-capture.php';
+	}
+
+
+	/** Render v0.9.0 Stage 2 Round 2 Inquiry Admin Management. @return void */
+	public function render_inquiries_page() {
+		$this->guard_admin_page();
+
+		$inquiry_id   = isset( $_GET['inquiry_id'] ) ? absint( $_GET['inquiry_id'] ) : 0;
+		$current_view = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : WPAIC_Inquiry_Repository::VIEW_ALL;
+		if ( ! in_array( $current_view, WPAIC_Inquiry_Repository::get_allowed_views(), true ) ) {
+			$current_view = WPAIC_Inquiry_Repository::VIEW_ALL;
+		}
+
+		$per_page     = 10;
+		$current_page = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
+
+		// Opening an active detail is the read action. Trash keeps its existing
+		// read/unread state so restore remains semantically predictable.
+		if ( $inquiry_id ) {
+			$preview = $this->inquiry_repository->get_by_id( $inquiry_id );
+			if ( is_array( $preview ) && empty( $preview['trashed_at'] ) ) {
+				$this->inquiry_repository->mark_read( $inquiry_id );
+			}
+		}
+
+		$inquiry       = $inquiry_id ? $this->inquiry_repository->get_by_id( $inquiry_id ) : null;
+		$view_counts   = $this->inquiry_repository->count_by_view();
+		$current_total = isset( $view_counts[ $current_view ] ) ? (int) $view_counts[ $current_view ] : 0;
+		$total_pages   = max( 1, (int) ceil( $current_total / $per_page ) );
+		if ( $current_page > $total_pages ) {
+			$current_page = $total_pages;
+		}
+		$inquiries = $inquiry_id ? array() : $this->inquiry_repository->list_paged( $current_page, $per_page, $current_view );
+
+		$action_state = isset( $_GET['wpaic-inquiry-action'] ) ? sanitize_key( wp_unslash( $_GET['wpaic-inquiry-action'] ) ) : '';
+		$messages = array(
+			'trashed'  => '询盘已移至回收站。',
+			'restored' => '询盘已从回收站恢复。',
+			'deleted'  => '询盘已永久删除。',
+		);
+		if ( isset( $messages[ $action_state ] ) ) {
+			add_settings_error( 'wpaic_inquiry_admin_messages', 'wpaic_inquiry_action_done', $messages[ $action_state ], 'updated' );
+		} elseif ( 'error' === $action_state ) {
+			add_settings_error( 'wpaic_inquiry_admin_messages', 'wpaic_inquiry_action_error', '询盘操作失败，请重试。', 'error' );
+		}
+
+		include WPAIC_PLUGIN_DIR . 'admin/views/page-inquiries.php';
+	}
+
+	/** Move one inquiry to trash. @return void */
+	public function handle_inquiry_trash() {
+		$this->guard_admin_page();
+		check_admin_referer( 'wpaic_inquiry_trash' );
+		$this->handle_inquiry_lifecycle_action( 'trash' );
+	}
+
+	/** Restore one inquiry from trash. @return void */
+	public function handle_inquiry_restore() {
+		$this->guard_admin_page();
+		check_admin_referer( 'wpaic_inquiry_restore' );
+		$this->handle_inquiry_lifecycle_action( 'restore' );
+	}
+
+	/** Permanently delete one inquiry already in trash. @return void */
+	public function handle_inquiry_delete_permanently() {
+		$this->guard_admin_page();
+		check_admin_referer( 'wpaic_inquiry_delete_permanently' );
+		$this->handle_inquiry_lifecycle_action( 'delete' );
+	}
+
+	/** Execute an Inquiry lifecycle action and redirect back to the list. @return void */
+	protected function handle_inquiry_lifecycle_action( $action ) {
+		$inquiry_id = isset( $_POST['inquiry_id'] ) ? absint( $_POST['inquiry_id'] ) : 0;
+		$paged      = isset( $_POST['paged'] ) ? max( 1, absint( $_POST['paged'] ) ) : 1;
+		$view       = isset( $_POST['view'] ) ? sanitize_key( wp_unslash( $_POST['view'] ) ) : WPAIC_Inquiry_Repository::VIEW_ALL;
+		if ( ! in_array( $view, WPAIC_Inquiry_Repository::get_allowed_views(), true ) ) {
+			$view = WPAIC_Inquiry_Repository::VIEW_ALL;
+		}
+
+		if ( 'trash' === $action ) {
+			$result = $this->inquiry_repository->move_to_trash( $inquiry_id );
+			$done   = 'trashed';
+		} elseif ( 'restore' === $action ) {
+			$result = $this->inquiry_repository->restore( $inquiry_id );
+			$done   = 'restored';
+		} else {
+			$result = $this->inquiry_repository->delete_permanently( $inquiry_id );
+			$done   = 'deleted';
+		}
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'                 => 'wp-ai-chat-lab-inquiries',
+					'view'                 => $view,
+					'paged'                => $paged,
+					'wpaic-inquiry-action' => is_wp_error( $result ) ? 'error' : $done,
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
 	}
 
 	/** Reset only the current administrator browser Visitor Inquiry rate state. @return void */

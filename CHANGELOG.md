@@ -1,4 +1,47 @@
+## v0.9.0 — Stage 2 Round 2 Read / Unread + Trash Lifecycle / Validation Passed / Sealed
+
+- Stage 2 Round 2 completed real WordPress admin validation and is formally sealed.
+- Inquiry operational state is simplified to `unread / read`.
+- Opening an active Inquiry detail automatically marks it as read.
+- Trash is a separate lifecycle via `trashed_at`, not a business status.
+- Added All / Unread / Read / Trash views.
+- Added move to trash, restore, and permanent delete for already-trashed records.
+- Migrated legacy `new → unread`, `contacted / closed → read`, and `spam → read + trash`.
+- DB Version remains `1.3` after the Round 2 schema migration.
+- Default pagination remains 10 items per page.
+- Inquiry admin uses the full WordPress admin width and native `wp-list-table / tablenav` styling.
+- Visitor-submitted Name / Email / Company / Phone / Message / Trigger / Context remain read-only.
+- Round 2 does not add bulk actions, source search/filter, empty-trash, CRM, or human handoff.
+
+Status: **Validation Passed / Sealed**.  
+Next: **Stage 2 Round 3 — Inquiry Management Efficiency**.
+
 # Changelog
+
+## v0.9.0 — Stage 2 Round 1 Inquiry Admin Management / Validation Build
+
+> Current build is for real WordPress validation. Do not seal or Release until List / Detail / Status behavior is verified.
+
+- Added a formal administrator-only `询盘管理` page backed directly by `wp_wpaic_inquiries`.
+- Added Inquiry list view showing the latest 50 real rows with status, contact, message summary, trigger source, and detail entry.
+- Added Inquiry detail view for Contact / Inquiry / Context without copying records into CPT or another data source.
+- Added four operational statuses: `new / contacted / closed / spam`.
+- Added nonce-protected administrator status updates through `admin-post.php`.
+- Added Repository methods for `get_by_id()`, `count_by_status()`, and `update_status()`.
+- Status updates change only `status + updated_at`; visitor-submitted Name / Email / Phone / Company / Message / Context remain read-only.
+- Added dashboard-style counts for All / New / Contacted / Closed / Spam.
+- Stage 2 Round 1 deliberately does not add Search, Filter, Pagination, Delete, Bulk Actions, Email, CRM Sync, or Human Handoff.
+- Plugin Version remains `0.9.0`; DB Version remains `1.2`; no schema changes or new tables.
+
+Validation focus:
+- Existing real Inquiry rows appear in the formal admin list.
+- Detail view shows the correct contact, message, trigger, conversation, source, and timestamps.
+- `new → contacted → closed → spam → new` status changes persist and update list / counts.
+- Same-status save is harmless.
+- Invalid ID cannot expose a different row.
+- Only administrators with `manage_options` can access or mutate Inquiry management.
+
+---
 
 ## v0.9.0 — Stage 1 Round 3 Chat Inline Inquiry Form Integration / Validation Passed / Sealed
 
@@ -920,3 +963,25 @@ v0.2.0 不包含：
 - Inquiry Form 打开期间明确禁用 Chat Composer 与发送按钮，并显示 `Inquiry form is open` 占位提示。
 - 使用 root state class + hidden row + CSS `!important` 三层保护，避免主题样式覆盖导致 UI 状态失效。
 - 修正 Round 3 Fix 2 完整仓库打包误带临时工作目录的问题；正式验证包只保留单一 `wp-ai-chat-lab/` 仓库目录。
+
+
+### v0.9.0 Stage 2 Round 1 UX Adjustment — Validation
+
+- 询盘详情页改为通栏卡片布局，Contact / Inquiry / Context / Status / Round 1 Boundary 按 20px 间距纵向排列。
+- Status 区域在通栏中保留紧凑的状态徽章、下拉框与保存按钮。
+- 正式 Inquiry List 从“最近 50 条”调整为默认每页 10 条，并新增基础分页。
+- Pagination 只解决列表可用性；Search / Filter / Delete 仍保留到后续 Round。
+
+- Stage 2 Round 1 UX2：询盘管理页取消 1180px 最大宽度，使用后台可用宽度；列表切换为 WordPress 原生 `wp-list-table / widefat / striped / table-view-list` 样式与原生 `tablenav` 分页外观；默认每页 10 条，保留详情页 20px 卡片间距。
+
+
+### v0.9.0 Stage 2 Round 2 — Read / Unread + Filter + Trash — Validation
+
+- Inquiry 运营状态从 `new / contacted / closed / spam` 简化为 `unread / read`。
+- 新 Inquiry 默认未读；打开详情自动标记为已读，详情页移除手动状态下拉框。
+- 新增 WordPress 风格 `全部 / 未读 / 已读 / 回收站` 筛选。
+- 删除改为软删除：新增 `trashed_at`，先进入回收站，再支持恢复或永久删除。
+- 回收站与 read/unread 独立，恢复后保留原读状态。
+- DB Version 从 `1.2` 升至 `1.3`；旧 `new → unread`、`contacted/closed → read`、`spam → read + trash`。
+- 分页保持每页 10 条，并优化为紧凑的 `‹ 第 X / Y 页 ›` WordPress 后台样式。
+- Inquiry Admin 继续使用单一 `wp_wpaic_inquiries` 数据源；不引入 CPT、CRM 或第二套状态表。

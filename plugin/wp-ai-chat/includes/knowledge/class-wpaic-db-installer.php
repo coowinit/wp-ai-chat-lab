@@ -109,7 +109,8 @@ class WPAIC_DB_Installer {
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
 			created_at datetime NOT NULL,
 			updated_at datetime NOT NULL,
-			status varchar(20) NOT NULL DEFAULT 'new',
+			status varchar(20) NOT NULL DEFAULT 'unread',
+			trashed_at datetime NULL,
 			name varchar(191) NOT NULL DEFAULT '',
 			email varchar(191) NOT NULL DEFAULT '',
 			phone varchar(80) NOT NULL DEFAULT '',
@@ -122,11 +123,19 @@ class WPAIC_DB_Installer {
 			visitor_hash char(64) NOT NULL DEFAULT '',
 			PRIMARY KEY  (id),
 			KEY status_created (status,created_at),
+			KEY trashed_at (trashed_at),
 			KEY visitor_created (visitor_hash,created_at),
 			KEY trigger_type (trigger_type)
 		) {$charset_collate};";
 
 		dbDelta( $inquiry_sql );
+
+		// v0.9.0 Stage 2 Round 2: simplify operational state to unread/read
+		// and keep trash as an independent soft-delete lifecycle. These
+		// migrations are idempotent so active-site zip upgrades remain safe.
+		$wpdb->query( "UPDATE {$inquiry_table} SET status = 'unread' WHERE status = 'new'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery
+		$wpdb->query( "UPDATE {$inquiry_table} SET status = 'read' WHERE status IN ('contacted','closed')" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery
+		$wpdb->query( "UPDATE {$inquiry_table} SET status = 'read', trashed_at = COALESCE(trashed_at, updated_at) WHERE status = 'spam'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery
 
 		$exists         = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) );
 		$usage_exists   = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $usage_table ) );

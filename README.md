@@ -3,7 +3,7 @@
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
 **当前稳定 Release：v0.8.0 · Chat Integration**  
-**当前开发：v0.9.0 — Stage 1 已完成（Round 1 / Round 2 / Round 3 均 Validation Passed / Sealed；稳定 Release 仍为 v0.8.0）**
+**当前开发：v0.9.0 — Stage 1 已完成；Stage 2 Round 1 / Round 2 已完成并封板，下一步进入 Round 3 后台效率功能（稳定 Release 仍为 v0.8.0）**
 
 ## v0.5.0 稳定版本状态
 
@@ -2640,7 +2640,23 @@ Token Usage Diagnostics
 
 ### Lead Capture & Inquiry Management
 
-当前状态：**Stage 1 已完成；Round 1 / Round 2 / Round 3 均已通过真实 WordPress 验收并封板。下一步进入 Stage 2 — Inquiry Admin Management。**
+当前状态：**Stage 1 已完成并封板；Stage 2 Round 1 / Round 2 已完成真实后台验收并封板，下一步进入 Round 3 — Inquiry Management Efficiency。**
+
+Stage 2 后台管理采用更简单的运营模型：
+
+```text
+wp_wpaic_inquiries
+↓
+未读 / 已读
+↓
+查看详情自动已读
+↓
+全部 / 未读 / 已读 / 回收站筛选
+↓
+软删除 / 恢复 / 永久删除
+```
+
+Inquiry 业务状态只保留 `unread / read`；回收站使用独立 `trashed_at` 生命周期，不再把 `contacted / closed / spam` 混入状态。列表默认每页 10 条，使用 WordPress 原生 list-table 风格和紧凑分页。Plugin Version 保持 `0.9.0`，DB Version 升至 `1.3`。
 
 目标：在 v0.8.0 已稳定的 Chat Integration 之上建立自然、可解释的询盘转化路径：
 
@@ -3279,5 +3295,10 @@ WP AI Chat Lab 中已经建立的后台实验与验收页面将长期保留，�
 
 Round 1 仍不创建 `wp_wpaic_inquiries`，不新增 Public Inquiry REST，不保存个人信息，也不修改正式 Chat Widget。
 
-当前状态：**Stage 1 已完成；Round 1 / Round 2 / Round 3 均 Validation Passed / Sealed。** Round 3 已完成正式 Chat CTA、Inline Form 与已验证 `/inquiry` Endpoint 的汇合。下一步进入 **Stage 2 — Inquiry Admin Management**。完整架构与验收记录见 `docs/versions/v0.9.0.md`。
+当前状态：**Stage 1 已完成并封板；Stage 2 Round 1 — Inquiry List + Detail + Status 已进入 Validation Build。** Round 1 直接读取 `wp_wpaic_inquiries`，不复制为 CPT；Search / Filter / Delete 留到后续 Round。完整架构与验收记录见 `docs/versions/v0.9.0.md`。
 
+
+- Stage 2 Round 1 UX2：询盘管理页取消 1180px 最大宽度，使用后台可用宽度；列表切换为 WordPress 原生 `wp-list-table / widefat / striped / table-view-list` 样式与原生 `tablenav` 分页外观；默认每页 10 条，保留详情页 20px 卡片间距。
+
+- Stage 2 Round 2：Inquiry 状态简化为未读/已读；打开详情自动标记已读；新增全部/未读/已读/回收站筛选、软删除、恢复、永久删除与紧凑分页；DB Version 升至 1.3。
+- Stage 2 Round 2 状态：**Validation Passed / Sealed**。已真实验证旧状态迁移、查看详情自动已读、未读/已读筛选、回收站、恢复、永久删除与分页；下一步进入 Round 3。
