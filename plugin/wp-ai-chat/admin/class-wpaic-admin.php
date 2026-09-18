@@ -162,6 +162,8 @@ class WPAIC_Admin {
 		add_action( 'admin_post_wpaic_inquiry_trash', array( $this, 'handle_inquiry_trash' ) );
 		add_action( 'admin_post_wpaic_inquiry_restore', array( $this, 'handle_inquiry_restore' ) );
 		add_action( 'admin_post_wpaic_inquiry_delete_permanently', array( $this, 'handle_inquiry_delete_permanently' ) );
+		add_action( 'admin_post_wpaic_inquiry_bulk_status', array( $this, 'handle_inquiry_bulk_status' ) );
+		add_action( 'admin_post_wpaic_inquiry_empty_trash', array( $this, 'handle_inquiry_empty_trash' ) );
 	}
 
 	/**
@@ -835,7 +837,7 @@ class WPAIC_Admin {
 	}
 
 
-	/** Render v0.9.0 Stage 2 Round 2 Inquiry Admin Management. @return void */
+	/** Render v0.9.0 Stage 2 Round 3 Inquiry Admin Management. @return void */
 	public function render_inquiries_page() {
 		$this->guard_admin_page();
 
@@ -844,6 +846,12 @@ class WPAIC_Admin {
 		if ( ! in_array( $current_view, WPAIC_Inquiry_Repository::get_allowed_views(), true ) ) {
 			$current_view = WPAIC_Inquiry_Repository::VIEW_ALL;
 		}
+
+		$trigger_filter = isset( $_GET['trigger'] ) ? sanitize_key( wp_unslash( $_GET['trigger'] ) ) : '';
+		if ( ! in_array( $trigger_filter, WPAIC_Inquiry_Repository::get_allowed_triggers(), true ) ) {
+			$trigger_filter = '';
+		}
+		$search_query = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
 
 		$per_page     = 10;
 		$current_page = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
@@ -859,21 +867,27 @@ class WPAIC_Admin {
 
 		$inquiry       = $inquiry_id ? $this->inquiry_repository->get_by_id( $inquiry_id ) : null;
 		$view_counts   = $this->inquiry_repository->count_by_view();
-		$current_total = isset( $view_counts[ $current_view ] ) ? (int) $view_counts[ $current_view ] : 0;
+		$current_total = $this->inquiry_repository->count_filtered( $current_view, $trigger_filter, $search_query );
 		$total_pages   = max( 1, (int) ceil( $current_total / $per_page ) );
 		if ( $current_page > $total_pages ) {
 			$current_page = $total_pages;
 		}
-		$inquiries = $inquiry_id ? array() : $this->inquiry_repository->list_paged( $current_page, $per_page, $current_view );
+		$inquiries = $inquiry_id ? array() : $this->inquiry_repository->list_paged( $current_page, $per_page, $current_view, $trigger_filter, $search_query );
 
 		$action_state = isset( $_GET['wpaic-inquiry-action'] ) ? sanitize_key( wp_unslash( $_GET['wpaic-inquiry-action'] ) ) : '';
+		$affected     = isset( $_GET['affected'] ) ? absint( $_GET['affected'] ) : 0;
 		$messages = array(
-			'trashed'  => '询盘已移至回收站。',
-			'restored' => '询盘已从回收站恢复。',
-			'deleted'  => '询盘已永久删除。',
+			'trashed'       => '询盘已移至回收站。',
+			'restored'      => '询盘已从回收站恢复。',
+			'deleted'       => '询盘已永久删除。',
+			'bulk_read'     => sprintf( '已将 %d 条询盘标记为已读。', $affected ),
+			'bulk_unread'   => sprintf( '已将 %d 条询盘标记为未读。', $affected ),
+			'trash_emptied' => sprintf( '回收站已清空，共永久删除 %d 条询盘。', $affected ),
 		);
 		if ( isset( $messages[ $action_state ] ) ) {
 			add_settings_error( 'wpaic_inquiry_admin_messages', 'wpaic_inquiry_action_done', $messages[ $action_state ], 'updated' );
+		} elseif ( 'no_selection' === $action_state ) {
+			add_settings_error( 'wpaic_inquiry_admin_messages', 'wpaic_inquiry_no_selection', '请先选择至少一条询盘。', 'error' );
 		} elseif ( 'error' === $action_state ) {
 			add_settings_error( 'wpaic_inquiry_admin_messages', 'wpaic_inquiry_action_error', '询盘操作失败，请重试。', 'error' );
 		}
@@ -902,11 +916,53 @@ class WPAIC_Admin {
 		$this->handle_inquiry_lifecycle_action( 'delete' );
 	}
 
+	/** Bulk mark selected active inquiries read/unread. @return void */
+	public function handle_inquiry_bulk_status() {
+		$this->guard_admin_page();
+		check_admin_referer( 'wpaic_inquiry_bulk_status' );
+
+		$bulk_action = isset( $_POST['bulk_action'] ) ? sanitize_key( wp_unslash( $_POST['bulk_action'] ) ) : '';
+		$ids         = isset( $_POST['inquiry_ids'] ) && is_array( $_POST['inquiry_ids'] ) ? array_map( 'absint', wp_unslash( $_POST['inquiry_ids'] ) ) : array();
+		$view        = isset( $_POST['view'] ) ? sanitize_key( wp_unslash( $_POST['view'] ) ) : WPAIC_Inquiry_Repository::VIEW_ALL;
+		$trigger     = isset( $_POST['trigger'] ) ? sanitize_key( wp_unslash( $_POST['trigger'] ) ) : '';
+		$search      = isset( $_POST['s'] ) ? sanitize_text_field( wp_unslash( $_POST['s'] ) ) : '';
+		$paged       = isset( $_POST['paged'] ) ? max( 1, absint( $_POST['paged'] ) ) : 1;
+
+		if ( empty( $ids ) ) {
+			$this->redirect_inquiry_list( $view, $paged, $trigger, $search, 'no_selection' );
+		}
+
+		if ( 'mark_read' === $bulk_action ) {
+			$status = WPAIC_Inquiry_Repository::STATUS_READ;
+			$done   = 'bulk_read';
+		} elseif ( 'mark_unread' === $bulk_action ) {
+			$status = WPAIC_Inquiry_Repository::STATUS_UNREAD;
+			$done   = 'bulk_unread';
+		} else {
+			$this->redirect_inquiry_list( $view, $paged, $trigger, $search, 'error' );
+		}
+
+		$result = $this->inquiry_repository->bulk_set_status( $ids, $status );
+		$this->redirect_inquiry_list( $view, $paged, $trigger, $search, is_wp_error( $result ) ? 'error' : $done, is_wp_error( $result ) ? 0 : (int) $result );
+	}
+
+	/** Permanently delete every Inquiry currently in trash. @return void */
+	public function handle_inquiry_empty_trash() {
+		$this->guard_admin_page();
+		check_admin_referer( 'wpaic_inquiry_empty_trash' );
+		$trigger = isset( $_POST['trigger'] ) ? sanitize_key( wp_unslash( $_POST['trigger'] ) ) : '';
+		$search  = isset( $_POST['s'] ) ? sanitize_text_field( wp_unslash( $_POST['s'] ) ) : '';
+		$result  = $this->inquiry_repository->empty_trash();
+		$this->redirect_inquiry_list( WPAIC_Inquiry_Repository::VIEW_TRASH, 1, $trigger, $search, is_wp_error( $result ) ? 'error' : 'trash_emptied', is_wp_error( $result ) ? 0 : (int) $result );
+	}
+
 	/** Execute an Inquiry lifecycle action and redirect back to the list. @return void */
 	protected function handle_inquiry_lifecycle_action( $action ) {
 		$inquiry_id = isset( $_POST['inquiry_id'] ) ? absint( $_POST['inquiry_id'] ) : 0;
 		$paged      = isset( $_POST['paged'] ) ? max( 1, absint( $_POST['paged'] ) ) : 1;
 		$view       = isset( $_POST['view'] ) ? sanitize_key( wp_unslash( $_POST['view'] ) ) : WPAIC_Inquiry_Repository::VIEW_ALL;
+		$trigger    = isset( $_POST['trigger'] ) ? sanitize_key( wp_unslash( $_POST['trigger'] ) ) : '';
+		$search     = isset( $_POST['s'] ) ? sanitize_text_field( wp_unslash( $_POST['s'] ) ) : '';
 		if ( ! in_array( $view, WPAIC_Inquiry_Repository::get_allowed_views(), true ) ) {
 			$view = WPAIC_Inquiry_Repository::VIEW_ALL;
 		}
@@ -922,17 +978,29 @@ class WPAIC_Admin {
 			$done   = 'deleted';
 		}
 
-		wp_safe_redirect(
-			add_query_arg(
-				array(
-					'page'                 => 'wp-ai-chat-lab-inquiries',
-					'view'                 => $view,
-					'paged'                => $paged,
-					'wpaic-inquiry-action' => is_wp_error( $result ) ? 'error' : $done,
-				),
-				admin_url( 'admin.php' )
-			)
+		$this->redirect_inquiry_list( $view, $paged, $trigger, $search, is_wp_error( $result ) ? 'error' : $done );
+	}
+
+	/** Redirect to Inquiry list while preserving the current operator filters. @return void */
+	protected function redirect_inquiry_list( $view, $paged, $trigger = '', $search = '', $state = '', $affected = 0 ) {
+		$view = sanitize_key( (string) $view );
+		if ( ! in_array( $view, WPAIC_Inquiry_Repository::get_allowed_views(), true ) ) {
+			$view = WPAIC_Inquiry_Repository::VIEW_ALL;
+		}
+		$trigger = sanitize_key( (string) $trigger );
+		if ( ! in_array( $trigger, WPAIC_Inquiry_Repository::get_allowed_triggers(), true ) ) {
+			$trigger = '';
+		}
+		$args = array(
+			'page' => 'wp-ai-chat-lab-inquiries',
 		);
+		if ( WPAIC_Inquiry_Repository::VIEW_ALL !== $view ) { $args['view'] = $view; }
+		if ( max( 1, absint( $paged ) ) > 1 ) { $args['paged'] = max( 1, absint( $paged ) ); }
+		if ( '' !== $trigger ) { $args['trigger'] = $trigger; }
+		if ( '' !== trim( (string) $search ) ) { $args['s'] = sanitize_text_field( (string) $search ); }
+		if ( '' !== $state ) { $args['wpaic-inquiry-action'] = sanitize_key( $state ); }
+		if ( $affected > 0 ) { $args['affected'] = absint( $affected ); }
+		wp_safe_redirect( add_query_arg( $args, admin_url( 'admin.php' ) ) );
 		exit;
 	}
 

@@ -1,3 +1,23 @@
+## v0.9.0 — Stage 2 Round 3 Inquiry Management Efficiency / Validation Passed / Sealed
+
+- Added bulk `mark read / mark unread` for selected active inquiries only.
+- Added source filter for `manual / commercial_intent / no_answer / usage_blocked`.
+- Added admin search across Name / Email / Company / Message.
+- Search, source filter, read-state view and pagination can be combined and are preserved when opening detail or performing row actions.
+- Added `Empty Trash` for permanently deleting all already-trashed inquiries with admin capability + nonce + confirmation.
+- Bulk actions intentionally do not include delete / restore / permanent delete.
+- Trash lifecycle remains separate from unread/read state.
+- Existing single-item move-to-trash / restore / permanent-delete behavior is retained.
+- DB Version remains `1.3`; no new table or column.
+- Plugin Version remains `0.9.0`.
+- Stage 2 Round 3 does not add CRM, sales stages, owner assignment, tags, exports or human handoff.
+
+Real WordPress admin validation passed for bulk read/unread, source filtering, search, composed filter/search/pagination flows, and Empty Trash.
+
+Status: **Validation Passed / Sealed**.  
+Stage 2 status: **Round 1 / Round 2 / Round 3 complete; Inquiry Admin Management is sealed.**  
+Next: **Stage 3 — Operational Validation**.
+
 ## v0.9.0 — Stage 2 Round 2 Read / Unread + Trash Lifecycle / Validation Passed / Sealed
 
 - Stage 2 Round 2 completed real WordPress admin validation and is formally sealed.

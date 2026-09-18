@@ -1354,3 +1354,51 @@
 	.wpaic-inquiry-detail-heading { align-items: flex-start; }
 	.wpaic-inquiry-pagination-links { gap: 4px; }
 }
+
+/* v0.9.0 Stage 2 Round 3 — Inquiry management efficiency */
+.wpaic-inquiry-list-heading {
+	align-items: flex-start;
+	display: flex;
+	gap: 20px;
+	justify-content: space-between;
+}
+.wpaic-inquiry-list-heading h2 { margin-bottom: 6px; }
+.wpaic-inquiry-list-heading > form { margin-top: 4px; }
+.wpaic-inquiry-query-tablenav,
+.wpaic-inquiry-bulk-tablenav {
+	height: auto;
+	margin: 12px 0;
+	min-height: 32px;
+	padding: 0;
+}
+.wpaic-inquiry-query-tablenav .actions,
+.wpaic-inquiry-bulk-tablenav .actions {
+	padding: 0;
+}
+.wpaic-inquiry-query-tablenav .search-box {
+	margin: 0;
+}
+.wpaic-inquiry-query-tablenav .search-box input[type="search"] {
+	min-width: 280px;
+}
+.wpaic-inquiry-admin-table .column-cb { width: 2.2em; }
+.wpaic-inquiry-admin-table .check-column input[type="checkbox"] { margin-top: 1px; }
+.wpaic-inquiry-bulk-form { margin: 0; }
+
+@media (max-width: 782px) {
+	.wpaic-inquiry-list-heading { flex-direction: column; }
+	.wpaic-inquiry-query-tablenav .alignleft,
+	.wpaic-inquiry-query-tablenav .search-box,
+	.wpaic-inquiry-bulk-tablenav .alignleft {
+		float: none;
+		margin: 0 0 10px;
+		width: 100%;
+	}
+	.wpaic-inquiry-query-tablenav .search-box input[type="search"],
+	.wpaic-inquiry-query-tablenav select,
+	.wpaic-inquiry-bulk-tablenav select {
+		box-sizing: border-box;
+		max-width: none;
+		width: 100%;
+	}
+}

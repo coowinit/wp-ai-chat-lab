@@ -3,7 +3,7 @@
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
 **当前稳定 Release：v0.8.0 · Chat Integration**  
-**当前开发：v0.9.0 — Stage 1 已完成；Stage 2 Round 1 / Round 2 已完成并封板，下一步进入 Round 3 后台效率功能（稳定 Release 仍为 v0.8.0）**
+**当前开发：v0.9.0 — Stage 1 / Stage 2 已完成真实验收并封板；下一步进入 Stage 3 — Operational Validation（稳定 Release 仍为 v0.8.0）**
 
 ## v0.5.0 稳定版本状态
 
@@ -2640,7 +2640,7 @@ Token Usage Diagnostics
 
 ### Lead Capture & Inquiry Management
 
-当前状态：**Stage 1 已完成并封板；Stage 2 Round 1 / Round 2 已完成真实后台验收并封板，下一步进入 Round 3 — Inquiry Management Efficiency。**
+当前状态：**Stage 1 / Stage 2 已完成真实 WordPress 验收并封板；下一步进入 Stage 3 — Operational Validation。**
 
 Stage 2 后台管理采用更简单的运营模型：
 
@@ -2697,7 +2697,7 @@ Deterministic Lead Trigger Policy
 Lead Trigger Lab
 ```
 
-当前 Plugin Version 为 `0.9.0`。Stage 1 Round 2 已将 DB Version 升至 `1.2`，新增独立 `wp_wpaic_inquiries`，并建立 `POST /wp-json/wpaic/v1/inquiry`、Inquiry Service / Repository、服务器校验、Honeypot 与独立 Visitor Submission Rate。Round 3 已把同一个 Lead Trigger Policy 与同一个 Public Inquiry REST 接入正式 Chat Widget，并通过真实前台验收。DB Version 保持 `1.2`，不新增表。
+当前 Plugin Version 为 `0.9.0`。Stage 1 Round 2 将 DB Version 升至 `1.2`，新增独立 `wp_wpaic_inquiries`，并建立 `POST /wp-json/wpaic/v1/inquiry`、Inquiry Service / Repository、服务器校验、Honeypot 与独立 Visitor Submission Rate；Stage 1 Round 3 将同一个 Lead Trigger Policy 与同一个 Public Inquiry REST 接入正式 Chat Widget。Stage 2 Round 2 为独立回收站生命周期新增 `trashed_at` 并将 DB Version 升至 `1.3`；Stage 2 Round 3 保持 DB Version `1.3`，不再新增表或字段。
 
 Round 1 已验证：普通 Answer 不触发、默认/自定义商业关键词、中文关键词增删、空列表关闭、恢复默认、`no_answer`、Visitor/Site/Conversation Usage Block、`clarify` / `error` Hard Stop、`manual` 最高优先，以及 `order` 不误命中 `border`。关键词首次保存时发现并修复了 Settings API sanitize callback 缺失导致的 Critical Error；修复后保存与运行时共用同一套标准化逻辑。
 
@@ -3295,10 +3295,13 @@ WP AI Chat Lab 中已经建立的后台实验与验收页面将长期保留，�
 
 Round 1 仍不创建 `wp_wpaic_inquiries`，不新增 Public Inquiry REST，不保存个人信息，也不修改正式 Chat Widget。
 
-当前状态：**Stage 1 已完成并封板；Stage 2 Round 1 — Inquiry List + Detail + Status 已进入 Validation Build。** Round 1 直接读取 `wp_wpaic_inquiries`，不复制为 CPT；Search / Filter / Delete 留到后续 Round。完整架构与验收记录见 `docs/versions/v0.9.0.md`。
+当前状态：**Stage 1 / Stage 2 已全部 Validation Passed / Sealed；下一步进入 Stage 3 — Operational Validation。** Stage 2 始终直接读取 `wp_wpaic_inquiries`，不复制为 CPT，也不扩展成 CRM。完整架构与验收记录见 `docs/versions/v0.9.0.md`。
 
 
 - Stage 2 Round 1 UX2：询盘管理页取消 1180px 最大宽度，使用后台可用宽度；列表切换为 WordPress 原生 `wp-list-table / widefat / striped / table-view-list` 样式与原生 `tablenav` 分页外观；默认每页 10 条，保留详情页 20px 卡片间距。
 
 - Stage 2 Round 2：Inquiry 状态简化为未读/已读；打开详情自动标记已读；新增全部/未读/已读/回收站筛选、软删除、恢复、永久删除与紧凑分页；DB Version 升至 1.3。
 - Stage 2 Round 2 状态：**Validation Passed / Sealed**。已真实验证旧状态迁移、查看详情自动已读、未读/已读筛选、回收站、恢复、永久删除与分页；下一步进入 Round 3。
+- Stage 2 Round 3：新增批量标记已读/未读、来源筛选、Name / Email / Company / Message 搜索与清空全部回收站；筛选/搜索可与分页组合，DB Version 保持 1.3。
+- Stage 2 Round 3 状态：**Validation Passed / Sealed**。真实后台验收确认批量已读/未读、来源筛选、搜索、组合筛选/分页、回收站清空均符合预期。
+- Stage 2 结论：**Round 1 + Round 2 + Round 3 已完成并封板**；下一步只进入 Stage 3 Operational Validation，不再继续增加 Inquiry Admin 功能。
