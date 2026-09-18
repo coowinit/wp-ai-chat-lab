@@ -31,6 +31,12 @@ class WPAIC_DB_Installer {
 		return $wpdb->prefix . 'wpaic_usage_counter';
 	}
 
+	/** Return the Inquiry table name for the current site. @return string */
+	public static function get_inquiry_table_name() {
+		global $wpdb;
+		return $wpdb->prefix . 'wpaic_inquiries';
+	}
+
 	/**
 	 * Create or upgrade the Knowledge Store schema.
 	 *
@@ -98,9 +104,34 @@ class WPAIC_DB_Installer {
 
 		dbDelta( $usage_sql );
 
-		$exists       = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) );
-		$usage_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $usage_table ) );
-		if ( $table_name === $exists && $usage_table === $usage_exists ) {
+		$inquiry_table = self::get_inquiry_table_name();
+		$inquiry_sql = "CREATE TABLE {$inquiry_table} (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			created_at datetime NOT NULL,
+			updated_at datetime NOT NULL,
+			status varchar(20) NOT NULL DEFAULT 'new',
+			name varchar(191) NOT NULL DEFAULT '',
+			email varchar(191) NOT NULL DEFAULT '',
+			phone varchar(80) NOT NULL DEFAULT '',
+			company varchar(191) NOT NULL DEFAULT '',
+			message longtext NOT NULL,
+			trigger_type varchar(32) NOT NULL DEFAULT '',
+			conversation_id char(36) NOT NULL DEFAULT '',
+			source_url text NOT NULL,
+			last_question text NOT NULL,
+			visitor_hash char(64) NOT NULL DEFAULT '',
+			PRIMARY KEY  (id),
+			KEY status_created (status,created_at),
+			KEY visitor_created (visitor_hash,created_at),
+			KEY trigger_type (trigger_type)
+		) {$charset_collate};";
+
+		dbDelta( $inquiry_sql );
+
+		$exists         = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table_name ) );
+		$usage_exists   = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $usage_table ) );
+		$inquiry_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $inquiry_table ) );
+		if ( $table_name === $exists && $usage_table === $usage_exists && $inquiry_table === $inquiry_exists ) {
 			update_option( WPAIC_OPTION_DB_VERSION, WPAIC_DB_VERSION, false );
 		}
 	}

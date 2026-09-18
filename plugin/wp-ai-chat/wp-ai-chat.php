@@ -19,7 +19,7 @@ define( 'WPAIC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WPAIC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'WPAIC_OPTION_SETTINGS', 'wpaic_settings' );
 define( 'WPAIC_OPTION_KNOWLEDGE_SOURCES', 'wpaic_enabled_sources' );
-define( 'WPAIC_DB_VERSION', '1.1' );
+define( 'WPAIC_DB_VERSION', '1.2' );
 define( 'WPAIC_OPTION_USAGE_SETTINGS', 'wpaic_usage_settings' );
 define( 'WPAIC_OPTION_CHAT_UI_SETTINGS', 'wpaic_chat_ui_settings' );
 define( 'WPAIC_OPTION_PUBLIC_GUARD_SETTINGS', 'wpaic_public_guard_settings' );
@@ -72,6 +72,11 @@ require_once WPAIC_PLUGIN_DIR . 'includes/chat/class-wpaic-chat-controller.php';
 require_once WPAIC_PLUGIN_DIR . 'public/class-wpaic-chat-widget.php';
 
 require_once WPAIC_PLUGIN_DIR . 'includes/inquiry/class-wpaic-lead-trigger-policy.php';
+require_once WPAIC_PLUGIN_DIR . 'includes/inquiry/class-wpaic-inquiry-context.php';
+require_once WPAIC_PLUGIN_DIR . 'includes/inquiry/class-wpaic-inquiry-rate-guard.php';
+require_once WPAIC_PLUGIN_DIR . 'includes/inquiry/class-wpaic-inquiry-repository.php';
+require_once WPAIC_PLUGIN_DIR . 'includes/inquiry/class-wpaic-inquiry-service.php';
+require_once WPAIC_PLUGIN_DIR . 'includes/inquiry/class-wpaic-inquiry-controller.php';
 
 require_once WPAIC_PLUGIN_DIR . 'admin/class-wpaic-admin.php';
 
@@ -210,12 +215,17 @@ function wpaic_bootstrap() {
 	// verified Public Chat Boundary. It owns no Retrieval / Grounding / AI logic.
 	new WPAIC_Chat_Widget();
 
-	// v0.9.0 Stage 1 Round 1: deterministic Lead Trigger Policy only.
-	// It does not persist inquiries or alter the verified Chat response path yet.
+	// v0.9.0 Stage 1: deterministic Lead Trigger Policy remains independent
+	// from Inquiry persistence. Round 2 adds the Public Inquiry boundary without
+	// modifying the verified Chat Widget yet.
 	$lead_trigger_policy = new WPAIC_Lead_Trigger_Policy();
+	$inquiry_repository  = new WPAIC_Inquiry_Repository();
+	$inquiry_service     = new WPAIC_Inquiry_Service( $inquiry_repository );
+	$inquiry_rate_guard  = new WPAIC_Inquiry_Rate_Guard();
+	new WPAIC_Inquiry_Controller( $inquiry_service, $inquiry_rate_guard );
 
 	if ( is_admin() ) {
-		new WPAIC_Admin( $manager, $discovery, $extractor, $store_repository, $lifecycle, $batch_sync, $local_retriever, $grounding_gate, $evidence_builder, $prompt_builder, $grounded_answer, $usage_repository, $usage_guard, $public_request_guard, $provider_failure_lab, $lead_trigger_policy );
+		new WPAIC_Admin( $manager, $discovery, $extractor, $store_repository, $lifecycle, $batch_sync, $local_retriever, $grounding_gate, $evidence_builder, $prompt_builder, $grounded_answer, $usage_repository, $usage_guard, $public_request_guard, $provider_failure_lab, $lead_trigger_policy, $inquiry_repository, $inquiry_rate_guard );
 	}
 }
 add_action( 'plugins_loaded', 'wpaic_bootstrap' );

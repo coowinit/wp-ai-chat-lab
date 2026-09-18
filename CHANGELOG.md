@@ -1,5 +1,38 @@
 # Changelog
 
+## v0.9.0 — Stage 1 Round 2 Inquiry Capture Foundation / Validation Passed / Sealed
+
+> Real WordPress validation passed. Stage seal only; this is not a Release.
+
+- DB Version advanced from `1.1` to `1.2`.
+- Added dedicated `wp_wpaic_inquiries` operational table.
+- Added `WPAIC_Inquiry_Context`, reusing the existing HttpOnly `wpaic_visitor` cookie while storing only an HMAC visitor hash.
+- Added `WPAIC_Inquiry_Repository` with fail-closed insert behavior and Lab-only recent-row diagnostics.
+- Added `WPAIC_Inquiry_Service` with required Name / Email / Message validation, optional Company / Phone, trigger allowlist, bounded text lengths, and `new` as the initial status.
+- Added public `POST /wp-json/wpaic/v1/inquiry` boundary.
+- Public success response exposes only `type + message`; it does not expose Inquiry ID, Visitor Hash, raw Visitor UUID, IP, or internal database details.
+- Added same-site Source URL normalization and optional Conversation UUID v4 validation.
+- Added honeypot rejection before rate consumption.
+- Added independent best-effort Inquiry submission rate: 5 submissions per Visitor per hour.
+- Inquiry Rate is separate from Public Chat Request Guard and Provider Usage Guard.
+- Added permanent `Inquiry Capture Lab` that calls the real Public Inquiry REST endpoint and shows only the latest rows for persistence verification.
+- Added administrator-only reset for the current browser Visitor Inquiry Rate; it does not delete saved inquiries.
+- Round 2 still does not modify the production Chat Widget, add Inline Inquiry Form, build formal Inquiry management, save full Chat transcripts, save raw IP, add Turnstile, Human Handoff, or CRM features.
+- Stage 1 Round 1 Lead Trigger Lab remains permanently available and unchanged in policy behavior.
+
+Real WordPress validation passed for:
+- Normal Public Inquiry submission → HTTP 201 / `submitted` / Rows +1 / initial `status = new`.
+- Required Name validation → HTTP 400 / no database row.
+- Invalid Email → HTTP 400 / no database row.
+- Invalid Conversation UUID → HTTP 400 / no database row.
+- Trigger outside the allowlist → HTTP 400 / no database row.
+- Honeypot → HTTP 400 / no database row / no Inquiry Rate consumption.
+- Inquiry Submission Rate → first 5 submissions succeed, 6th returns HTTP 429 + `Retry-After`, and Rows do not increase.
+- Stored visitor identity is hash-only; no raw Visitor UUID or IP is stored.
+
+Forced database-failure injection remains deferred to Stage 3 Operational Validation; the Round 2 write path already returns error unless Repository insert succeeds.
+
+Stage 1 Round 2 is now formally **Validation Passed / Sealed**. Next: **Stage 1 Round 3 — Chat Inline Inquiry Form Integration**, reusing the same Lead Trigger Policy and Public Inquiry REST boundary.
 ## v0.9.0 — Stage 1 Round 1 Lead Trigger Policy / Validation Passed / Sealed
 
 > Real WordPress validation passed. Stage seal only; this is not a Release.

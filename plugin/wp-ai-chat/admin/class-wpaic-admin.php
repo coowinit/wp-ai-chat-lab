@@ -59,6 +59,12 @@ class WPAIC_Admin {
 	/** @var WPAIC_Lead_Trigger_Policy */
 	protected $lead_trigger_policy;
 
+	/** @var WPAIC_Inquiry_Repository */
+	protected $inquiry_repository;
+
+	/** @var WPAIC_Inquiry_Rate_Guard */
+	protected $inquiry_rate_guard;
+
 	/** @var string */
 	protected $ai_page_hook = '';
 
@@ -89,6 +95,9 @@ class WPAIC_Admin {
 	/** @var string */
 	protected $lead_trigger_page_hook = '';
 
+	/** @var string */
+	protected $inquiry_capture_page_hook = '';
+
 	/**
 	 * @param WPAIC_AI_Manager                    $manager          AI manager.
 	 * @param WPAIC_Source_Discovery              $discovery        Source discovery.
@@ -106,8 +115,10 @@ class WPAIC_Admin {
 	 * @param WPAIC_Public_Request_Guard            $public_request_guard Public request abuse guard.
 	 * @param WPAIC_Provider_Failure_Lab            $provider_failure_lab Permanent Lab one-shot Provider failure injector.
 	 * @param WPAIC_Lead_Trigger_Policy             $lead_trigger_policy  Deterministic Lead Trigger Policy.
+	 * @param WPAIC_Inquiry_Repository              $inquiry_repository   Inquiry persistence repository.
+	 * @param WPAIC_Inquiry_Rate_Guard              $inquiry_rate_guard   Inquiry submission rate guard.
 	 */
-	public function __construct( WPAIC_AI_Manager $manager, WPAIC_Source_Discovery $discovery, WPAIC_Generic_Extractor $extractor, WPAIC_Knowledge_Store_Repository $store_repository, WPAIC_Knowledge_Lifecycle_Manager $lifecycle, WPAIC_Knowledge_Batch_Sync $batch_sync, WPAIC_Local_Retriever $local_retriever, WPAIC_Grounding_Gate $grounding_gate, WPAIC_Evidence_Pack_Builder $evidence_builder, WPAIC_Grounded_Prompt_Builder $prompt_builder, WPAIC_Grounded_Answer_Service $grounded_answer, WPAIC_Usage_Counter_Repository $usage_repository, WPAIC_Usage_Guard $usage_guard, WPAIC_Public_Request_Guard $public_request_guard, WPAIC_Provider_Failure_Lab $provider_failure_lab, WPAIC_Lead_Trigger_Policy $lead_trigger_policy ) {
+	public function __construct( WPAIC_AI_Manager $manager, WPAIC_Source_Discovery $discovery, WPAIC_Generic_Extractor $extractor, WPAIC_Knowledge_Store_Repository $store_repository, WPAIC_Knowledge_Lifecycle_Manager $lifecycle, WPAIC_Knowledge_Batch_Sync $batch_sync, WPAIC_Local_Retriever $local_retriever, WPAIC_Grounding_Gate $grounding_gate, WPAIC_Evidence_Pack_Builder $evidence_builder, WPAIC_Grounded_Prompt_Builder $prompt_builder, WPAIC_Grounded_Answer_Service $grounded_answer, WPAIC_Usage_Counter_Repository $usage_repository, WPAIC_Usage_Guard $usage_guard, WPAIC_Public_Request_Guard $public_request_guard, WPAIC_Provider_Failure_Lab $provider_failure_lab, WPAIC_Lead_Trigger_Policy $lead_trigger_policy, WPAIC_Inquiry_Repository $inquiry_repository, WPAIC_Inquiry_Rate_Guard $inquiry_rate_guard ) {
 		$this->manager          = $manager;
 		$this->discovery        = $discovery;
 		$this->extractor        = $extractor;
@@ -124,6 +135,8 @@ class WPAIC_Admin {
 		$this->public_request_guard = $public_request_guard;
 		$this->provider_failure_lab = $provider_failure_lab;
 		$this->lead_trigger_policy  = $lead_trigger_policy;
+		$this->inquiry_repository   = $inquiry_repository;
+		$this->inquiry_rate_guard   = $inquiry_rate_guard;
 
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
@@ -142,6 +155,7 @@ class WPAIC_Admin {
 		add_action( 'admin_post_wpaic_public_hardening_reset', array( $this, 'handle_public_hardening_reset' ) );
 		add_action( 'admin_post_wpaic_provider_failure_lab', array( $this, 'handle_provider_failure_lab' ) );
 		add_action( 'admin_post_wpaic_restore_lead_keywords', array( $this, 'handle_restore_lead_keywords' ) );
+		add_action( 'admin_post_wpaic_inquiry_rate_reset', array( $this, 'handle_inquiry_rate_reset' ) );
 	}
 
 	/**
@@ -249,6 +263,15 @@ class WPAIC_Admin {
 			'manage_options',
 			'wp-ai-chat-lab-lead-trigger',
 			array( $this, 'render_lead_trigger_page' )
+		);
+
+		$this->inquiry_capture_page_hook = add_submenu_page(
+			'wp-ai-chat-lab',
+			'Inquiry Capture Lab',
+			'Inquiry Capture Lab',
+			'manage_options',
+			'wp-ai-chat-lab-inquiry-capture',
+			array( $this, 'render_inquiry_capture_page' )
 		);
 	}
 
@@ -445,7 +468,7 @@ class WPAIC_Admin {
 	 * @return void
 	 */
 	public function enqueue_assets( $hook ) {
-		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook, $this->store_page_hook, $this->retrieval_page_hook, $this->grounded_page_hook, $this->usage_page_hook, $this->chat_boundary_page_hook, $this->chat_ui_page_hook, $this->public_hardening_page_hook, $this->lead_trigger_page_hook ), true ) ) {
+		if ( ! in_array( $hook, array( $this->ai_page_hook, $this->knowledge_page_hook, $this->store_page_hook, $this->retrieval_page_hook, $this->grounded_page_hook, $this->usage_page_hook, $this->chat_boundary_page_hook, $this->chat_ui_page_hook, $this->public_hardening_page_hook, $this->lead_trigger_page_hook, $this->inquiry_capture_page_hook ), true ) ) {
 			return;
 		}
 
@@ -481,6 +504,7 @@ class WPAIC_Admin {
 			array(
 				'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
 				'chatEndpoint'   => WPAIC_Chat_Controller::get_endpoint_url(),
+				'inquiryEndpoint'=> WPAIC_Inquiry_Controller::get_endpoint_url(),
 				'nonce'          => wp_create_nonce( 'wpaic_ai_test' ),
 				'knowledgeNonce' => wp_create_nonce( 'wpaic_knowledge_preview' ),
 				'storeNonce'     => wp_create_nonce( 'wpaic_store_sync' ),
@@ -766,6 +790,43 @@ class WPAIC_Admin {
 		exit;
 	}
 
+
+
+	/** Render the permanent v0.9.0 Stage 1 Round 2 Inquiry Capture Lab. @return void */
+	public function render_inquiry_capture_page() {
+		$this->guard_admin_page();
+		$inquiry_endpoint = WPAIC_Inquiry_Controller::get_endpoint_url();
+		$inquiry_status   = $this->inquiry_repository->get_operational_status();
+		$recent_inquiries = $this->inquiry_repository->list_recent( 10 );
+		$test_conversation_id = wp_generate_uuid4();
+		$test_source_url = home_url( '/' );
+		$rate_reset = isset( $_GET['wpaic-inquiry-rate-reset'] ) ? sanitize_key( wp_unslash( $_GET['wpaic-inquiry-rate-reset'] ) ) : '';
+
+		$context_request = new WP_REST_Request( 'POST', '/wpaic/v1/inquiry' );
+		$inquiry_context = WPAIC_Inquiry_Context::from_request( $context_request );
+		$inquiry_rate_state = is_wp_error( $inquiry_context )
+			? array( 'used' => 0, 'limit' => WPAIC_Inquiry_Rate_Guard::LIMIT, 'retry_after' => 0 )
+			: $this->inquiry_rate_guard->get_state( $inquiry_context );
+
+		if ( 'done' === $rate_reset ) {
+			add_settings_error( 'wpaic_inquiry_capture_messages', 'wpaic_inquiry_rate_reset', '当前 Visitor 的 Inquiry Rate 已重置。', 'updated' );
+		}
+
+		include WPAIC_PLUGIN_DIR . 'admin/views/page-inquiry-capture.php';
+	}
+
+	/** Reset only the current administrator browser Visitor Inquiry rate state. @return void */
+	public function handle_inquiry_rate_reset() {
+		$this->guard_admin_page();
+		check_admin_referer( 'wpaic_inquiry_rate_reset' );
+		$request = new WP_REST_Request( 'POST', '/wpaic/v1/inquiry' );
+		$context = WPAIC_Inquiry_Context::from_request( $request );
+		if ( ! is_wp_error( $context ) ) {
+			$this->inquiry_rate_guard->reset( $context );
+		}
+		wp_safe_redirect( add_query_arg( array( 'page' => 'wp-ai-chat-lab-inquiry-capture', 'wpaic-inquiry-rate-reset' => 'done' ), admin_url( 'admin.php' ) ) );
+		exit;
+	}
 
 	/** Render the permanent v0.8.0 Stage 3 Public Hardening Lab. @return void */
 	public function render_public_hardening_page() {

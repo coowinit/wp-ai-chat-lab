@@ -6,13 +6,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 <div class="wrap wpaic-wrap">
 	<h1>WP AI Chat Lab — Lead Trigger Lab</h1>
-	<p class="description">v0.9.0 Stage 1 · Round 1 — Validation Passed / Sealed ✅ · Commercial Keywords Settings + Deterministic Lead Trigger Policy。该页面长期保留，用来调整商业需求关键词并回归验证“什么时候应该邀请访客提交询盘”。</p>
+	<p class="description">v0.9.0 Stage 1 · Round 1 — Validation Passed / Sealed ✅ · Commercial Keywords Settings + Deterministic Lead Trigger Policy。该页面长期保留，用来调整商业需求关键词并回归验证“什么时候应该邀请访客提交询盘”。Round 2 已开始建立 Inquiry Capture Foundation。</p>
 	<?php settings_errors( 'wpaic_lead_trigger_messages' ); ?>
 
 	<div class="wpaic-card">
 		<h2>Round 1 Validation Passed / Sealed ✅</h2>
 		<div class="wpaic-flow-line"><code>Chat Result</code><span>→</span><code>Lead Trigger Policy</code><span>→</span><code>Offer / No Offer</code></div>
-		<p><strong>Round 1 已完成真实 WordPress 验收并封板。</strong>本轮仍不创建 Inquiry 数据表，也不修改正式 Chat UI；这些工具继续永久保留，供关键词调整、诊断与回归测试。下一步进入 Stage 1 Round 2 — Inquiry Capture Foundation。</p>
+		<p><strong>Round 1 已完成真实 WordPress 验收并封板。</strong>Round 1 本身已经封板；Round 2 现在开始创建独立 Inquiry Capture Boundary，但不会改变本页已经验证通过的 Trigger Policy。正式 Chat UI 仍未接入 Inquiry Form。</p>
 	</div>
 
 	<div class="wpaic-grid">
@@ -101,7 +101,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					<div><dt>DB Version</dt><dd><?php echo esc_html( WPAIC_DB_VERSION ); ?></dd></div>
 					<div><dt>Keywords</dt><dd><?php echo esc_html( (int) $lead_keywords_count ); ?></dd></div>
 					<div><dt>Commercial Intent</dt><dd><?php echo $lead_keywords_count > 0 ? 'Enabled' : 'Disabled'; ?></dd></div>
-					<div><dt>Inquiry Table</dt><dd>Not created</dd></div>
+					<div><dt>Inquiry Table</dt><dd>Created in Round 2</dd></div>
 					<div><dt>AI Lead Scoring</dt><dd>Disabled</dd></div>
 				</dl>
 			</div>
@@ -129,10 +129,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 			</div>
 
 			<div class="wpaic-card">
-				<h2>Round 1 明确不做</h2>
+				<h2>Round 1 当时明确不做</h2>
 				<ul class="wpaic-plain-list">
-					<li>不创建 <code>wp_wpaic_inquiries</code></li>
-					<li>不新增 Public Inquiry REST</li>
+					<li>Round 1 不创建 <code>wp_wpaic_inquiries</code>（现由 Round 2 创建）</li>
+					<li>Round 1 不新增 Public Inquiry REST（现由 Round 2 建立独立 Boundary）</li>
 					<li>不修改正式 Chat Widget</li>
 					<li>不保存 Name / Email / Phone 等个人信息</li>
 					<li>不增加 AI Lead Scoring</li>

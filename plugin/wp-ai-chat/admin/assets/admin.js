@@ -888,6 +888,61 @@
 			});
 		}
 
+
+		var inquiryForm = document.getElementById('wpaic-inquiry-capture-form');
+		var inquirySubmit = document.getElementById('wpaic-inquiry-submit');
+		var inquiryResult = document.getElementById('wpaic-inquiry-result');
+		if (inquiryForm && inquirySubmit && inquiryResult && WPAICAdmin.inquiryEndpoint) {
+			inquiryForm.addEventListener('submit', function (event) {
+				event.preventDefault();
+				var payload = {
+					name: (document.getElementById('wpaic-inquiry-name') || {}).value || '',
+					email: (document.getElementById('wpaic-inquiry-email') || {}).value || '',
+					company: (document.getElementById('wpaic-inquiry-company') || {}).value || '',
+					phone: (document.getElementById('wpaic-inquiry-phone') || {}).value || '',
+					message: (document.getElementById('wpaic-inquiry-message') || {}).value || '',
+					trigger_type: (document.getElementById('wpaic-inquiry-trigger') || {}).value || '',
+					conversation_id: (document.getElementById('wpaic-inquiry-conversation') || {}).value || '',
+					last_question: (document.getElementById('wpaic-inquiry-question') || {}).value || '',
+					source_url: (document.getElementById('wpaic-inquiry-source') || {}).value || '',
+					website: (document.getElementById('wpaic-inquiry-honeypot') || {}).checked ? 'https://bot.example/' : ''
+				};
+
+				inquirySubmit.disabled = true;
+				inquiryResult.hidden = false;
+				inquiryResult.className = 'wpaic-result';
+				inquiryResult.innerHTML = '<strong>Submitting…</strong><p>正在调用真实 Public Inquiry REST。</p>';
+
+				fetch(WPAICAdmin.inquiryEndpoint, {
+					method: 'POST',
+					credentials: 'same-origin',
+					headers: {'Content-Type': 'application/json'},
+					body: JSON.stringify(payload)
+				}).then(function (response) {
+					return response.json().catch(function () { return {}; }).then(function (data) {
+						return {response: response, data: data};
+					});
+				}).then(function (result) {
+					var ok = result.response.ok && result.data && result.data.type === 'submitted';
+					var retry = result.response.headers.get('Retry-After');
+					inquiryResult.className = 'wpaic-result ' + (ok ? 'is-success' : 'is-error');
+					inquiryResult.innerHTML = '<h3>' + (ok ? 'Inquiry Submitted ✅' : 'Inquiry Rejected / Failed') + '</h3>' +
+						'<dl class="wpaic-meta wpaic-meta-source">' +
+						'<div><dt>HTTP</dt><dd><strong>' + escapeHtml(result.response.status) + '</strong></dd></div>' +
+						'<div><dt>Type</dt><dd><code>' + escapeHtml(result.data.type || 'error') + '</code></dd></div>' +
+						'<div class="wpaic-meta-wide"><dt>Message</dt><dd>' + escapeHtml(result.data.message || 'Request failed.') + '</dd></div>' +
+						(retry ? '<div><dt>Retry-After</dt><dd>' + escapeHtml(retry) + 's</dd></div>' : '') +
+						'</dl>' +
+						(ok ? '<p><strong>刷新本页</strong>即可在“最近 10 条 Inquiry”中核对真实数据库写入。</p>' : '<p>失败请求不应新增 Inquiry Row。</p>');
+				}).catch(function () {
+					inquiryResult.className = 'wpaic-result is-error';
+					inquiryResult.innerHTML = '<strong>Network Error</strong><p>无法连接 Public Inquiry Endpoint。</p>';
+				}).finally(function () {
+					inquirySubmit.disabled = false;
+				});
+			});
+		}
+
 		document.querySelectorAll('.wpaic-preview-example').forEach(function (button) {
 			button.addEventListener('click', function () {
 				var postId = parseInt(button.getAttribute('data-post-id'), 10);
