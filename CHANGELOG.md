@@ -1,3 +1,23 @@
+## v0.9.0 — Lead Capture & Inquiry Management / Final Review Passed / Stable Release
+
+> v0.9.0 完成从 AI Chat 到自然询盘转化，再到 WordPress 后台询盘管理的完整闭环。Stage 1 / Stage 2 / Stage 3 均已完成真实 WordPress 验收并封板。
+
+- Added administrator-configurable commercial intent keywords and deterministic Lead Trigger Policy.
+- Added `manual / commercial_intent / no_answer / usage_blocked` lead sources with tested priority and hard-stop semantics.
+- Added inline Chat inquiry CTA / form integration while preserving Chat, Grounding, Usage and Provider boundaries.
+- Added dedicated `wp_wpaic_inquiries` table and public `POST /wp-json/wpaic/v1/inquiry` endpoint with server validation, honeypot and Visitor submission rate guard.
+- Added Inquiry Admin Management with unread/read, auto-read detail, pagination, source filter, search, bulk read/unread, Trash, Restore, Permanent Delete and Empty Trash.
+- Added read-state nonce protection so unprotected detail GETs remain read-only and cannot silently change unread state.
+- Real validation passed for invalid IDs, Stored XSS / HTML escaping, same-site Source URL enforcement, Unicode/special-character search, composed filter/search/pagination queries, bulk boundaries, and Trash lifecycle idempotency.
+- Permanent Lab / Playground / Validation pages remain part of the product for teaching, diagnostics and regression testing.
+- Plugin Version: `0.9.0`; DB Version: `1.3`.
+- Deferred to future Hardening / Regression: dedicated DB 1.2 → 1.3 Migration Validation Lab and Inquiry Repository DB Failure Injection Lab.
+- Explicitly not included: CRM pipeline, owner assignment, tags, Human Handoff, Agent, RAG, Vector Database.
+
+Status: **Final Review Passed / Stable Release**.
+
+---
+
 ## v0.9.0 — Stage 3 Round 2 Security & Data Boundary / Validation Passed / Sealed
 
 > Round 1 已封板。本轮不新增业务能力，专项验证管理员状态变更、防 XSS / HTML、Source URL、特殊字符搜索与非法 ID 等边界。
@@ -8,9 +28,9 @@
 - 保持 Inquiry 生命周期 admin-post 操作的 `manage_options + nonce` 边界。
 - 明确 XSS / HTML、外部 Source URL、中文与特殊字符搜索、非法 ID、组合筛选的真实验收顺序。
 - Plugin Version 保持 `0.9.0`；DB Version 保持 `1.3`；无 Schema 变化。
-- Dedicated DB 1.2 → 1.3 Migration Validation Lab 与 Inquiry Repository DB Failure Injection Lab 延后到后续 Hardening / Regression 版本，不阻塞 v0.9.0 Final Review。
+- Dedicated DB 1.2 → 1.3 Migration Validation Lab 与 Inquiry Repository DB Failure Injection Lab 延后到后续 Hardening / Regression 版本，不阻塞 v0.9.0 Release。
 
-Validation passed:
+Validation focus:
 - Auto-read nonce / CSRF 边界。
 - Invalid Inquiry ID。
 - XSS / HTML sanitation + escaped admin output。
