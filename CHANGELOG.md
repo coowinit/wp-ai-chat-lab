@@ -1,3 +1,19 @@
+## v1.0.0 — Lead Capture & Inquiry Management / First Stable Release
+
+> `v1.0.0` 将已经完成 v0.9.0 Stage 1 / Stage 2 / Stage 3 与 Final Review 的稳定基线正式提升为第一版 `1.0.0` Release。此版本重点完成版本号、文档、Tag、Release 与安装包的一致性收口，不新增数据库 Schema。
+
+- Plugin Version promoted from `0.9.0` to `1.0.0`.
+- DB Version remains `1.3`; no new tables or columns.
+- Lead Capture & Inquiry Management feature set remains the validated v0.9.0 Final Review baseline.
+- README production/testing guidance updated to use `v1.0.0` as the current stable release.
+- Added `docs/versions/v1.0.0.md` as the stable release summary.
+- Historical v0.9.0 Stage / Round documentation is intentionally retained for traceability and regression reference.
+- Future Hardening remains deferred: DB 1.2 → 1.3 Migration Validation Lab and Inquiry Repository DB Failure Injection Lab.
+
+Status: **Final Review Passed / First Stable Release**.
+
+---
+
 ## v0.9.0 — Lead Capture & Inquiry Management / Final Review Passed / Stable Release
 
 > v0.9.0 完成从 AI Chat 到自然询盘转化，再到 WordPress 后台询盘管理的完整闭环。Stage 1 / Stage 2 / Stage 3 均已完成真实 WordPress 验收并封板。

@@ -70,12 +70,12 @@ $table_ready = is_array( $inquiry_status ) && ! empty( $inquiry_status['table_ex
 		</div>
 
 		<div class="wpaic-card">
-			<h2>v0.9.0 封板边界 / Future Hardening</h2>
+			<h2>v1.0.0 Future Hardening</h2>
 			<ul class="wpaic-plain-list">
 				<li>不新增 CRM / Agent / Human Handoff。</li>
 				<li>不改变 Inquiry Schema；DB Version 保持 1.3。</li>
 				<li>不创建第二套测试 Repository 或假的 REST 路径。</li>
-				<li>Dedicated DB 1.2 → 1.3 Migration Validation Lab 与 Inquiry Repository DB Failure Injection Lab 延后到后续 Hardening / Regression 版本，不阻塞 v0.9.0 Release。</li>
+				<li>Dedicated DB 1.2 → 1.3 Migration Validation Lab 与 Inquiry Repository DB Failure Injection Lab 延后到后续 Hardening / Regression 版本，不阻塞 v1.0.0 Stable Release。</li>
 			</ul>
 		</div>
 	</div>

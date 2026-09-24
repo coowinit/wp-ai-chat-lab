@@ -2,10 +2,12 @@
 
 > 从 WordPress 网站知识出发，研究并逐步构建一套可控、可靠、低成本、可扩展的 AI Chat 架构。
 
-**当前稳定 Release：v0.9.0 · Lead Capture & Inquiry Management**  
+**当前稳定 Release：v1.0.0 · Lead Capture & Inquiry Management**  
 **状态：Final Review Passed / Stable Release**
 
-> **测试与上线提醒**：v0.9.0 的真实开发/验收使用 COODEC 官网（https://www.coodecglobal.com/）公开内容及对应 WordPress 站点数据作为真实站点样本。README 中的型号、查询词、评分、Token、限额与计数均属于当时测试快照，不能直接当作其他站点或正式生产环境的固定值。正式上线前请务必阅读下文 **「v0.9.0 测试数据与正式上线注意事项」**。
+> **版本说明**：`v0.9.0` 保留为完整开发与验收里程碑；由于正式 GitHub Tag / Release 已采用 `v1.0.0`，当前代码版本、安装包、README 与 CHANGELOG 统一以 `v1.0.0` 作为第一版稳定 Release。
+
+> **测试与上线提醒**：v1.0.0 的正式发布基线延续 v0.9.0 Final Review 已完成的真实开发/验收结果，测试使用 COODEC 官网 coodecglobal.com 公开内容及对应 WordPress 站点数据作为真实站点样本。README 中的型号、查询词、评分、Token、限额与计数均属于当时测试快照，不能直接当作其他站点或正式生产环境的固定值。正式上线前请务必阅读下文 **「v1.0.0 测试数据与正式上线注意事项」**。
 
 ## v0.5.0 稳定版本状态
 
@@ -2709,11 +2711,11 @@ Round 3 已真实验证：Manual Contact Sales、commercial_intent / no_answer /
 
 详细设计与 Round 1 / Round 2 / Round 3 验收清单见：`docs/versions/v0.9.0.md`。
 
-## v0.9.0 测试数据与正式上线注意事项
+## v1.0.0 测试数据与正式上线注意事项
 
 ### 1. 测试数据来源
 
-本项目 v0.3.0～v0.9.0 的大量真实环境测试，使用 **COODEC 官网（https://www.coodecglobal.com/）公开内容及对应 WordPress 站点数据**作为真实企业站样本，包括产品、文章、FAQ、结构化字段、Knowledge、Retrieval、Grounding、Chat 与 Inquiry 场景。
+本项目 v0.3.0～v1.0.0 的大量真实环境测试，使用 **COODEC 官网（https://www.coodecglobal.com/）公开内容及对应 WordPress 站点数据**作为真实企业站样本，包括产品、文章、FAQ、结构化字段、Knowledge、Retrieval、Grounding、Chat 与 Inquiry 场景。
 
 因此 README / Lab 中出现的以下内容都应理解为**测试快照**，而不是插件固定业务规则：
 
@@ -2759,7 +2761,7 @@ Inquiry 测试数据
 
 1. **WordPress Timezone**：Visitor / Site Daily Limit 使用 WordPress Local Day。站点若仍是 `+00:00`，每天额度会按 UTC 切换。生产站应改成真实业务时区。
 2. **数据库引擎**：Usage Counter 的 Public Provider Boundary 依赖事务与行锁；生产环境必须保持支持事务的 InnoDB 等引擎。
-3. **DB Version**：v0.9.0 为 `1.3`。升级前建议备份 WordPress 数据库与插件文件。
+3. **DB Version**：v1.0.0 为 `1.3`。升级前建议备份 WordPress 数据库与插件文件。
 4. **测试 Counter**：上线前建议清理专用测试 Counter / Rate 状态，并确认 Provider Failure Lab 为 `Idle`。
 5. **测试 Inquiry**：上线前删除或清空明确的测试询盘，避免后台未读数量与真实运营数据混在一起。
 6. **商业关键词**：默认词只是通用起点。B2B 站应补充自身常用的 quote / sample / MOQ / distributor / project 等语言及对应中文或目标市场语言。
@@ -2770,7 +2772,7 @@ Inquiry 测试数据
 
 ```text
 [ ] 备份数据库与插件文件
-[ ] 确认 Plugin Version = 0.9.0 / DB Version = 1.3
+[ ] 确认 Plugin Version = 1.0.0 / DB Version = 1.3
 [ ] 确认 WordPress Timezone
 [ ] 确认 DeepSeek API Key 未写入仓库且连接测试正常
 [ ] 执行 Knowledge Preview / Full Sync，确认 Errors = 0
@@ -2790,8 +2792,8 @@ Inquiry 测试数据
 
 ### 4. 其他运维注意事项
 
-- **v0.9.0 不提供邮件通知。** 新 Inquiry 会进入 WordPress 后台“询盘管理”，运营人员需要主动查看；不要误以为提交后一定会自动发邮件给销售。
-- **v0.9.0 不保存服务器端完整聊天记录。** Conversation ID / 当前标签页 Chat transcript 的连续性与 Inquiry 数据是两套概念；不要把 Inquiry 当成完整 Conversation Archive。
+- **v1.0.0 不提供邮件通知。** 新 Inquiry 会进入 WordPress 后台“询盘管理”，运营人员需要主动查看；不要误以为提交后一定会自动发邮件给销售。
+- **v1.0.0 不保存服务器端完整聊天记录。** Conversation ID / 当前标签页 Chat transcript 的连续性与 Inquiry 数据是两套概念；不要把 Inquiry 当成完整 Conversation Archive。
 - **未提交的个人信息不持久化。** Name / Email / Company / Phone / Inquiry Message 草稿不会因为刷新而保存在 `sessionStorage`。
 - **Inquiry 中包含个人信息。** 生产站应限制后台管理员权限，建立合理的数据保留 / 删除规则，并根据所在地法规完善 Privacy Policy。
 - **Public Request Guard 属于 WordPress 应用层 best-effort 保护。** 高流量、Bot 或攻击场景优先在 Cloudflare / WAF 等边缘层限流。
@@ -2799,18 +2801,35 @@ Inquiry 测试数据
 - **Lab / Playground 是长期诊断工具。** 可以用于测试与回归，但不要把测试按钮当成日常运营操作；测试后应恢复生产设置。
 - **Source URL 只接受本站来源。** 不应把访客传入的外站 URL 当成可信来源链接。
 - **Read / Unread 只是轻量运营状态。** 当前版本没有 CRM Pipeline、Sales Owner、Lead Tag、Human Handoff 或销售跟进阶段。
-- **与现有客服系统可以并存。** v0.9.0 已能完成 AI Chat + Inquiry 闭环，但不包含实时人工客服；如果站点仍需要 Human Live Chat，可继续与 Tidio 等成熟客服系统并行。
-- **Future Hardening**：Dedicated DB `1.2 → 1.3` Migration Validation Lab 与 Inquiry Repository DB Failure Injection Lab 已明确延后，不阻塞 v0.9.0，但适合作为后续 `v0.9.1 / v1.0.0` 的回归扩展。
+- **与现有客服系统可以并存。** v1.0.0 已能完成 AI Chat + Inquiry 闭环，但不包含实时人工客服；如果站点仍需要 Human Live Chat，可继续与 Tidio 等成熟客服系统并行。
+- **Future Hardening**：Dedicated DB `1.2 → 1.3` Migration Validation Lab 与 Inquiry Repository DB Failure Injection Lab 已明确延后，不阻塞 v1.0.0；适合作为后续 `v1.0.1 / v1.1.0` 的回归扩展。
 
 ---
 
-## v1.0.0
+## v1.0.0 — First Stable Release
 
-### First Stable Release
+`v1.0.0` 是 WP AI Chat Lab 第一版正式稳定发布。它不重新发明一套功能，而是把已经在 `v0.9.0` 完成 Final Review 的 **Lead Capture & Inquiry Management** 基线提升为正式 `1.0.0` 产品版本。
 
-目标：
+发布基线：
 
-> 第一款可以部署到真实 WordPress 企业网站进行长期使用和验证的版本。
+```text
+Plugin Version = 1.0.0
+DB Version     = 1.3
+```
+
+正式能力包括：
+
+- Local Knowledge / Retrieval / Grounding / Usage Guard；
+- Public Chat + Request Guard + Provider Failure Boundary；
+- 后台可配置 `commercial_intent` 关键词与确定性 Lead Trigger；
+- Inline Inquiry Form + Public Inquiry REST；
+- `wp_wpaic_inquiries` 持久化、Honeypot、Visitor Submission Rate；
+- Inquiry 未读/已读、自动已读、搜索、来源筛选、批量已读/未读、回收站生命周期；
+- Stored XSS、Source URL、非法 ID、Nonce、Unicode / 特殊字符搜索等运营边界验收。
+
+`v1.0.0` 不包含 CRM Pipeline、Human Handoff、Agent、RAG 或 Vector Database。数据库结构相对 v0.9.0 Final Review **没有新增变化**，仍为 DB Version `1.3`。
+
+完整发布说明见：`docs/versions/v1.0.0.md`。
 
 ---
 
@@ -3134,13 +3153,13 @@ Lead / Support / Action
 
 ```text
 Version:
-v0.9.0
+v1.0.0
 
 Release:
-Lead Capture & Inquiry Management — Stable Release
+Lead Capture & Inquiry Management — First Stable Release
 
 Plugin Code:
-v0.9.0 Final Review Passed
+v1.0.0 Final Review Passed
 
 DB Version:
 1.3
@@ -3185,7 +3204,7 @@ Human Handoff / CRM:
 Not Included
 
 Next Direction:
-Production observation → Future Hardening → v1.0.0
+Production observation → Future Hardening → v1.0.1 / v1.1.0
 ```
 
 ---
@@ -3349,6 +3368,22 @@ WP AI Chat Lab 中已经建立的后台实验与验收页面将长期保留，�
 3. **版本回归**：后续 v0.8.x / v0.9.x / v1.x 升级后可直接重跑关键场景，确认旧能力没有回归。
 
 因此后续版本的原则是：**可以整理、折叠、优化这些 Lab 页面，但不因正式功能上线而删除其核心测试能力。** 详细约定见 `docs/lab-validation-policy.md`。
+
+# v1.0.0 — Lead Capture & Inquiry Management
+
+`v1.0.0` 是第一版正式稳定 Release。功能基线继承已经完成 Stage 1 / Stage 2 / Stage 3 与 Final Review 的 v0.9.0 成果，并完成版本号、文档、Release 与安装包的一致性收口。
+
+当前正式状态：
+
+```text
+Plugin Version = 1.0.0
+DB Version     = 1.3
+Release        = First Stable Release
+```
+
+本次从 v0.9.0 Final Review 提升到 v1.0.0 **不增加数据库表、不修改 Schema、不重新改变已经验收通过的业务边界**。v0.9.0 章节继续作为完整开发与验收历史保留。
+
+生产部署、测试数据、限额、隐私与运维注意事项见前文 **「v1.0.0 测试数据与正式上线注意事项」**，版本摘要见 `docs/versions/v1.0.0.md`。
 
 # v0.9.0 — Lead Capture & Inquiry Management
 

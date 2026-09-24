@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: WP AI Chat Lab
- * Description: Experimental WordPress AI foundation for controlled, knowledge-grounded chat, including AI providers, WordPress knowledge sources, and a rebuildable Knowledge Store.
- * Version: 0.9.0
+ * Description: WordPress AI knowledge and chat foundation with grounded answers, usage controls, lead capture, and inquiry management.
+ * Version: 1.0.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: coowinit
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPAIC_VERSION', '0.9.0' );
+define( 'WPAIC_VERSION', '1.0.0' );
 define( 'WPAIC_PLUGIN_FILE', __FILE__ );
 define( 'WPAIC_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WPAIC_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
