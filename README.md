@@ -5,9 +5,13 @@
 **当前稳定 Release：v1.0.0 · Lead Capture & Inquiry Management**  
 **状态：Final Review Passed / Stable Release**
 
+<<<<<<< HEAD
 > **版本说明**：`v0.9.0` 保留为完整开发与验收里程碑；由于正式 GitHub Tag / Release 已采用 `v1.0.0`，当前代码版本、安装包、README 与 CHANGELOG 统一以 `v1.0.0` 作为第一版稳定 Release。
 
 > **测试与上线提醒**：v1.0.0 的正式发布基线延续 v0.9.0 Final Review 已完成的真实开发/验收结果，测试使用 COODEC 官网 coodecglobal.com 公开内容及对应 WordPress 站点数据作为真实站点样本。README 中的型号、查询词、评分、Token、限额与计数均属于当时测试快照，不能直接当作其他站点或正式生产环境的固定值。正式上线前请务必阅读下文 **「v1.0.0 测试数据与正式上线注意事项」**。
+=======
+> **测试与上线提醒**：v0.9.0 的真实开发/验收使用 COODEC官网 coodecglobal.com 公开内容及对应 WordPress 站点数据作为真实站点样本。README 中的型号、查询词、评分、Token、限额与计数均属于当时测试快照，不能直接当作其他站点或正式生产环境的固定值。正式上线前请务必阅读下文 **「v0.9.0 测试数据与正式上线注意事项」**。
+>>>>>>> deb1146cfe57348d8666ffc7fd24db66509cee97
 
 ## v0.5.0 稳定版本状态
 
